@@ -1,10 +1,10 @@
 //TODO: consider resource manager and page builder classes
 
-// shi pul pul shit
+// shi pul pul... stuff
 #include <vector>
 #include <memory>
 
-// hardware shit
+// hardware... stuff
 #include <SPI.h>
 #include <TFT_eSPI.h> // Hardware-specific library
 #include "GfxUi.h"
