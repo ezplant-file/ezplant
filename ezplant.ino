@@ -9,7 +9,8 @@
 
 // GUI & strings
 #include "data/wifi.h"
-#include "WiFi.h"
+#include <WiFi.h>
+#include <WebServer.h>
 #include "GfxUi.h"
 #include "rustrings.h"
 #include "enstrings.h"
@@ -489,6 +490,61 @@ void gui(void* arg)
 }
 #endif
 
+WebServer server(80);
+
+void handleClient()
+{
+	listRootToHtml();
+}
+
+bool handleFileRead(String path)
+{
+	File file = SPIFFS.open(path, "r");
+
+	if (!file) {
+
+		server.send(404, "text/plain", "FileNotFound");
+		return false;
+	}
+
+	server.streamFile(file, "text/html");
+	file.close();
+	return true;
+}
+
+void listRootToHtml()
+{
+    File root = SPIFFS.open("/");
+
+    if (!root) {
+        Serial.println("error");
+        return;
+    }
+
+    String html = "<html><meta charset=\"UTF-8\"><body>";
+
+    if (root.isDirectory()) {
+
+        File file = root.openNextFile();
+        while (file) {
+
+            String name = file.name();
+
+            html += "<p><a href=\"";
+            html += name;
+            html += (String)"\" download=\"";
+            html += name +"\">";
+            html += name;
+            html += "</a></p>";
+
+            file = root.openNextFile();
+        }
+        html += "</body></html>";
+    }
+
+    server.send(200, "text/html", html);
+}
+
 void setup(void)
 {
 	Serial.begin(115200);
@@ -533,6 +589,16 @@ void setup(void)
 	// flag for cursor
 	initDone = true;
 
+	// webserver stuff
+	server.on("/",  HTTP_GET, handleClient);
+	server.onNotFound([]() {
+			if (!handleFileRead(server.uri())) {
+			server.send(404, "text/plain", "FILE NOT FOUND");
+			}
+			});
+
+	server.begin();
+
 	// cursor
 #ifdef TASKS
 	xTaskCreate(
@@ -545,15 +611,15 @@ void setup(void)
 		   );
 
 	/*
-	xTaskCreate(
-			nav,
-			"nav",
-			10000,
-			NULL,
-			2,
-			NULL
-		   );
-		   */
+	   xTaskCreate(
+	   nav,
+	   "nav",
+	   10000,
+	   NULL,
+	   2,
+	   NULL
+	   );
+	 */
 #endif
 }
 
@@ -562,6 +628,7 @@ unsigned long oldMils = 0;
 
 void loop() {
 #ifndef TASKS
+	server.handleClient();
 
 	if (millis() - oldMils > INTERVAL) {
 		Serial.print("Free heap: ");
