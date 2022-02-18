@@ -8,6 +8,8 @@
 #define OK 5
 
 // GUI & strings
+#include "data/wifi.h"
+#include "WiFi.h"
 #include "GfxUi.h"
 #include "rustrings.h"
 #include "enstrings.h"
@@ -489,10 +491,19 @@ void gui(void* arg)
 
 void setup(void)
 {
+	Serial.begin(115200);
+
 	// init all stuff in Gui.h
 	app.init();
 
-	Serial.begin(115200);
+	// wifi stuff
+	WiFi.begin(ssid, password);
+	while (WiFi.status() != WL_CONNECTED) {
+		Serial.print(".");
+	}
+	Serial.println();
+	Serial.println(WiFi.localIP());
+
 
 	// backlight
 	pinMode(19, OUTPUT);
@@ -546,8 +557,20 @@ void setup(void)
 #endif
 }
 
+#define INTERVAL 1000
+unsigned long oldMils = 0;
+
 void loop() {
 #ifndef TASKS
+
+	if (millis() - oldMils > INTERVAL) {
+		Serial.print("Free heap: ");
+		Serial.println(ESP.getFreeHeap());
+		oldMils = millis();
+		Serial.print("WiFi strength: ");
+		Serial.println(WiFi.RSSI());
+	}
+
 	app.update();
 	delay(10);
 #endif

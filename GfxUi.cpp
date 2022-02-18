@@ -255,11 +255,11 @@ void GfxUi::jpegRender(int xpos, int ypos) {
   }
 
   // calculate how long it took to draw the image
-  drawTime = millis() - drawTime; // Calculate the time it took
+  //drawTime = millis() - drawTime; // Calculate the time it took
 
   // print the results to the serial port
-  Serial.print  ("Total render time was    : "); Serial.print(drawTime); Serial.println(" ms");
-  Serial.println("=====================================");
+  //Serial.print  ("Total render time was    : "); Serial.print(drawTime); Serial.println(" ms");
+  //Serial.println("=====================================");
 
 }
 
