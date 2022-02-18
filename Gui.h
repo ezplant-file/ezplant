@@ -1,3 +1,10 @@
+#include <vector>
+
+// hardware... stuff
+#include <SPI.h>
+#include <TFT_eSPI.h>
+
+
 // defines
 #define GREY_BUTTON_HEIGHT 24
 #define GREY_BUTTON_WIDTH 210
@@ -47,12 +54,16 @@
 //cursor color
 #define CURCOL 0x70
 
+// debounce stuff
+#define TIMER 500
+#define DEBOUNCE 200
+
 // consts
 const char* SMALLFONT = "SegoeUI-12";
 const char* LARGEFONT = "SegoeUI-18";
 const char* BOLDFONT = "SegoeUI-Bold-16";
 
-// point to current language strings
+// pointer to current language strings
 const char** scrStrings = ruStrings;
 
 // objs
@@ -93,8 +104,7 @@ class ScrObj {
 			_callback = callback;
 		}
 
-		//virtual void onClick()
-		void onClick()
+		virtual void onClick()
 		{
 			_callback();
 		}
@@ -192,11 +202,12 @@ class ScrObj {
 		bool _invalid = false;
 		bool _isSquare = true;
 		bool _isCircle = false;
+		// cursor erase color
 		uint16_t _curCol = 0xffff;
 };
 
 // current selected item
-static ScrObj* currItem = nullptr;
+ScrObj* currItem = nullptr;
 typedef std::vector<ScrObj*> obj_list;
 
 
@@ -216,7 +227,6 @@ class BlueTextButton: public ScrObj {
 				_w = tft.textWidth(scrStrings[_index]) + _paddingX*2;
 				tft.fillRect(_x, _y, _w, _h, _bg);
 				tft.setCursor(_x+_paddingX, _y+_paddingY);
-				//tft.print(_bText);
 				tft.print(scrStrings[_index]);
 				tft.unloadFont();
 			}
@@ -240,7 +250,6 @@ class BlueTextButton: public ScrObj {
 
 		void setText(dispStrings_t index)
 		{
-			//_bText = text;
 			_index = index;
 			_invalid = true;
 			_isSelectable = true;
@@ -248,7 +257,6 @@ class BlueTextButton: public ScrObj {
 
 	private:
 		String _fontName;
-		//String _bText;
 		dispStrings_t _index;
 		uint16_t _fg;
 		uint16_t _bg;
@@ -270,16 +278,11 @@ class GreyTextButton: public ScrObj {
 			_w = GREY_BUTTON_WIDTH;
 			_h = GREY_BUTTON_HEIGHT;
 			if (_invalid) {
-				//fontCol = greyscaleColor(GR_BTN_TXT_COLOR);
-				//setColors(fontCol, greyscaleColor(0xE3));
 				_btnSpr.createSprite(_w, _h);
-				//_btnSpr.fillRect(_x, _y, _w, _h, _bg);
 				_btnSpr.fillSprite(_bg);
 				_btnSpr.loadFont(_fontName);
 				_btnSpr.setTextColor(_fg, _bg);
-				//_btnSpr.setCursor(_x+_paddingX, _y+_paddingY);
 				_btnSpr.setCursor(_paddingX, _paddingY);
-				//_btnSpr.print(_bText);
 				_btnSpr.print(scrStrings[_index]);
 				_btnSpr.setCursor(197, _paddingY);
 				_btnSpr.print(">");
@@ -310,7 +313,6 @@ class GreyTextButton: public ScrObj {
 
 		void setText(dispStrings_t index)
 		{
-			//_bText = text;
 			_index = index;
 			_invalid = true;
 			_isSelectable = true;
@@ -318,7 +320,6 @@ class GreyTextButton: public ScrObj {
 
 	private:
 		String _fontName;
-		//String _bText;
 		dispStrings_t _index;
 		uint16_t _fg;
 		uint16_t _bg;
@@ -576,7 +577,6 @@ class InputField: public ScrObj {
 				_w = tft.textWidth(_text) + _paddingX*2;
 				tft.fillRect(_x, _y, _w, _h, _bg);
 				tft.setCursor(_x+_paddingX, _y+_paddingY);
-				//tft.print(_bText);
 				tft.print(_text);
 				tft.unloadFont();
 			}
@@ -606,7 +606,6 @@ class InputField: public ScrObj {
 		void setText(const String& text)
 		{
 			_text = text;
-			//_index = index;
 			_invalid = true;
 			_isSelectable = true;
 		}
@@ -614,8 +613,6 @@ class InputField: public ScrObj {
 	private:
 		String _fontName;
 		String _text;
-		//String _bText;
-		//dispStrings_t _index;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = BL_BTN_X_PADDING;
@@ -644,22 +641,27 @@ class CircRadBtn: public ScrObj {
 		{
 		}
 		
-		/*
 		virtual void onClick() override
 		{
 			if (!_isOn)
 				_callback();
 		}
-		*/
 
 		virtual void prepare() override
 		{
 		}
-		
+
+		// set cursor erase color
+		void setCurCol(uint16_t col)
+		{
+			_curCol = col;
+		}
+	/*	
 		virtual uint16_t getCurCol() override
 		{
 			return greyscaleColor(GR_BTN_BG_COLOR);
 		}
+		*/
 
 		void on(bool isOn)
 		{
@@ -676,84 +678,96 @@ class CircRadBtn: public ScrObj {
 };
 
 
-namespace Cursor {
-
-	static bool _isCircle;
-	static int _x;
-	static int _y;
-	static int _w;
-	static int _h;
-
-	static void draw()
-	{
-		if (_isCircle) {
-			tft.drawCircle(
-					_x, 
-					_y, 
-					_h/2 + 1, 
-					greyscaleColor(CURCOL)
-				      );
-
-		}
-		else {
-			tft.drawRect(
-					_x,
-					_y,
-					_w,
-					_h,
-					greyscaleColor(CURCOL)
-				    );
-		}
-	}
-	
-	static void erase()
-	{
-		if (_isCircle) {
-			tft.drawCircle(
-					_x, 
-					_y, 
-					_h/2 + 1, 
-					currItem->getCurCol()
-					//greyscaleColor(BACKGROUND)
-				      );
-
-		}
-		else {
-			tft.drawRect(
-					_x,
-					_y,
-					_w,
-					_h,
-					currItem->getCurCol()
-					//greyscaleColor(BACKGROUND)
-				    );
+class Cursor {
+	public:
+		void draw(bool blink)
+		{
+			if (!currItem)
+				return;
+			_setCoord(currItem);
+			
+			if (blink)
+				_draw();
+			else
+				_erase();
 		}
 
-	}
+	private:
+		void _draw()
+		{
+			if (_isCircle) {
+				tft.drawCircle(
+						_x, 
+						_y, 
+						_h/2 + 1, 
+						greyscaleColor(CURCOL)
+					      );
 
-	static void setCoord(ScrObj* obj)
-	{
-		if (!obj)
-			return;
+			}
+			else {
+				tft.drawRect(
+						_x,
+						_y,
+						_w,
+						_h,
+						greyscaleColor(CURCOL)
+					    );
+			}
+		}
 
-		if (obj->isCircle()) {
-			_isCircle = true;
-			int x = currItem->getX();
-			int y = currItem->getY();
-			_h = currItem->getH();
-			_w = currItem->getW();
-			_x = x+(_w/2) - 1;
-			_y = y+(_h/2) - 1;
+		void _erase()
+		{
+			if (_isCircle) {
+				tft.drawCircle(
+						_x, 
+						_y, 
+						_h/2 + 1, 
+						currItem->getCurCol()
+					      );
+
+			}
+			else {
+				tft.drawRect(
+						_x,
+						_y,
+						_w,
+						_h,
+						currItem->getCurCol()
+					    );
+			}
+
 		}
-		else {
-			_isCircle = false;
-			_x = currItem->getX() - 1;
-			_y = currItem->getY() - 1;
-			_w = currItem->getW() + 1;
-			_h = currItem->getH() + 1;
+
+		void _setCoord(ScrObj* obj)
+		{
+			if (!obj)
+				return;
+
+			if (obj->isCircle()) {
+				_isCircle = true;
+				int x = currItem->getX();
+				int y = currItem->getY();
+				_h = currItem->getH();
+				_w = currItem->getW();
+				_x = x+(_w/2) - 1;
+				_y = y+(_h/2) - 1;
+			}
+			else {
+				_isCircle = false;
+				_x = currItem->getX() - 1;
+				_y = currItem->getY() - 1;
+				_w = currItem->getW() + 1;
+				_h = currItem->getH() + 1;
+			}
 		}
-	}
-};
+
+	private:
+		bool _isCircle;
+		int _x;
+		int _y;
+		int _w;
+		int _h;
+} cursor;
 
 class Page {
 	public:
@@ -823,13 +837,76 @@ class Page {
 		ScrObj* _currItem;
 };
 
+Page* currPage;
+
 class App {
+	private:
+		unsigned long _oldMils = 0;
+		unsigned long _dbMils = 0;
+		bool _blink = false;
+		bool _dbFlag = false;
+		Cursor _cursor;
+		int _iterator = 0;
 	public:
-		App() {
+		void init()
+		{
 			SPIFFS.begin();
 			tft.init();
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
 		}
-		~App(){}
+
+		void update()
+		{
+#ifdef TASKS
+			yield();
+			sleep(10);
+#endif
+
+			if (millis() - _oldMils > TIMER) {
+				cursor.draw(_blink);
+				_oldMils = millis();
+				_blink = !_blink;
+			}
+
+			if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
+				if (millis() - _dbMils > DEBOUNCE) {
+					if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
+						_dbMils = millis();
+						_dbFlag = true;
+					}
+				}
+			}
+
+			if (!digitalRead(PREV) && _dbFlag) {
+				_oldMils = millis();
+				//Serial.println(currPage->selSize());
+				cursor.draw(false);
+				_iterator--;
+				if (_iterator < 0)
+					_iterator = currPage->selSize() - 1;
+				currItem = currPage->getCurrItemAt(_iterator);
+				cursor.draw(true);
+				_dbFlag = false;
+			}
+			else if (!digitalRead(NEXT) && _dbFlag) {
+			_oldMils = millis();
+				cursor.draw(false);
+				_iterator++;
+				if (_iterator > currPage->selSize() - 1)
+					_iterator = 0;
+				currItem = currPage->getCurrItemAt(_iterator);
+				_cursor.draw(true);
+			 _dbFlag = false;
+			}
+			else if (!digitalRead(OK) && _dbFlag) {
+			_oldMils = millis();
+				_cursor.draw(false);
+				currItem->onClick();
+				// TODO: don't reset iterator unless needed
+				_iterator = 0;
+				currItem = currPage->getCurrItemAt(_iterator);
+			_dbFlag = false;
+			}
+		}
 };

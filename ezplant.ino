@@ -1,27 +1,18 @@
 //TODO: consider resource manager and page builder classes
 
-// shi pul pul... stuff
-#include <vector>
-#include <memory>
+//#define TASKS
 
-// hardware... stuff
-#include <SPI.h>
-#include <TFT_eSPI.h> // Hardware-specific library
+// buttons defines
+#define PREV 18
+#define NEXT 23
+#define OK 5
+
+// GUI & strings
 #include "GfxUi.h"
 #include "rustrings.h"
 #include "enstrings.h"
 #include "stringenum.h"
 #include "Gui.h"
-//#define TASKS
-
-// debounce stuff
-#define TIMER 500
-#define DEBOUNCE 100
-
-bool dbFlag = false;
-unsigned long dbMils = 0;
-unsigned long interval = 500;
-static unsigned long oldMils = 0;
 
 
 // prevent redrawing control buttons... Maybe make control bar object?
@@ -39,7 +30,6 @@ void buildTopBar()
 	topBox.setColor(greyscaleColor(TOP_BAR_BG_COL));
 	topBox.setWH(SCR_WIDTH, TOP_BAR_HEIGHT);
 	topBox.invalidate();
-	//tft.fillRect(0,0,250,27,greyscaleColor(TOP_BAR_BG_COL));
 	menuText.setFont(LARGEFONT);
 	menuText.setXYpos(LEFTMOST, TOPMOST);
 	menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
@@ -62,8 +52,6 @@ void buildTopBar()
 
 static Page mainPage;
 static Page settingsPage;
-
-Page* currPage;
 
 void cursorDraw(bool);
 bool gRapidBlink = false;
@@ -246,11 +234,13 @@ void buildLangPage()
 
 	//static CircRadBtn ruSelect;
 	ruSelect.setXYpos(20, 186);
+	ruSelect.setCurCol(greyscaleColor(TOP_BAR_BG_COL));
 	ruSelect.on(true);
 	ruSelect.setCallback(changeLangRus);
 
 	//static CircRadBtn enSelect;
 	enSelect.setXYpos(20, 238);
+	enSelect.setCurCol(greyscaleColor(TOP_BAR_BG_COL));
 	enSelect.on(false);
 	enSelect.setCallback(changeLangEng);
 
@@ -377,96 +367,29 @@ void callMainPage()
 
 bool initDone = false;
 
+//static Cursor cursor;
+
 // Cursor task function
+/*
 void cursorDraw(bool blink)
 {
 	if (!currItem)
 		return;
 	//DEBUG_PRINT(currItem);
 
-	Cursor::setCoord(currItem);
+	cursor.setCoord(currItem);
 
 	if (blink) {
-		Cursor::draw();
+		cursor.draw();
 	}
 	else {
-		Cursor::erase();
+		cursor.erase();
 	}
 }
+*/
 
 bool gblink = false;
 
-// buttons defines
-#define NBUTTONS 3
-#define PREV 18
-#define NEXT 23
-#define OK 5
-
-bool buttons[NBUTTONS];
-
-int elIterator = 0;
-int blinkCounter = 0;
-
-#ifdef TASKS
-void cursor(void* arg)
-{
-	for (;;) {
-		if (millis() - oldMils > interval) {
-			cursorDraw(gblink);
-			oldMils = millis();
-			gblink = !gblink;
-			blinkCounter++;
-		}
-
-		if (blinkCounter > 6) {
-			blinkCounter = 0;
-			interval = 500;
-		}
-
-		if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
-			if (millis() - dbMils > DEBOUNCE) {
-				if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
-					dbMils = millis();
-					dbFlag = true;
-				}
-			}
-		}
-
-		if (!digitalRead(PREV) && dbFlag) {
-			oldMils = millis();
-			//Serial.println(currPage->selSize());
-			cursorDraw(false);
-			elIterator--;
-			if (elIterator < 0)
-				elIterator = currPage->selSize() - 1;
-			currItem = currPage->getCurrItemAt(elIterator);
-			cursorDraw(true);
-			dbFlag = false;
-		}
-		else if (!digitalRead(NEXT) && dbFlag) {
-			oldMils = millis();
-			cursorDraw(false);
-			elIterator++;
-			if (elIterator > currPage->selSize() - 1)
-				elIterator = 0;
-			currItem = currPage->getCurrItemAt(elIterator);
-			cursorDraw(true);
-			dbFlag = false;
-		}
-		else if (!digitalRead(OK) && dbFlag) {
-			oldMils = millis();
-			cursorDraw(false);
-			currItem->onClick();
-			elIterator = 0;
-			currItem = currPage->getCurrItemAt(elIterator);
-			dbFlag = false;
-			interval = 50;
-		}
-		sleep(10);
-	}
-}
-
-#endif
 
 // screen buttons
 #define menu1_size 4
@@ -480,10 +403,6 @@ static BlueTextButton next;
 
 void buildMainPage()
 {
-	// colors
-	//uint16_t bg = greyscaleColor(BACKGROUND);
-	//uint16_t topBarCol = greyscaleColor(TOP_BAR_BG_COL);
-	//uint16_t fontCol = greyscaleColor(0x70);
 
 	//////// TODO: calculate gap?
 	int gap = 5;
@@ -555,10 +474,23 @@ void buildSettingsPage()
 
 }
 
+static App app;
+
+#ifdef TASKS
+void gui(void* arg)
+{
+	for(;;) {
+		app.update();
+		//yield();
+		//sleep(10);
+	}
+}
+#endif
+
 void setup(void)
 {
 	// init all stuff in Gui.h
-	App app;
+	app.init();
 
 	Serial.begin(115200);
 
@@ -593,11 +525,11 @@ void setup(void)
 	// cursor
 #ifdef TASKS
 	xTaskCreate(
-			cursor,
-			"cursor",
-			10000,
+			gui,
+			"gui",
+			20000,
 			NULL,
-			2,
+			0,
 			NULL
 		   );
 
@@ -616,51 +548,7 @@ void setup(void)
 
 void loop() {
 #ifndef TASKS
-
-	if (millis() - oldMils > TIMER) {
-		cursorDraw(gblink);
-		oldMils = millis();
-		gblink = !gblink;
-	}
-
-	if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
-		if (millis() - dbMils > DEBOUNCE) {
-			if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
-				dbMils = millis();
-				dbFlag = true;
-			}
-		}
-	}
-
-	if (!digitalRead(PREV) && dbFlag) {
-		oldMils = millis();
-		//Serial.println(currPage->selSize());
-		cursorDraw(false);
-		elIterator--;
-		if (elIterator < 0)
-			elIterator = currPage->selSize() - 1;
-		currItem = currPage->getCurrItemAt(elIterator);
-		cursorDraw(true);
-		dbFlag = false;
-	}
-	else if (!digitalRead(NEXT) && dbFlag) {
-		oldMils = millis();
-		cursorDraw(false);
-		elIterator++;
-		if (elIterator > currPage->selSize() - 1)
-			elIterator = 0;
-		currItem = currPage->getCurrItemAt(elIterator);
-		cursorDraw(true);
-		dbFlag = false;
-	}
-	else if (!digitalRead(OK) && dbFlag) {
-		oldMils = millis();
-		cursorDraw(false);
-		currItem->onClick();
-		elIterator = 0;
-		currItem = currPage->getCurrItemAt(elIterator);
-		dbFlag = false;
-	}
+	app.update();
 	delay(10);
 #endif
 }
