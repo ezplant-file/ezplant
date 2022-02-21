@@ -1,3 +1,16 @@
+//TODO:
+//
+// precalculate all colors to uint16_t
+//
+// Obj:
+// progress bar -
+// input field -
+// checkbox -
+// switch -
+// wifi -
+// internet -
+//
+
 #include <vector>
 
 // hardware... stuff
@@ -5,7 +18,11 @@
 #include <TFT_eSPI.h>
 
 
-// defines
+/***************************** defines *************************/
+// debug print object address
+#define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
+
+// grey button
 #define GREY_BUTTON_HEIGHT 24
 #define GREY_BUTTON_WIDTH 210
 #define GR_BTN_X_PADDING 8
@@ -13,37 +30,23 @@
 #define GR_BTN_TXT_COLOR 0x70
 #define GR_BTN_BG_COLOR 0xE3
 
+// blue button
 #define BLUE_BUTTON_HEIGHT 24
 #define BL_BTN_X_PADDING 8
 #define BL_BTN_Y_PADDING 7
 
+// top bar
 #define TOP_BAR_HEIGHT 27
-
-#define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
-
 #define TOP_BAR_BG_COL 0xE3
 #define FONT_COLOR 0x70
 #define sleep(A) (vTaskDelay((A) / portTICK_PERIOD_MS))
-#define BACKGROUND 0xFF
-
-#define BLUE_BUTTON_HEIGHT 24
-#define BL_BTN_X_PADDING 8
-#define BL_BTN_Y_PADDING 7
-
-#define GREY_BUTTON_HEIGHT 24
-#define GREY_BUTTON_WIDTH 210
-#define GR_BTN_X_PADDING 8
-#define GR_BTN_Y_PADDING 7
-#define GR_BTN_TXT_COLOR 0x70
-#define GR_BTN_BG_COLOR 0xE3
-
-#define TOP_BAR_HEIGHT 27
-#define SCR_WIDTH 240
-#define SCR_HEIGHT 320
-
-// defines for top bar
 #define LEFTMOST 17
 #define TOPMOST 11
+
+
+#define SCR_WIDTH 240
+#define SCR_HEIGHT 320
+#define BACKGROUND 0xFF
 
 // left page padding
 #define PG_LEFT_PADD 15
@@ -57,6 +60,10 @@
 // debounce stuff
 #define TIMER 500
 #define DEBOUNCE 200
+
+// checkbox
+#define CHK_COL 0xDC
+#define CHECKBOX_FILE "/check.jpg"
 
 // consts
 const char* SMALLFONT = "SegoeUI-12";
@@ -97,6 +104,7 @@ class ScrObj {
 		virtual void erase()
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			freeRes();
 		}
 
 		void setCallback(void(*callback)())
@@ -570,18 +578,22 @@ class InputField: public ScrObj {
 	public:
 		virtual void draw() override
 		{
-			_h = BLUE_BUTTON_HEIGHT;
-			if (_invalid) {
-				tft.setTextColor(_fg, _bg);
-				tft.loadFont(_fontName);
-				_w = tft.textWidth(_text) + _paddingX*2;
-				tft.fillRect(_x, _y, _w, _h, _bg);
-				tft.setCursor(_x+_paddingX, _y+_paddingY);
-				tft.print(_text);
-				tft.unloadFont();
-			}
-			_invalid = false;
+			if (!_invalid)
+				return;
 
+			tft.setTextColor(_fg, _bg);
+			tft.loadFont(_fontName);
+			//_w = tft.textWidth(_text) + _paddingX*2;
+			_w = tft.textWidth(String(_value)) + _paddingX*2;
+			tft.fillRect(_x, _y, _w, _h, _bg);
+			tft.setCursor(_x+_paddingX, _y+_paddingY);
+			//tft.print(_text);
+			tft.print(_value);
+			tft.setCursor(_x+_w+_paddingX, _y+_paddingY);
+			tft.setTextColor(_fg, TFT_WHITE);
+			tft.print(scrStrings[_index]);
+			tft.unloadFont();
+			_invalid = false;
 		}
 
 		virtual void freeRes() override
@@ -601,22 +613,106 @@ class InputField: public ScrObj {
 			_fontName = fontName;
 			_invalid = true;
 			_isSelectable = true;
+			_h = BLUE_BUTTON_HEIGHT;
 		}
 
-		void setText(const String& text)
+		void setValue(uint16_t value)
 		{
-			_text = text;
 			_invalid = true;
 			_isSelectable = true;
+			_value = value;
+		}
+
+		void setText(dispStrings_t index)
+		{
+			if (index > END_OF_STRINGS)
+				return;
+
+			_index = index;
+			_invalid = true;
+		}
+		
+		uint16_t getValue() 
+		{
+			return _value;
 		}
 
 	private:
 		String _fontName;
-		String _text;
+		dispStrings_t _index;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = BL_BTN_X_PADDING;
 		uint8_t _paddingY = BL_BTN_Y_PADDING;
+		uint16_t _value = 0;
+};
+
+class CheckBox: public ScrObj {
+	public:
+		virtual void draw() override
+		{
+			if (!_invalid)
+				return;
+			if (!_isOn) {
+				tft.drawRect(_x, _y, _w, _h, greyscaleColor(CHK_COL));
+				_invalid = false;
+			}
+			else if (_jpegFile) {
+				ui.drawJpeg(_jpegFile, _x, _y);
+				_invalid = false;
+			}
+		}
+
+		virtual void freeRes() override
+		{
+			if (_jpegFile)
+				_jpegFile.close();
+		}
+
+		void reload()
+		{
+			_jpegFile = SPIFFS.open(_filename, "r");
+		}
+
+		void setText(dispStrings_t index)
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_index = index;
+		}
+
+	private:
+		uint16_t _bg;
+		dispStrings_t _index = 0;
+		bool _textAligned = false;
+		bool _isOn = false;
+		fs::File _jpegFile;
+		const char* _filename = CHECKBOX_FILE;
+};
+
+class Toggle: public ScrObj {
+	public:
+		virtual void draw() override
+		{
+		}
+
+		virtual void freeRes() override
+		{
+		}
+
+		void setText(dispStrings_t index)
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_index = index;
+		}
+
+	private:
+		uint16_t _bg;
+		uint16_t _fg;
+		dispStrings_t _index;
+		bool _textAligned = false;
+		bool _isOn = false;
 };
 
 class CircRadBtn: public ScrObj {
@@ -869,16 +965,16 @@ class App {
 				_blink = !_blink;
 			}
 
-			if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
+			if (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK)) {
 				if (millis() - _dbMils > DEBOUNCE) {
-					if (!digitalRead(PREV) || !digitalRead(NEXT) || !digitalRead(OK)) {
+					if (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK)) {
 						_dbMils = millis();
 						_dbFlag = true;
 					}
 				}
 			}
 
-			if (!digitalRead(PREV) && _dbFlag) {
+			if (!digitalRead(BTN_PREV) && _dbFlag) {
 				_oldMils = millis();
 				//Serial.println(currPage->selSize());
 				cursor.draw(false);
@@ -889,7 +985,7 @@ class App {
 				cursor.draw(true);
 				_dbFlag = false;
 			}
-			else if (!digitalRead(NEXT) && _dbFlag) {
+			else if (!digitalRead(BTN_NEXT) && _dbFlag) {
 			_oldMils = millis();
 				cursor.draw(false);
 				_iterator++;
@@ -899,7 +995,7 @@ class App {
 				_cursor.draw(true);
 			 _dbFlag = false;
 			}
-			else if (!digitalRead(OK) && _dbFlag) {
+			else if (!digitalRead(BTN_OK) && _dbFlag) {
 			_oldMils = millis();
 				_cursor.draw(false);
 				currItem->onClick();

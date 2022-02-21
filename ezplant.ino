@@ -3,9 +3,11 @@
 //#define TASKS
 
 // buttons defines
-#define PREV 18
-#define NEXT 23
-#define OK 5
+#define BTN_PREV 18
+#define BTN_NEXT 23
+#define BTN_OK 5
+#define BTN_MIN 16
+#define BTN_PLU 17
 
 // GUI & strings
 #include "data/wifi.h"
@@ -158,12 +160,14 @@ void buildLangPage()
 	static InputField brightness;
 	brightness.setFont(SMALLFONT);
 	brightness.setXYpos(PG_LEFT_PADD, 83);
-	brightness.setText("100");
+	brightness.setValue(100);
+	brightness.setText(PERCENT);
 	brightness.setColors(
 			greyscaleColor(FONT_COLOR), 
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
+	/*
 	static Text percent;
 	percent.setFont(SMALLFONT);
         percent.setText(PERCENT);
@@ -178,6 +182,7 @@ void buildLangPage()
                      greyscaleColor(FONT_COLOR), 
                      greyscaleColor(BACKGROUND)
 		     );
+		     */
 
 	static Text sleepAfter;
 	sleepAfter.setFont(SMALLFONT);
@@ -192,12 +197,14 @@ void buildLangPage()
 	static InputField seconds;
 	seconds.setFont(SMALLFONT);
 	seconds.setXYpos(PG_LEFT_PADD, 130);
-	seconds.setText("100");
+	seconds.setValue(100);
+	seconds.setText(SEC);
 	seconds.setColors(
 			greyscaleColor(FONT_COLOR), 
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
+	/*
 	static Text secText;
 	secText.setFont(SMALLFONT);
 	//secText.setXYpos(PG_LEFT_PADD, 127);
@@ -208,6 +215,7 @@ void buildLangPage()
 			+ 3, 
 			130 + GR_BTN_Y_PADDING
 			);
+			*/
 
 	secText.setText(SEC);
 	secText.setColors(
@@ -566,9 +574,11 @@ void setup(void)
 	analogWrite(19, 127);
 
 	// buttons
-	pinMode(PREV, INPUT_PULLUP);
-	pinMode(NEXT, INPUT_PULLUP);
-	pinMode(OK, INPUT_PULLUP);
+	pinMode(BTN_PREV, INPUT_PULLUP);
+	pinMode(BTN_NEXT, INPUT_PULLUP);
+	pinMode(BTN_OK, INPUT_PULLUP);
+	pinMode(BTN_MIN, INPUT_PULLUP);
+	pinMode(BTN_PLU, INPUT_PULLUP);
 
 	buildMainPage();
 	buildSettingsPage();
