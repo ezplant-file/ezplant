@@ -637,6 +637,9 @@ class InputField: public ScrObj {
 		uint16_t _value = 0;
 };
 
+//TODO: manually decode JPG, push array to sprite
+TFT_eSprite checkSprite = TFT_eSprite(&tft);
+
 class CheckBox: public ScrObj {
 	public:
 		CheckBox(): ScrObj(CHK_BOX_SIZE, CHK_BOX_SIZE, SELECTABLE)
@@ -677,6 +680,7 @@ class CheckBox: public ScrObj {
 		uint16_t _bg;
 		bool _textAligned = false;
 		bool _isOn = false;
+		//TFT_eSprite* spr;
 		fs::File _jpegFile;
 		const char* _filename = CHK_BOX_FILE;
 };
@@ -689,6 +693,7 @@ class CheckBox: public ScrObj {
 #define TGL_OFF_COL 0x6E
 #define TGL_SHF_RAD 6
 
+// TODO: replace with antialiased image
 class Toggle: public ScrObj {
 	public:
 		Toggle(): ScrObj(TGL_W, TGL_H, SELECTABLE)
@@ -704,13 +709,13 @@ class Toggle: public ScrObj {
 
 			if (_isOn) {
 				_col = tft.color565(0x4C, 0xAF, 0x50);
-				_shaftX = _x + uint16_t(3/4*_w);
+				_shaftX = _x + uint16_t((3/4)*_w);
 				_shaftY = _y + _h/2;
 				_invalid = false;
 			}
 			else {
 				_col = greyscaleColor(TGL_OFF_COL);
-				_shaftX = _x + uint16_t(3/4*_w);
+				_shaftX = _x + uint16_t((3/4)*_w);
 				_shaftY = _y + _h/2;
 				_invalid = false;
 			}
@@ -736,6 +741,7 @@ class Toggle: public ScrObj {
 };
 
 
+// TODO: replace with antialiased image
 class CircRadBtn: public ScrObj {
 	public:
 		CircRadBtn(): ScrObj(RAD_BTN_SIZE, RAD_BTN_SIZE, SELECTABLE)
