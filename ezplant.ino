@@ -215,13 +215,13 @@ void buildLangPage()
 			+ 3, 
 			130 + GR_BTN_Y_PADDING
 			);
-			*/
 
 	secText.setText(SEC);
 	secText.setColors(
 			greyscaleColor(FONT_COLOR), 
 			greyscaleColor(BACKGROUND)
 			);
+			*/
 
 	static Text boldLang;
 	boldLang.setFont(BOLDFONT);
@@ -292,10 +292,10 @@ void buildLangPage()
 	langPage.addItem(&boldScreen);
 	langPage.addItem(&subtScreen);
 	langPage.addItem(&brightness);
-	langPage.addItem(&percent);
+	//langPage.addItem(&percent);
 	langPage.addItem(&sleepAfter);
 	langPage.addItem(&seconds);
-	langPage.addItem(&secText);
+	//langPage.addItem(&secText);
 	langPage.addItem(&boldLang);
 
 	langPage.addItem(&ruBox);

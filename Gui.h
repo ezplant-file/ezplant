@@ -90,6 +90,13 @@ uint16_t greyscaleColor(uint8_t g)
 
 class ScrObj {
 	public:
+		ScrObj(uint16_t w = 0, uint16_t h = 0, bool isSelectable = true):
+			_w(w),
+			_h(h),
+			_isSelectable(isSelectable)
+		{
+		}
+
 		virtual ~ScrObj()
 		{
 		}
@@ -197,14 +204,24 @@ class ScrObj {
 			return _curCol;
 		}
 
+		void setText(dispStrings_t index)
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_index = index;
+			_invalid = true;
+		}
+
+
 	protected:
-		int _x = 0;
-		int _y = 0;
-		int _w = 0;
-		int _h = 0;
+		dispStrings_t _index;
+		uint16_t _x = 0;
+		uint16_t _y = 0;
+		uint16_t _w;
+		uint16_t _h;
 		void (*_callback)() = nop;
 		bool _isVisible = true;
-		bool _isSelectable = false;
+		bool _isSelectable;
 		bool _isPressed = false;
 		bool _isSelected = false;
 		bool _invalid = false;
@@ -222,22 +239,26 @@ typedef std::vector<ScrObj*> obj_list;
 class BlueTextButton: public ScrObj {
 
 	public:
+		BlueTextButton(): ScrObj(0, BLUE_BUTTON_HEIGHT, true)
+		{
+		}
+
 		virtual void freeRes() override
 		{
 		}
 
 		virtual void draw() override
 		{
-			_h = BLUE_BUTTON_HEIGHT;
-			if (_invalid) {
-				tft.setTextColor(_fg, _bg);
-				tft.loadFont(_fontName);
-				_w = tft.textWidth(scrStrings[_index]) + _paddingX*2;
-				tft.fillRect(_x, _y, _w, _h, _bg);
-				tft.setCursor(_x+_paddingX, _y+_paddingY);
-				tft.print(scrStrings[_index]);
-				tft.unloadFont();
-			}
+			//_h = BLUE_BUTTON_HEIGHT;
+			if (!_invalid)
+				return;
+			tft.setTextColor(_fg, _bg);
+			tft.loadFont(_fontName);
+			_w = tft.textWidth(scrStrings[_index]) + _paddingX*2;
+			tft.fillRect(_x, _y, _w, _h, _bg);
+			tft.setCursor(_x+_paddingX, _y+_paddingY);
+			tft.print(scrStrings[_index]);
+			tft.unloadFont();
 			_invalid = false;
 		}
 
@@ -246,26 +267,17 @@ class BlueTextButton: public ScrObj {
 			_bg = bg;
 			_fg = fg;
 			_invalid = true;
-			_isSelectable = true;
 		}
 
 		void setFont(const String& fontName)
 		{
 			_fontName = fontName;
 			_invalid = true;
-			_isSelectable = true;
 		}
 
-		void setText(dispStrings_t index)
-		{
-			_index = index;
-			_invalid = true;
-			_isSelectable = true;
-		}
 
 	private:
 		String _fontName;
-		dispStrings_t _index;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = BL_BTN_X_PADDING;
@@ -274,8 +286,11 @@ class BlueTextButton: public ScrObj {
 
 
 class GreyTextButton: public ScrObj {
-
 	public:
+		GreyTextButton(): ScrObj(GREY_BUTTON_WIDTH, GREY_BUTTON_HEIGHT, true)
+		{
+		}
+
 		virtual void freeRes() override
 		{
 			_btnSpr.deleteSprite();
@@ -283,8 +298,8 @@ class GreyTextButton: public ScrObj {
 
 		virtual void prepare() override
 		{
-			_w = GREY_BUTTON_WIDTH;
-			_h = GREY_BUTTON_HEIGHT;
+			//_w = GREY_BUTTON_WIDTH;
+			//_h = GREY_BUTTON_HEIGHT;
 			if (_invalid) {
 				_btnSpr.createSprite(_w, _h);
 				_btnSpr.fillSprite(_bg);
@@ -319,16 +334,8 @@ class GreyTextButton: public ScrObj {
 			_isSelectable = true;
 		}
 
-		void setText(dispStrings_t index)
-		{
-			_index = index;
-			_invalid = true;
-			_isSelectable = true;
-		}
-
 	private:
 		String _fontName;
-		dispStrings_t _index;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
@@ -341,6 +348,10 @@ class GreyTextButton: public ScrObj {
 class Text: public ScrObj {
 
 	public:
+		Text(): ScrObj(0, TOP_BAR_HEIGHT - 12, false)
+		{
+		}
+
 		virtual void freeRes() override
 		{
 			_txtSp.deleteSprite();
@@ -354,7 +365,7 @@ class Text: public ScrObj {
 
 		void prepare()
 		{
-			_h = TOP_BAR_HEIGHT - 12;
+			//_h = TOP_BAR_HEIGHT - 12;
 			if (_invalid) {
 				_txtSp.loadFont(_fontName);
 				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
@@ -379,13 +390,6 @@ class Text: public ScrObj {
 			_fontName = fontName;
 		}
 
-		void setText(dispStrings_t index)
-		{
-			_index = index;
-			//_text = text;
-			_invalid = true;
-		}
-
 		void setColors(uint16_t fg, uint16_t bg)
 		{
 			// set colors
@@ -395,10 +399,8 @@ class Text: public ScrObj {
 		}
 
 	private:
-		dispStrings_t _index;
 		uint16_t _fg, _bg;
 		String _fontName;
-		//const char* _text;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
@@ -408,6 +410,10 @@ class Text: public ScrObj {
 class BodyText: public ScrObj {
 
 	public:
+		BodyText(): ScrObj(0, TOP_BAR_HEIGHT - 12, false)
+		{
+		}
+
 		virtual void freeRes() override
 		{
 			_txtSp.deleteSprite();
@@ -421,7 +427,7 @@ class BodyText: public ScrObj {
 
 		void prepare()
 		{
-			_h = TOP_BAR_HEIGHT - 12;
+			//_h = TOP_BAR_HEIGHT - 12;
 			if (_invalid) {
 				_txtSp.loadFont(_fontName);
 				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
@@ -440,13 +446,6 @@ class BodyText: public ScrObj {
 			_fontName = fontName;
 		}
 
-		void setText(dispStrings_t index)
-		{
-			_index = index;
-			//_text = text;
-			_invalid = true;
-		}
-
 		void setColors(uint16_t fg, uint16_t bg)
 		{
 			// set colors
@@ -456,10 +455,8 @@ class BodyText: public ScrObj {
 		}
 
 	private:
-		dispStrings_t _index;
 		uint16_t _fg, _bg;
 		String _fontName;
-		//const char* _text;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
@@ -623,15 +620,6 @@ class InputField: public ScrObj {
 			_value = value;
 		}
 
-		void setText(dispStrings_t index)
-		{
-			if (index > END_OF_STRINGS)
-				return;
-
-			_index = index;
-			_invalid = true;
-		}
-		
 		uint16_t getValue() 
 		{
 			return _value;
@@ -639,7 +627,6 @@ class InputField: public ScrObj {
 
 	private:
 		String _fontName;
-		dispStrings_t _index;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = BL_BTN_X_PADDING;
@@ -683,7 +670,6 @@ class CheckBox: public ScrObj {
 
 	private:
 		uint16_t _bg;
-		dispStrings_t _index = 0;
 		bool _textAligned = false;
 		bool _isOn = false;
 		fs::File _jpegFile;
@@ -700,13 +686,6 @@ class Toggle: public ScrObj {
 		{
 		}
 
-		void setText(dispStrings_t index)
-		{
-			if (index > END_OF_STRINGS)
-				return;
-			_index = index;
-		}
-
 	private:
 		uint16_t _bg;
 		uint16_t _fg;
@@ -715,8 +694,14 @@ class Toggle: public ScrObj {
 		bool _isOn = false;
 };
 
+#define CRB_SIZE 22
+
 class CircRadBtn: public ScrObj {
 	public:
+		CircRadBtn(): ScrObj(CRB_SIZE, CRB_SIZE, true)
+		{
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid)
@@ -762,9 +747,6 @@ class CircRadBtn: public ScrObj {
 		void on(bool isOn)
 		{
 			_isOn = isOn;
-			//TODO: move it somewhere else
-			_isSelectable = true;
-			_w = _h = 22;
 		}
 
 	private:
