@@ -10,6 +10,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Online monitoring",
 	"Settings",
 	"Diagnostics",
+	"Test page",
 
 	// settings strings
 	"Time and date",
@@ -26,7 +27,12 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"seconds",
 	"Language",
 	"Русский",
-	"English"
+	"English",
+
+	// test page
+	"Toggle",
+	"Checkbox",
+	"Radio button"
 };
 
 #endif

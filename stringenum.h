@@ -10,6 +10,7 @@ typedef enum {
 	ONLINE_MON,
 	SETTINGS,
 	DIAG,
+	TEST_PAGE,
 
 	// settings strings
 	TIMEDATE,
@@ -27,6 +28,11 @@ typedef enum {
 	LANG,
 	RUS,
 	ENG,
+
+	// test page
+	TOGGLE_TEXT,
+	CHECHBOX_TEXT,
+	RADIO_TEXT,
 
 	END_OF_STRINGS
 } dispStrings_t;

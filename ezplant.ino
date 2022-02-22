@@ -57,6 +57,16 @@ void buildTopBar()
 
 static Page mainPage;
 static Page settingsPage;
+// screen buttons
+#define menu1_size 5
+#define settings_size 5
+static GreyTextButton menu_items[menu1_size];
+static GreyTextButton settings_items[settings_size];
+static ImageButton back;
+//static ImageButton sett_back;
+static BlueTextButton next;
+
+
 
 void cursorDraw(bool);
 bool gRapidBlink = false;
@@ -132,6 +142,41 @@ void changeLangEng()
 	currPage->draw();
 }
 
+/************************ TEST PAGE ******************************/
+
+Page testPage;
+
+void buildTestPage()
+{
+	static Toggle testTgl;
+	testTgl.setFont(SMALLFONT);
+	testTgl.setXYpos(17, 41);
+	testTgl.setText(TOGGLE_TEXT);
+	testTgl.on(false);
+	//testTgl.setCallback(
+	
+	static CheckBox testChBox;
+	testChBox.setFont(SMALLFONT);
+	testChBox.setXYpos(17, 65);
+	testChBox.setText(CHECHBOX_TEXT);
+	testChBox.on(false);
+	//testChBox.setCallback(
+
+	static CircRadBtn testRad;
+	testRad.setFont(SMALLFONT);
+	testRad.setXYpos(17, 79);
+	testRad.setText(RADIO_TEXT);
+	testRad.on(false);
+	//testChBox.setCallback(
+
+	testPage.addItem(&testTgl);
+	testPage.addItem(&testChBox);
+	testPage.addItem(&testRad);
+
+	testPage.addItem(&back);
+}
+
+/************************ END TEST PAGE *************************/
 
 // hardcoded
 void buildLangPage()
@@ -256,11 +301,13 @@ void buildLangPage()
 	enSelect.setCallback(changeLangEng);
 
 
+	/*
 	static ImageButton lang_back;
 	lang_back.setCallback(callSettingsPage);
 	lang_back.loadRes("/prev.jpg");
 	lang_back.setXYpos(7, 284);
 	lang_back.setCircle();
+	*/
 
 	static Image ruFlag;
 	ruFlag.loadRes("/ru.jpg");
@@ -310,16 +357,36 @@ void buildLangPage()
 	langPage.addItem(&langRu);
 	langPage.addItem(&langEng);
 
-	langPage.addItem(&lang_back);
+	langPage.addItem(&back);
 }
 
 /******************************************************************************* 
 callback functions
 *******************************************************************************/
+void callTestPage()
+{
+	gBackBtnOnScreen = true;
+
+	back.setCallback(callMainPage);
+
+	testPage.invalidateAll();
+	testPage.prepare();
+
+	menuText.erase();
+	topBar.invalidateAll();
+	currPage->erase();
+	menuText.setText(TEST_PAGE);
+	menuText.prepare();
+	currPage = &testPage;
+	topBar.draw();
+	currPage->draw();
+}
 
 void callLangPage()
 {
 	gBackBtnOnScreen = true;
+
+	back.setCallback(callSettingsPage);
 
 	langPage.invalidateAll();
 	langPage.prepare();
@@ -337,6 +404,8 @@ void callLangPage()
 void callSettingsPage()
 {
 	gBackBtnOnScreen = true;
+
+	back.setCallback(callMainPage);
 
 	settingsPage.invalidateAll();
 	settingsPage.prepare();
@@ -358,6 +427,8 @@ void callSettingsPage()
 void callMainPage()
 {
 	gBackBtnOnScreen = true;
+
+	back.setCallback(nop);
 
 	mainPage.invalidateAll();
 	mainPage.prepare();
@@ -402,15 +473,6 @@ void cursorDraw(bool blink)
 bool gblink = false;
 
 
-// screen buttons
-#define menu1_size 4
-#define settings_size 5
-static GreyTextButton menu_items[menu1_size];
-static GreyTextButton settings_items[settings_size];
-static ImageButton back;
-static ImageButton sett_back;
-static BlueTextButton next;
-
 
 void buildMainPage()
 {
@@ -423,6 +485,7 @@ void buildMainPage()
 	ru_menu1[1] = ONLINE_MON;
 	ru_menu1[2] = SETTINGS;
 	ru_menu1[3] = DIAG;
+	ru_menu1[4] = TEST_PAGE;
 
 	int j = 0;
 
@@ -437,6 +500,7 @@ void buildMainPage()
 	}
 
 	menu_items[2].setCallback(callSettingsPage);
+	menu_items[4].setCallback(callTestPage);
 
 	for (int i = 0; i < menu1_size; i++) {
 		mainPage.addItem(&menu_items[i]);
@@ -477,11 +541,14 @@ void buildSettingsPage()
 		settingsPage.addItem(&settings_items[i]);
 	}
 
+	/*
 	sett_back.setCallback(callMainPage);
 	sett_back.loadRes("/prev.jpg");
 	sett_back.setXYpos(7, 284);
 	sett_back.setCircle();
 	settingsPage.addItem(&sett_back);
+	*/
+	settingsPage.addItem(&back);
 
 }
 
@@ -580,9 +647,10 @@ void setup(void)
 	pinMode(BTN_MIN, INPUT_PULLUP);
 	pinMode(BTN_PLU, INPUT_PULLUP);
 
-	buildMainPage();
-	buildSettingsPage();
+	buildTestPage();
 	buildLangPage();
+	buildSettingsPage();
+	buildMainPage();
 
 	//mainPage.prepare();
 

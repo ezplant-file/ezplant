@@ -47,6 +47,7 @@
 #define SCR_WIDTH 240
 #define SCR_HEIGHT 320
 #define BACKGROUND 0xFF
+#define SELECTABLE true
 
 // left page padding
 #define PG_LEFT_PADD 15
@@ -62,13 +63,29 @@
 #define DEBOUNCE 200
 
 // checkbox
-#define CHK_COL 0xDC
-#define CHECKBOX_FILE "/check.jpg"
+#define CHK_BOX_COL 0xDC
+#define CHK_BOX_SIZE 21
+#define CHK_BOX_FILE "/check.jpg"
 
-// consts
-const char* SMALLFONT = "SegoeUI-12";
-const char* LARGEFONT = "SegoeUI-18";
-const char* BOLDFONT = "SegoeUI-Bold-16";
+// input field
+#define INPUT_H 24
+
+// radio button
+#define RAD_BTN_SIZE 22
+
+// fonts
+typedef enum {
+	SMALLFONT,
+	LARGEFONT,
+	BOLDFONT,
+	END_OF_FONTS
+} fonts_t;
+
+const char* FONTS[END_OF_FONTS] = {
+	"SegoeUI-12",
+	"SegoeUI-18",
+	"SegoeUI-Bold-16"
+};
 
 // pointer to current language strings
 const char** scrStrings = ruStrings;
@@ -90,7 +107,7 @@ uint16_t greyscaleColor(uint8_t g)
 
 class ScrObj {
 	public:
-		ScrObj(uint16_t w = 0, uint16_t h = 0, bool isSelectable = true):
+		ScrObj(uint16_t w = 0, uint16_t h = 0, bool isSelectable = false):
 			_w(w),
 			_h(h),
 			_isSelectable(isSelectable)
@@ -212,9 +229,15 @@ class ScrObj {
 			_invalid = true;
 		}
 
+		void setFont(fonts_t fontIndex)
+		{
+			_fontIndex = fontIndex;
+			_invalid = true;
+		}
 
 	protected:
 		dispStrings_t _index;
+		fonts_t _fontIndex;
 		uint16_t _x = 0;
 		uint16_t _y = 0;
 		uint16_t _w;
@@ -239,7 +262,7 @@ typedef std::vector<ScrObj*> obj_list;
 class BlueTextButton: public ScrObj {
 
 	public:
-		BlueTextButton(): ScrObj(0, BLUE_BUTTON_HEIGHT, true)
+		BlueTextButton(): ScrObj(0, BLUE_BUTTON_HEIGHT, SELECTABLE)
 		{
 		}
 
@@ -253,7 +276,7 @@ class BlueTextButton: public ScrObj {
 			if (!_invalid)
 				return;
 			tft.setTextColor(_fg, _bg);
-			tft.loadFont(_fontName);
+			tft.loadFont(FONTS[_fontIndex]);
 			_w = tft.textWidth(scrStrings[_index]) + _paddingX*2;
 			tft.fillRect(_x, _y, _w, _h, _bg);
 			tft.setCursor(_x+_paddingX, _y+_paddingY);
@@ -269,15 +292,7 @@ class BlueTextButton: public ScrObj {
 			_invalid = true;
 		}
 
-		void setFont(const String& fontName)
-		{
-			_fontName = fontName;
-			_invalid = true;
-		}
-
-
 	private:
-		String _fontName;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = BL_BTN_X_PADDING;
@@ -287,7 +302,7 @@ class BlueTextButton: public ScrObj {
 
 class GreyTextButton: public ScrObj {
 	public:
-		GreyTextButton(): ScrObj(GREY_BUTTON_WIDTH, GREY_BUTTON_HEIGHT, true)
+		GreyTextButton(): ScrObj(GREY_BUTTON_WIDTH, GREY_BUTTON_HEIGHT, SELECTABLE)
 		{
 		}
 
@@ -303,7 +318,7 @@ class GreyTextButton: public ScrObj {
 			if (_invalid) {
 				_btnSpr.createSprite(_w, _h);
 				_btnSpr.fillSprite(_bg);
-				_btnSpr.loadFont(_fontName);
+				_btnSpr.loadFont(FONTS[_fontIndex]);
 				_btnSpr.setTextColor(_fg, _bg);
 				_btnSpr.setCursor(_paddingX, _paddingY);
 				_btnSpr.print(scrStrings[_index]);
@@ -327,15 +342,8 @@ class GreyTextButton: public ScrObj {
 			_isSelectable = true;
 		}
 
-		void setFont(const String& fontName)
-		{
-			_fontName = fontName;
-			_invalid = true;
-			_isSelectable = true;
-		}
 
 	private:
-		String _fontName;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
@@ -367,7 +375,7 @@ class Text: public ScrObj {
 		{
 			//_h = TOP_BAR_HEIGHT - 12;
 			if (_invalid) {
-				_txtSp.loadFont(_fontName);
+				_txtSp.loadFont(FONTS[_fontIndex]);
 				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
 				_txtSp.createSprite(_w, _h);
 				_txtSp.fillSprite(TFT_TRANSPARENT);
@@ -384,12 +392,6 @@ class Text: public ScrObj {
 			freeRes();
 		}
 
-		void setFont(const char* fontName)
-		{
-			// set font
-			_fontName = fontName;
-		}
-
 		void setColors(uint16_t fg, uint16_t bg)
 		{
 			// set colors
@@ -400,7 +402,6 @@ class Text: public ScrObj {
 
 	private:
 		uint16_t _fg, _bg;
-		String _fontName;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
@@ -410,7 +411,7 @@ class Text: public ScrObj {
 class BodyText: public ScrObj {
 
 	public:
-		BodyText(): ScrObj(0, TOP_BAR_HEIGHT - 12, false)
+		BodyText(): ScrObj(0, TOP_BAR_HEIGHT - 12)
 		{
 		}
 
@@ -429,7 +430,7 @@ class BodyText: public ScrObj {
 		{
 			//_h = TOP_BAR_HEIGHT - 12;
 			if (_invalid) {
-				_txtSp.loadFont(_fontName);
+				_txtSp.loadFont(FONTS[_fontIndex]);
 				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
 				_txtSp.createSprite(_w, _h);
 				_txtSp.fillSprite(TFT_TRANSPARENT);
@@ -438,12 +439,6 @@ class BodyText: public ScrObj {
 				_txtSp.print(scrStrings[_index]);
 				_txtSp.unloadFont();
 			}
-		}
-
-		void setFont(const char* fontName)
-		{
-			// set font
-			_fontName = fontName;
 		}
 
 		void setColors(uint16_t fg, uint16_t bg)
@@ -456,7 +451,6 @@ class BodyText: public ScrObj {
 
 	private:
 		uint16_t _fg, _bg;
-		String _fontName;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
@@ -501,10 +495,15 @@ class Image: public ScrObj {
 		String _filename;
 };
 
+#define IMG_BTN_SIZE 30
 
 class ImageButton: public ScrObj {
 
 	public:
+		ImageButton(): ScrObj(IMG_BTN_SIZE, IMG_BTN_SIZE, SELECTABLE)
+		{
+		}
+
 		virtual void draw() override
 		{
 			if (_invalid)
@@ -529,9 +528,9 @@ class ImageButton: public ScrObj {
 		void loadRes(const String& filename)
 		{
 			//_jpegFile = SPIFFS.open(filename, "r");
-			_w = _h = 30;
+			//_w = _h = 30;
 			_invalid = true;
-			_isSelectable = true;
+			//_isSelectable = true;
 			_filename = filename;
 		}
 
@@ -568,26 +567,29 @@ class SimpleBox: public ScrObj {
 
 	private:
 		uint16_t _col = 0;
-
 };
 
+//TODO: increase/decrease with buttons
 class InputField: public ScrObj {
 	public:
+		InputField(): ScrObj(0, INPUT_H, SELECTABLE)
+		{
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid)
 				return;
 
 			tft.setTextColor(_fg, _bg);
-			tft.loadFont(_fontName);
-			//_w = tft.textWidth(_text) + _paddingX*2;
+			tft.loadFont(FONTS[_fontIndex]);
 			_w = tft.textWidth(String(_value)) + _paddingX*2;
 			tft.fillRect(_x, _y, _w, _h, _bg);
 			tft.setCursor(_x+_paddingX, _y+_paddingY);
-			//tft.print(_text);
 			tft.print(_value);
 			tft.setCursor(_x+_w+_paddingX, _y+_paddingY);
 			tft.setTextColor(_fg, TFT_WHITE);
+			_textw = tft.textWidth(scrStrings[_index]) + _paddingX*2;
 			tft.print(scrStrings[_index]);
 			tft.unloadFont();
 			_invalid = false;
@@ -597,26 +599,29 @@ class InputField: public ScrObj {
 		{
 		}
 
+		virtual void erase() override
+		{
+			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
+			tft.fillRect(
+					_x+_w+_paddingX, 
+					_y,
+					_textw,
+					_h,
+					TFT_WHITE
+					);
+			freeRes();
+		}
+
 		void setColors(uint16_t fg, uint16_t bg)
 		{
 			_bg = bg;
 			_fg = fg;
 			_invalid = true;
-			_isSelectable = true;
-		}
-
-		void setFont(const String& fontName)
-		{
-			_fontName = fontName;
-			_invalid = true;
-			_isSelectable = true;
-			_h = BLUE_BUTTON_HEIGHT;
 		}
 
 		void setValue(uint16_t value)
 		{
 			_invalid = true;
-			_isSelectable = true;
 			_value = value;
 		}
 
@@ -626,9 +631,7 @@ class InputField: public ScrObj {
 		}
 
 	private:
-		String _fontName;
-		uint16_t _fg;
-		uint16_t _bg;
+		uint16_t _fg, _bg, _textw;
 		uint8_t _paddingX = BL_BTN_X_PADDING;
 		uint8_t _paddingY = BL_BTN_Y_PADDING;
 		uint16_t _value = 0;
@@ -636,12 +639,16 @@ class InputField: public ScrObj {
 
 class CheckBox: public ScrObj {
 	public:
+		CheckBox(): ScrObj(CHK_BOX_SIZE, CHK_BOX_SIZE, SELECTABLE)
+		{
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid)
 				return;
 			if (!_isOn) {
-				tft.drawRect(_x, _y, _w, _h, greyscaleColor(CHK_COL));
+				tft.drawRect(_x, _y, _w, _h, greyscaleColor(CHK_BOX_COL));
 				_invalid = false;
 			}
 			else if (_jpegFile) {
@@ -656,16 +663,14 @@ class CheckBox: public ScrObj {
 				_jpegFile.close();
 		}
 
+		void on(bool isOn)
+		{
+			_isOn = isOn;
+		}
+
 		void reload()
 		{
 			_jpegFile = SPIFFS.open(_filename, "r");
-		}
-
-		void setText(dispStrings_t index)
-		{
-			if (index > END_OF_STRINGS)
-				return;
-			_index = index;
 		}
 
 	private:
@@ -673,32 +678,67 @@ class CheckBox: public ScrObj {
 		bool _textAligned = false;
 		bool _isOn = false;
 		fs::File _jpegFile;
-		const char* _filename = CHECKBOX_FILE;
+		const char* _filename = CHK_BOX_FILE;
 };
+
+#define TGL_BG 0xDC
+#define TGL_RAD 9
+#define TGL_W 33
+#define TGL_H 17
+//#define TGL_ON_COL 
+#define TGL_OFF_COL 0x6E
+#define TGL_SHF_RAD 6
 
 class Toggle: public ScrObj {
 	public:
+		Toggle(): ScrObj(TGL_W, TGL_H, SELECTABLE)
+		{
+		}
+
 		virtual void draw() override
 		{
+			if (!_invalid)
+				return;
+
+			tft.fillRoundRect(_x, _y, _w, _h, TGL_RAD, greyscaleColor(TGL_H));
+
+			if (_isOn) {
+				_col = tft.color565(0x4C, 0xAF, 0x50);
+				_shaftX = _x + uint16_t(3/4*_w);
+				_shaftY = _y + _h/2;
+				_invalid = false;
+			}
+			else {
+				_col = greyscaleColor(TGL_OFF_COL);
+				_shaftX = _x + uint16_t(3/4*_w);
+				_shaftY = _y + _h/2;
+				_invalid = false;
+			}
+			
+			tft.fillCircle(_shaftX, _shaftY, TGL_SHF_RAD, _col);
 		}
 
 		virtual void freeRes() override
 		{
 		}
 
+		void on(bool isOn)
+		{
+			_isOn = isOn;
+		}
+
 	private:
-		uint16_t _bg;
-		uint16_t _fg;
 		dispStrings_t _index;
+		fonts_t _fontIndex;
+		uint16_t _bg, _fg, _col, _shaftX, _shaftY;
 		bool _textAligned = false;
 		bool _isOn = false;
 };
 
-#define CRB_SIZE 22
 
 class CircRadBtn: public ScrObj {
 	public:
-		CircRadBtn(): ScrObj(CRB_SIZE, CRB_SIZE, true)
+		CircRadBtn(): ScrObj(RAD_BTN_SIZE, RAD_BTN_SIZE, SELECTABLE)
 		{
 		}
 

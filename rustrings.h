@@ -10,6 +10,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Онлайн мониторинг",
 	"Настройки",
 	"Диагностика оборудования",
+	"Тест-страница",
 
 	// settings strings
 	"Дата и время",
@@ -26,7 +27,12 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"секунд",
 	"Язык интерфейса",
 	"Русский",
-	"English"
+	"English",
+
+	// test page
+	"Переключатель",
+	"Галка",
+	"Радио-кнопка"
 };
 
 #endif
