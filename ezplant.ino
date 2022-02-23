@@ -743,22 +743,25 @@ void setup(void)
 #endif
 }
 
-#define INTERVAL 1000
+#define INTERVAL 500
 unsigned long oldMils = 0;
 
 void loop() {
 #ifndef TASKS
 	server.handleClient();
 
-	/*
 	if (millis() - oldMils > INTERVAL) {
+	/*
 		Serial.print("Free heap: ");
 		Serial.println(ESP.getFreeHeap());
-		oldMils = millis();
 		Serial.print("WiFi strength: ");
 		Serial.println(WiFi.RSSI());
-	}
 	*/
+		Serial.print("REG: ");
+		// NEXT - 28, PREV - 23, OK - 5, PLUS - 22, MINUS - 21
+		Serial.println(REG_READ(GPIO_IN_REG), BIN);
+		oldMils = millis();
+	}
 
 	app.update();
 	delay(10);
