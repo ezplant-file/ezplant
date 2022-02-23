@@ -19,6 +19,7 @@
 #include "stringenum.h"
 #include "Gui.h"
 
+static App app;
 
 // prevent redrawing control buttons... Maybe make control bar object?
 bool gBackBtnOnScreen = false;
@@ -29,6 +30,7 @@ static SimpleBox topBox;
 static Image statusWIFI;
 static Image statusInternet;
 static Text menuText;
+
 
 void buildTopBar()
 {
@@ -97,8 +99,10 @@ void rapidblink(void* par)
 
 static Page langPage;
 
-static CircRadBtn ruSelect;
-static CircRadBtn enSelect;
+//static CircRadBtn ruSelect;
+//static CircRadBtn enSelect;
+static ExclusiveRadio ruSelect;
+static ExclusiveRadio enSelect;
 
 void changeLangRus()
 {
@@ -145,29 +149,60 @@ void changeLangEng()
 /************************ TEST PAGE ******************************/
 
 Page testPage;
+static Toggle testTgl;
+static CheckBox testChBox;
+static CircRadBtn testRad;
+
+void tglCallback()
+{
+	if (testTgl.isOn())
+		testTgl.on(false);
+	else
+		testTgl.on(true);
+	testTgl.invalidate();
+	testTgl.draw();
+}
+
+void chkCallback()
+{
+	if (testChBox.isOn())
+		testChBox.on(false);
+	else
+		testChBox.on(true);
+	testChBox.invalidate();
+	testChBox.draw();
+}
+
+void radCallback()
+{
+	if (testRad.isOn())
+		testRad.on(false);
+	else
+		testRad.on(true);
+	testRad.invalidate();
+	testRad.draw();
+}
 
 void buildTestPage()
 {
-	static Toggle testTgl;
 	testTgl.setFont(SMALLFONT);
 	testTgl.setXYpos(17, 41);
 	testTgl.setText(TOGGLE_TEXT);
 	testTgl.on(false);
-	//testTgl.setCallback(
+	testTgl.setCallback(tglCallback);
 	
-	static CheckBox testChBox;
 	testChBox.setFont(SMALLFONT);
 	testChBox.setXYpos(17, 65);
 	testChBox.setText(CHECHBOX_TEXT);
 	testChBox.on(false);
-	//testChBox.setCallback(
+	testChBox.setCallback(chkCallback);
 
-	static CircRadBtn testRad;
 	testRad.setFont(SMALLFONT);
-	testRad.setXYpos(17, 79);
+	testRad.setXYpos(17, 90);
 	testRad.setText(RADIO_TEXT);
 	testRad.on(false);
-	//testChBox.setCallback(
+	testRad.setBgColor(0xDC);
+	testRad.setCallback(radCallback);
 
 	testPage.addItem(&testTgl);
 	testPage.addItem(&testChBox);
@@ -367,6 +402,8 @@ void callTestPage()
 {
 	gBackBtnOnScreen = true;
 
+	app.resetIterator();
+
 	back.setCallback(callMainPage);
 
 	testPage.invalidateAll();
@@ -386,6 +423,8 @@ void callLangPage()
 {
 	gBackBtnOnScreen = true;
 
+	app.resetIterator();
+
 	back.setCallback(callSettingsPage);
 
 	langPage.invalidateAll();
@@ -404,6 +443,8 @@ void callLangPage()
 void callSettingsPage()
 {
 	gBackBtnOnScreen = true;
+
+	app.resetIterator();
 
 	back.setCallback(callMainPage);
 
@@ -427,6 +468,8 @@ void callSettingsPage()
 void callMainPage()
 {
 	gBackBtnOnScreen = true;
+
+	app.resetIterator();
 
 	back.setCallback(nop);
 
@@ -552,7 +595,6 @@ void buildSettingsPage()
 
 }
 
-static App app;
 
 #ifdef TASKS
 void gui(void* arg)
@@ -708,6 +750,7 @@ void loop() {
 #ifndef TASKS
 	server.handleClient();
 
+	/*
 	if (millis() - oldMils > INTERVAL) {
 		Serial.print("Free heap: ");
 		Serial.println(ESP.getFreeHeap());
@@ -715,6 +758,7 @@ void loop() {
 		Serial.print("WiFi strength: ");
 		Serial.println(WiFi.RSSI());
 	}
+	*/
 
 	app.update();
 	delay(10);

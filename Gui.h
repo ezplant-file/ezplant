@@ -644,14 +644,23 @@ class CheckBox: public ScrObj {
 	public:
 		CheckBox(): ScrObj(CHK_BOX_SIZE, CHK_BOX_SIZE, SELECTABLE)
 		{
+			reload();
+		}
+		
+		~CheckBox()
+		{
+			freeRes();
 		}
 
 		virtual void draw() override
 		{
 			if (!_invalid)
 				return;
+
+			reload();
+
 			if (!_isOn) {
-				tft.drawRect(_x, _y, _w, _h, greyscaleColor(CHK_BOX_COL));
+				tft.fillRect(_x, _y, _w, _h, greyscaleColor(CHK_BOX_COL));
 				_invalid = false;
 			}
 			else if (_jpegFile) {
@@ -664,6 +673,11 @@ class CheckBox: public ScrObj {
 		{
 			if (_jpegFile)
 				_jpegFile.close();
+		}
+
+		bool isOn()
+		{
+			return _isOn;
 		}
 
 		void on(bool isOn)
@@ -686,7 +700,7 @@ class CheckBox: public ScrObj {
 };
 
 #define TGL_BG 0xDC
-#define TGL_RAD 9
+#define TGL_RAD 10
 #define TGL_W 33
 #define TGL_H 17
 //#define TGL_ON_COL 
@@ -705,17 +719,19 @@ class Toggle: public ScrObj {
 			if (!_invalid)
 				return;
 
-			tft.fillRoundRect(_x, _y, _w, _h, TGL_RAD, greyscaleColor(TGL_H));
+			tft.fillRoundRect(_x, _y, _w, _h, TGL_RAD, greyscaleColor(TGL_BG));
 
 			if (_isOn) {
+				// TODO: draw on image
 				_col = tft.color565(0x4C, 0xAF, 0x50);
-				_shaftX = _x + uint16_t((3/4)*_w);
+				_shaftX = _x + _w - TGL_RAD; 
 				_shaftY = _y + _h/2;
 				_invalid = false;
 			}
 			else {
+				// TODO: draw off image
 				_col = greyscaleColor(TGL_OFF_COL);
-				_shaftX = _x + uint16_t((3/4)*_w);
+				_shaftX = _x + TGL_RAD - 1;
 				_shaftY = _y + _h/2;
 				_invalid = false;
 			}
@@ -725,6 +741,11 @@ class Toggle: public ScrObj {
 
 		virtual void freeRes() override
 		{
+		}
+
+		bool isOn()
+		{
+			return _isOn;
 		}
 
 		void on(bool isOn)
@@ -740,6 +761,7 @@ class Toggle: public ScrObj {
 		bool _isOn = false;
 };
 
+#define RAD_BG_COL 0xE3
 
 // TODO: replace with antialiased image
 class CircRadBtn: public ScrObj {
@@ -752,6 +774,8 @@ class CircRadBtn: public ScrObj {
 		{
 			if (!_invalid)
 				return;
+
+			tft.fillRect(_x, _y, _w, _h, greyscaleColor(_bgcol));
 
 			if (_isOn)
 				//#4CAF50 - checked green
@@ -768,14 +792,21 @@ class CircRadBtn: public ScrObj {
 		{
 		}
 		
+		/*
 		virtual void onClick() override
 		{
 			if (!_isOn)
 				_callback();
 		}
+		*/
 
 		virtual void prepare() override
 		{
+		}
+
+		bool isOn()
+		{
+			return _isOn;
 		}
 
 		// set cursor erase color
@@ -783,12 +814,17 @@ class CircRadBtn: public ScrObj {
 		{
 			_curCol = col;
 		}
-	/*	
+
+		/*	
 		virtual uint16_t getCurCol() override
 		{
 			return greyscaleColor(GR_BTN_BG_COLOR);
 		}
 		*/
+		void setBgColor(uint8_t bgcol)
+		{
+			_bgcol = bgcol;
+		}
 
 		void on(bool isOn)
 		{
@@ -799,6 +835,17 @@ class CircRadBtn: public ScrObj {
 		bool _isOn = false;
 		int _r = 5;
 		uint16_t _col = 0xffff;
+		uint8_t _bgcol = RAD_BG_COL;
+};
+
+class ExclusiveRadio: public CircRadBtn {
+	public:
+		virtual void onClick() override
+		{
+			if (!this->isOn()) {
+				_callback();
+			}
+		}
 };
 
 
@@ -941,7 +988,7 @@ class Page {
 
 		size_t nItems()
 		{
-			return _items.size();
+			return _selectable.size();
 		}
 
 		void setCurrItem(size_t i)
@@ -971,7 +1018,20 @@ class App {
 		bool _dbFlag = false;
 		Cursor _cursor;
 		int _iterator = 0;
+		//bool _resetIterator = true;
+
 	public:
+		/*
+		void resetIterator(bool reset)
+		{
+			_resetIterator = reset;
+		}
+		*/
+		void resetIterator()
+		{
+			_iterator = 0;
+		}
+
 		void init()
 		{
 			SPIFFS.begin();
@@ -1028,7 +1088,15 @@ class App {
 				_cursor.draw(false);
 				currItem->onClick();
 				// TODO: don't reset iterator unless needed
-				_iterator = 0;
+				//if (_resetIterator)
+				/*
+				Serial.print("CURRENT PAGE ITEMS: ");
+				Serial.println(currPage->nItems());
+				Serial.print("ITERATOR: ");
+				Serial.println(_iterator);
+				*/
+				if (_iterator >= currPage->nItems())// || _resetIterator)
+					_iterator = 0;
 				currItem = currPage->getCurrItemAt(_iterator);
 			_dbFlag = false;
 			}
