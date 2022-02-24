@@ -221,7 +221,7 @@ class ScrObj {
 			return _curCol;
 		}
 
-		void setText(dispStrings_t index)
+		virtual void setText(dispStrings_t index)
 		{
 			if (index > END_OF_STRINGS)
 				return;
@@ -229,10 +229,25 @@ class ScrObj {
 			_invalid = true;
 		}
 
-		void setFont(fonts_t fontIndex)
+		virtual void setFont(fonts_t fontIndex)
 		{
 			_fontIndex = fontIndex;
 			_invalid = true;
+		}
+
+		virtual int16_t getValue()
+		{
+			return 0;
+		}
+
+		virtual void setValue(int16_t value)
+		{
+			return;
+		}
+		
+		bool isInvalid()
+		{
+			return _invalid;
 		}
 
 	protected:
@@ -252,6 +267,7 @@ class ScrObj {
 		bool _isCircle = false;
 		// cursor erase color
 		uint16_t _curCol = 0xffff;
+		int16_t _value = 0;
 };
 
 // current selected item
@@ -264,6 +280,7 @@ class BlueTextButton: public ScrObj {
 	public:
 		BlueTextButton(): ScrObj(0, BLUE_BUTTON_HEIGHT, SELECTABLE)
 		{
+			_setColors();
 		}
 
 		virtual void freeRes() override
@@ -285,10 +302,12 @@ class BlueTextButton: public ScrObj {
 			_invalid = false;
 		}
 
-		void setColors(uint16_t fg, uint16_t bg)
+		//void setColors(uint16_t fg, uint16_t bg)
+	private:
+		void _setColors()
 		{
-			_bg = bg;
-			_fg = fg;
+			_bg = tft.color565(0x61, 0xb4, 0xe4);
+			_fg = greyscaleColor(FONT_COLOR);
 			_invalid = true;
 		}
 
@@ -398,6 +417,16 @@ class Text: public ScrObj {
 			_fg = fg;
 			_bg = bg;
 			_txtSp.setColorDepth(16);
+		}
+
+		uint8_t getYpadding()
+		{
+			return _paddingY;
+		}
+
+		uint8_t getXpadding()
+		{
+			return _paddingX;
 		}
 
 	private:
@@ -569,7 +598,7 @@ class SimpleBox: public ScrObj {
 		uint16_t _col = 0;
 };
 
-//TODO: increase/decrease with buttons
+//TODO: set upper/lower limits
 class InputField: public ScrObj {
 	public:
 		InputField(): ScrObj(0, INPUT_H, SELECTABLE)
@@ -583,7 +612,8 @@ class InputField: public ScrObj {
 
 			tft.setTextColor(_fg, _bg);
 			tft.loadFont(FONTS[_fontIndex]);
-			_w = tft.textWidth(String(_value)) + _paddingX*2;
+			//_w = tft.textWidth(String(_value)) + _paddingX*2;
+			_w = tft.textWidth("000") + _paddingX*2;
 			tft.fillRect(_x, _y, _w, _h, _bg);
 			tft.setCursor(_x+_paddingX, _y+_paddingY);
 			tft.print(_value);
@@ -619,22 +649,33 @@ class InputField: public ScrObj {
 			_invalid = true;
 		}
 
-		void setValue(uint16_t value)
+		virtual void setValue(int16_t value) override
 		{
+			if (value > _upper)
+				value = _lower;
+			if (value < _lower)
+				value = _upper;
 			_invalid = true;
 			_value = value;
 		}
 
-		uint16_t getValue() 
+		virtual int16_t getValue() override
 		{
 			return _value;
 		}
 
+		void setLimits(uint8_t upper, uint8_t lower)
+		{
+			_upper = upper;
+			_lower = lower;
+		}
+
 	private:
 		uint16_t _fg, _bg, _textw;
+		uint8_t _upper = 100;
+		uint8_t _lower = 0;
 		uint8_t _paddingX = BL_BTN_X_PADDING;
 		uint8_t _paddingY = BL_BTN_Y_PADDING;
-		uint16_t _value = 0;
 };
 
 //TODO: manually decode JPG, push array to sprite
@@ -659,6 +700,8 @@ class CheckBox: public ScrObj {
 
 			reload();
 
+			_tglText.draw();
+
 			if (!_isOn) {
 				tft.fillRect(_x, _y, _w, _h, greyscaleColor(CHK_BOX_COL));
 				_invalid = false;
@@ -674,6 +717,42 @@ class CheckBox: public ScrObj {
 			if (_jpegFile)
 				_jpegFile.close();
 		}
+
+		virtual void erase() override
+		{
+			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_tglText.erase();
+			freeRes();
+		}
+
+		virtual void prepare() override
+		{
+			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding());
+			_tglText.setColors(
+					greyscaleColor(FONT_COLOR),
+					greyscaleColor(BACKGROUND)
+					);
+			_tglText.invalidate();
+			_tglText.prepare();
+		}
+
+		virtual void setText(dispStrings_t index) override
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_tglText.setText(index);
+			//_index = index;
+			_invalid = true;
+		}
+
+		virtual void setFont(fonts_t fontIndex) override
+		{
+			if (fontIndex > END_OF_FONTS)
+				return;
+			_tglText.setFont(fontIndex);
+			_invalid = true;
+		}
+
 
 		bool isOn()
 		{
@@ -691,6 +770,7 @@ class CheckBox: public ScrObj {
 		}
 
 	private:
+		Text _tglText;
 		uint16_t _bg;
 		bool _textAligned = false;
 		bool _isOn = false;
@@ -721,6 +801,8 @@ class Toggle: public ScrObj {
 
 			tft.fillRoundRect(_x, _y, _w, _h, TGL_RAD, greyscaleColor(TGL_BG));
 
+			_tglText.draw();
+
 			if (_isOn) {
 				// TODO: draw on image
 				_col = tft.color565(0x4C, 0xAF, 0x50);
@@ -742,6 +824,41 @@ class Toggle: public ScrObj {
 		virtual void freeRes() override
 		{
 		}
+		
+		virtual void erase() override
+		{
+			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_tglText.erase();
+			freeRes();
+		}
+
+		virtual void prepare() override
+		{
+			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding());
+			_tglText.setColors(
+					greyscaleColor(FONT_COLOR),
+					greyscaleColor(BACKGROUND)
+					);
+			_tglText.invalidate();
+			_tglText.prepare();
+		}
+
+		virtual void setText(dispStrings_t index) override
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_tglText.setText(index);
+			//_index = index;
+			_invalid = true;
+		}
+
+		virtual void setFont(fonts_t fontIndex) override
+		{
+			if (fontIndex > END_OF_FONTS)
+				return;
+			_tglText.setFont(fontIndex);
+			_invalid = true;
+		}
 
 		bool isOn()
 		{
@@ -754,8 +871,9 @@ class Toggle: public ScrObj {
 		}
 
 	private:
-		dispStrings_t _index;
-		fonts_t _fontIndex;
+		//dispStrings_t _index;
+		Text _tglText;
+		//fonts_t _fontIndex;
 		uint16_t _bg, _fg, _col, _shaftX, _shaftY;
 		bool _textAligned = false;
 		bool _isOn = false;
@@ -786,6 +904,7 @@ class CircRadBtn: public ScrObj {
 			int x = _x + _w/2 - 1;
 			int y = _y + _h/2 - 1;
 			tft.fillCircle(x, y, _r, _col);
+			_invalid = true;
 		}
 
 		virtual void freeRes() override
@@ -800,9 +919,6 @@ class CircRadBtn: public ScrObj {
 		}
 		*/
 
-		virtual void prepare() override
-		{
-		}
 
 		bool isOn()
 		{
@@ -848,6 +964,134 @@ class ExclusiveRadio: public CircRadBtn {
 		}
 };
 
+class TestPageRadio: public ScrObj {
+	public:
+		TestPageRadio(): ScrObj(RAD_BTN_SIZE, RAD_BTN_SIZE, SELECTABLE)
+		{
+		}
+
+		virtual void draw() override
+		{
+			if (!_invalid)
+				return;
+
+			tft.fillRect(_x, _y, _w, _h, greyscaleColor(_bgcol));
+
+			_tglText.draw();
+
+			if (_isOn)
+				//#4CAF50 - checked green
+				_col = tft.color565(0x4C, 0xAF, 0x50);
+			else
+				_col = 0xFFFF;
+
+			int x = _x + _w/2 - 1;
+			int y = _y + _h/2 - 1;
+			tft.fillCircle(x, y, _r, _col);
+			_invalid = true;
+		}
+
+		virtual void freeRes() override
+		{
+		}
+		
+		/*
+		virtual void onClick() override
+		{
+			if (!_isOn)
+				_callback();
+		}
+		*/
+
+		virtual void erase() override
+		{
+			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_tglText.erase();
+			freeRes();
+		}
+
+		virtual void prepare() override
+		{
+			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding());
+			_tglText.setColors(
+					greyscaleColor(FONT_COLOR),
+					greyscaleColor(BACKGROUND)
+					);
+			_tglText.invalidate();
+			_tglText.prepare();
+		}
+
+		virtual void setText(dispStrings_t index) override
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_tglText.setText(index);
+			//_index = index;
+			_invalid = true;
+		}
+
+		virtual void setFont(fonts_t fontIndex) override
+		{
+			if (fontIndex > END_OF_FONTS)
+				return;
+			_tglText.setFont(fontIndex);
+			_invalid = true;
+		}
+
+
+		bool isOn()
+		{
+			return _isOn;
+		}
+
+		// set cursor erase color
+		void setCurCol(uint16_t col)
+		{
+			_curCol = col;
+		}
+
+		/*	
+		virtual uint16_t getCurCol() override
+		{
+			return greyscaleColor(GR_BTN_BG_COLOR);
+		}
+		*/
+		void setBgColor(uint8_t bgcol)
+		{
+			_bgcol = bgcol;
+		}
+
+		void on(bool isOn)
+		{
+			_isOn = isOn;
+		}
+
+	private:
+		Text _tglText;
+		bool _isOn = false;
+		int _r = 5;
+		uint16_t _col = 0xffff;
+		uint8_t _bgcol = RAD_BG_COL;
+};
+
+/*
+class Wait: public ScrObj {
+	public:
+		Wait(): public ScrObj(10, 10)
+		{
+
+		}
+
+		virtual void draw() override
+		{
+
+		}
+
+	private:
+		uint16_t _dark = ;
+		uint16_t _light = ;
+};
+*/
 
 class Cursor {
 	public:
@@ -1010,6 +1254,7 @@ class Page {
 
 Page* currPage;
 
+#define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
 class App {
 	private:
 		unsigned long _oldMils = 0;
@@ -1018,15 +1263,13 @@ class App {
 		bool _dbFlag = false;
 		Cursor _cursor;
 		int _iterator = 0;
-		//bool _resetIterator = true;
 
 	public:
-		/*
-		void resetIterator(bool reset)
+		void draw()
 		{
-			_resetIterator = reset;
+			currPage->draw();
 		}
-		*/
+
 		void resetIterator()
 		{
 			_iterator = 0;
@@ -1053,9 +1296,10 @@ class App {
 				_blink = !_blink;
 			}
 
-			if (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK)) {
+			//TODO: change to REG_READ
+			if (INPUT_READ) {
 				if (millis() - _dbMils > DEBOUNCE) {
-					if (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK)) {
+					if (INPUT_READ){
 						_dbMils = millis();
 						_dbFlag = true;
 					}
@@ -1064,7 +1308,6 @@ class App {
 
 			if (!digitalRead(BTN_PREV) && _dbFlag) {
 				_oldMils = millis();
-				//Serial.println(currPage->selSize());
 				cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
@@ -1074,31 +1317,35 @@ class App {
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_NEXT) && _dbFlag) {
-			_oldMils = millis();
+				_oldMils = millis();
 				cursor.draw(false);
 				_iterator++;
 				if (_iterator > currPage->selSize() - 1)
 					_iterator = 0;
 				currItem = currPage->getCurrItemAt(_iterator);
 				_cursor.draw(true);
-			 _dbFlag = false;
+				_dbFlag = false;
+			}
+			else if (!digitalRead(BTN_MIN) && _dbFlag) {
+				_oldMils = millis();
+				currItem->setValue(currItem->getValue() - 1);
+				currItem->draw();
+				_dbFlag = false;
+			}
+			else if (!digitalRead(BTN_PLU) && _dbFlag) {
+				_oldMils = millis();
+				currItem->setValue(currItem->getValue() + 1);
+				currItem->draw();
+				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_OK) && _dbFlag) {
-			_oldMils = millis();
+				_oldMils = millis();
 				_cursor.draw(false);
 				currItem->onClick();
-				// TODO: don't reset iterator unless needed
-				//if (_resetIterator)
-				/*
-				Serial.print("CURRENT PAGE ITEMS: ");
-				Serial.println(currPage->nItems());
-				Serial.print("ITERATOR: ");
-				Serial.println(_iterator);
-				*/
-				if (_iterator >= currPage->nItems())// || _resetIterator)
+				if (_iterator >= currPage->nItems())
 					_iterator = 0;
 				currItem = currPage->getCurrItemAt(_iterator);
-			_dbFlag = false;
+				_dbFlag = false;
 			}
 		}
 };

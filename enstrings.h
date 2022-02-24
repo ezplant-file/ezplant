@@ -32,7 +32,10 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// test page
 	"Toggle",
 	"Checkbox",
-	"Radio button"
+	"Radio button",
+	"Input field",
+	"Grey menu button",
+	"Blue button"
 };
 
 #endif

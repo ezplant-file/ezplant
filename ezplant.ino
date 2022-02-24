@@ -10,9 +10,9 @@
 #define BTN_PLU 17
 
 // GUI & strings
-#include "data/wifi.h"
-#include <WiFi.h>
-#include <WebServer.h>
+//#include "data/wifi.h"
+//#include <WiFi.h>
+//#include <WebServer.h>
 #include "GfxUi.h"
 #include "rustrings.h"
 #include "enstrings.h"
@@ -151,7 +151,10 @@ void changeLangEng()
 Page testPage;
 static Toggle testTgl;
 static CheckBox testChBox;
-static CircRadBtn testRad;
+static TestPageRadio testRad;
+static InputField testInput;
+static GreyTextButton testGreyButton;
+static BlueTextButton testBlueButton;
 
 void tglCallback()
 {
@@ -188,31 +191,61 @@ void buildTestPage()
 	testTgl.setFont(SMALLFONT);
 	testTgl.setXYpos(17, 41);
 	testTgl.setText(TOGGLE_TEXT);
+	testTgl.prepare();
 	testTgl.on(false);
 	testTgl.setCallback(tglCallback);
 	
 	testChBox.setFont(SMALLFONT);
 	testChBox.setXYpos(17, 65);
 	testChBox.setText(CHECHBOX_TEXT);
+	testChBox.prepare();
 	testChBox.on(false);
 	testChBox.setCallback(chkCallback);
 
 	testRad.setFont(SMALLFONT);
 	testRad.setXYpos(17, 90);
 	testRad.setText(RADIO_TEXT);
+	testRad.prepare();
 	testRad.on(false);
 	testRad.setBgColor(0xDC);
 	testRad.setCallback(radCallback);
 
+	testInput.setFont(SMALLFONT);
+	testInput.setXYpos(17, 115);
+	testInput.setValue(100);
+	testInput.setText(INPUT_TEXT);
+	testInput.setColors(
+			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(GR_BTN_BG_COLOR)
+			);
+
+	testGreyButton.setXYpos(17, 150);
+	testGreyButton.setText(GREY_BUTTON);
+	testGreyButton.setFont(SMALLFONT);
+	testGreyButton.setCallback(nop);
+
+	//TODO: depricate this:
+	testGreyButton.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
+
+	testBlueButton.setXYpos(17, 185);
+	testBlueButton.setText(BLUE_BUTTON);
+	testBlueButton.setFont(SMALLFONT);
+	testBlueButton.setCallback(nop);
+
+
 	testPage.addItem(&testTgl);
 	testPage.addItem(&testChBox);
 	testPage.addItem(&testRad);
+	testPage.addItem(&testInput);
+	testPage.addItem(&testGreyButton);
+	testPage.addItem(&testBlueButton);
 
 	testPage.addItem(&back);
 }
 
 /************************ END TEST PAGE *************************/
 
+static InputField brightness;
 // hardcoded
 void buildLangPage()
 {
@@ -237,10 +270,9 @@ void buildLangPage()
 			);
 
 	// Поле ввода
-	static InputField brightness;
 	brightness.setFont(SMALLFONT);
 	brightness.setXYpos(PG_LEFT_PADD, 83);
-	brightness.setValue(100);
+	brightness.setValue(50);
 	brightness.setText(PERCENT);
 	brightness.setColors(
 			greyscaleColor(FONT_COLOR), 
@@ -607,6 +639,7 @@ void gui(void* arg)
 }
 #endif
 
+/*
 WebServer server(80);
 
 void handleClient()
@@ -661,6 +694,18 @@ void listRootToHtml()
 
     server.send(200, "text/html", html);
 }
+*/
+
+#define LED_PIN 19
+
+uint8_t g_curr_brightness;
+
+void setBacklight(uint8_t br)
+{
+	uint8_t mapped_br = map(br, 0, 100, 0, 255); 
+	Serial.println(mapped_br);
+	analogWrite(LED_PIN, mapped_br);
+}
 
 void setup(void)
 {
@@ -669,6 +714,7 @@ void setup(void)
 	// init all stuff in Gui.h
 	app.init();
 
+	/*
 	// wifi stuff
 	WiFi.begin(ssid, password);
 	while (WiFi.status() != WL_CONNECTED) {
@@ -676,11 +722,7 @@ void setup(void)
 	}
 	Serial.println();
 	Serial.println(WiFi.localIP());
-
-
-	// backlight
-	pinMode(19, OUTPUT);
-	analogWrite(19, 127);
+*/
 
 	// buttons
 	pinMode(BTN_PREV, INPUT_PULLUP);
@@ -694,6 +736,11 @@ void setup(void)
 	buildSettingsPage();
 	buildMainPage();
 
+	// backlight
+	g_curr_brightness = brightness.getValue();
+	pinMode(LED_PIN, OUTPUT);
+	setBacklight(g_curr_brightness);
+
 	//mainPage.prepare();
 
 	currPage = &mainPage;
@@ -706,8 +753,9 @@ void setup(void)
 	currPage->draw();
 	topBar.draw();
 
+	/*
 	// flag for cursor
-	initDone = true;
+	//initDone = true;
 
 	// webserver stuff
 	server.on("/",  HTTP_GET, handleClient);
@@ -718,6 +766,7 @@ void setup(void)
 			});
 
 	server.begin();
+	*/
 
 	// cursor
 #ifdef TASKS
@@ -748,22 +797,30 @@ unsigned long oldMils = 0;
 
 void loop() {
 #ifndef TASKS
-	server.handleClient();
+	//server.handleClient();
 
 	if (millis() - oldMils > INTERVAL) {
+		uint8_t new_br = brightness.getValue();
+		if (new_br != g_curr_brightness) {
+			setBacklight(new_br);
+			g_curr_brightness = new_br;
+		}
 	/*
 		Serial.print("Free heap: ");
 		Serial.println(ESP.getFreeHeap());
 		Serial.print("WiFi strength: ");
 		Serial.println(WiFi.RSSI());
 	*/
+		/*
 		Serial.print("REG: ");
 		// NEXT - 28, PREV - 23, OK - 5, PLUS - 22, MINUS - 21
 		Serial.println(REG_READ(GPIO_IN_REG), BIN);
 		oldMils = millis();
+		*/
 	}
 
 	app.update();
+	//app.draw();
 	delay(10);
 #endif
 }

@@ -33,6 +33,9 @@ typedef enum {
 	TOGGLE_TEXT,
 	CHECHBOX_TEXT,
 	RADIO_TEXT,
+	INPUT_TEXT,
+	GREY_BUTTON,
+	BLUE_BUTTON,
 
 	END_OF_STRINGS
 } dispStrings_t;
