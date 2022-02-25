@@ -11,6 +11,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Settings",
 	"Diagnostics",
 	"Test page",
+	"Fonts",
 
 	// settings strings
 	"Time and date",
@@ -35,7 +36,16 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Radio button",
 	"Input field",
 	"Grey menu button",
-	"Blue button"
+	"Blue button",
+
+	// font page
+	"Font SegoeUI-12",
+	"Font SegoeUI-14",
+	"Font SegoeUI-16",
+	"Font SegoeUI-18",
+	"Font SegoeUI-20",
+	"Font SegoeUI-Bold-16",
+	"Font SegoeUI-Bold-18"
 };
 
 #endif

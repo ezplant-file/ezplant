@@ -37,7 +37,7 @@ void buildTopBar()
 	topBox.setColor(greyscaleColor(TOP_BAR_BG_COL));
 	topBox.setWH(SCR_WIDTH, TOP_BAR_HEIGHT);
 	topBox.invalidate();
-	menuText.setFont(LARGEFONT);
+	menuText.setFont(MIDFONT);
 	menuText.setXYpos(LEFTMOST, TOPMOST);
 	menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
 	menuText.setText(MENU);
@@ -60,7 +60,7 @@ void buildTopBar()
 static Page mainPage;
 static Page settingsPage;
 // screen buttons
-#define menu1_size 5
+#define menu1_size 6
 #define settings_size 5
 static GreyTextButton menu_items[menu1_size];
 static GreyTextButton settings_items[settings_size];
@@ -186,6 +186,62 @@ void radCallback()
 	testRad.draw();
 }
 
+static Text smallestFont, smallFont, \
+		    midFont, largeFont, \
+		    largestFont, boldFont, \
+		    boldFont2;
+Text* fonts[] = {
+	&smallestFont,
+	&smallFont,
+	&midFont,
+	&largeFont,
+	&largestFont,
+	&boldFont,
+	&boldFont2
+};
+
+Page fontPage;
+
+void buildFontPage()
+{
+
+
+	smallestFont.setFont(SMALLESTFONT);
+	smallFont.setFont(SMALLFONT);
+	midFont.setFont(MIDFONT);
+	largeFont.setFont(LARGEFONT);
+	largestFont.setFont(LARGESTFONT);
+	boldFont.setFont(BOLDFONT);
+	boldFont2.setFont(BOLDFONT2);
+
+	smallestFont.setText(SMALLESTFONT_TEXT);
+	smallFont.setText(SMALLFONT_TEXT);
+	midFont.setText(MIDFONT_TEXT);
+	largeFont.setText(LARGEFONT_TEXT);
+	largestFont.setText(LARGESTFONT_TEXT);
+	boldFont.setText(BOLDFONT_TEXT);
+	boldFont2.setText(BOLDFONT2_TEXT);
+
+	int gap = 5;
+	int j = 0;
+
+	for (auto i:fonts) {
+		i->setCallback(nop);
+		i->setXYpos(
+				PG_LEFT_PADD,
+				MB_Y_START
+				+(GREY_BUTTON_HEIGHT+gap)*j
+				);
+		i->setColors(
+			greyscaleColor(FONT_COLOR),
+			greyscaleColor(BACKGROUND)
+			);
+		j++;
+		fontPage.addItem(i);
+	}
+	fontPage.addItem(&back);
+}
+
 void buildTestPage()
 {
 	testTgl.setFont(SMALLFONT);
@@ -194,7 +250,7 @@ void buildTestPage()
 	testTgl.prepare();
 	testTgl.on(false);
 	testTgl.setCallback(tglCallback);
-	
+
 	testChBox.setFont(SMALLFONT);
 	testChBox.setXYpos(17, 65);
 	testChBox.setText(CHECHBOX_TEXT);
@@ -215,7 +271,7 @@ void buildTestPage()
 	testInput.setValue(100);
 	testInput.setText(INPUT_TEXT);
 	testInput.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
@@ -255,7 +311,7 @@ void buildLangPage()
 	boldScreen.setText(SCREEN);
 	boldScreen.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	boldScreen.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(BACKGROUND)
 			);
 
@@ -265,7 +321,7 @@ void buildLangPage()
 	subtScreen.setText(BRIGHT);
 	subtScreen.setXYpos(PG_LEFT_PADD, 63);
 	subtScreen.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(BACKGROUND)
 			);
 
@@ -275,7 +331,7 @@ void buildLangPage()
 	brightness.setValue(50);
 	brightness.setText(PERCENT);
 	brightness.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
@@ -284,14 +340,14 @@ void buildLangPage()
 	percent.setFont(SMALLFONT);
         percent.setText(PERCENT);
 	percent.setXYpos(
-			brightness.getX() 
+			brightness.getX()
 			//+ brightness.getW()
 			+ 40
-			+ 3, 
+			+ 3,
 			83 + GR_BTN_Y_PADDING
 			);
         percent.setColors(
-                     greyscaleColor(FONT_COLOR), 
+                     greyscaleColor(FONT_COLOR),
                      greyscaleColor(BACKGROUND)
 		     );
 		     */
@@ -301,7 +357,7 @@ void buildLangPage()
 	sleepAfter.setText(DIMAFTER);
 	sleepAfter.setXYpos(PG_LEFT_PADD, 110);
 	sleepAfter.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(BACKGROUND)
 			);
 
@@ -312,7 +368,7 @@ void buildLangPage()
 	seconds.setValue(100);
 	seconds.setText(SEC);
 	seconds.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
@@ -324,13 +380,13 @@ void buildLangPage()
 			PG_LEFT_PADD
 			//+ brightness.getW()
 			+ 40
-			+ 3, 
+			+ 3,
 			130 + GR_BTN_Y_PADDING
 			);
 
 	secText.setText(SEC);
 	secText.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(BACKGROUND)
 			);
 			*/
@@ -340,7 +396,7 @@ void buildLangPage()
 	boldLang.setText(LANG);
 	boldLang.setXYpos(PG_LEFT_PADD, 157);
 	boldLang.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(BACKGROUND)
 			);
 
@@ -389,7 +445,7 @@ void buildLangPage()
 	langRu.setText(RUS);
 	langRu.setXYpos(49, 189);
 	langRu.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
@@ -398,7 +454,7 @@ void buildLangPage()
 	langEng.setText(ENG);
 	langEng.setXYpos(49, 241);
 	langEng.setColors(
-			greyscaleColor(FONT_COLOR), 
+			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
@@ -427,7 +483,7 @@ void buildLangPage()
 	langPage.addItem(&back);
 }
 
-/******************************************************************************* 
+/*******************************************************************************
 callback functions
 *******************************************************************************/
 void callTestPage()
@@ -447,6 +503,27 @@ void callTestPage()
 	menuText.setText(TEST_PAGE);
 	menuText.prepare();
 	currPage = &testPage;
+	topBar.draw();
+	currPage->draw();
+}
+
+void callFontPage()
+{
+	gBackBtnOnScreen = true;
+
+	app.resetIterator();
+
+	back.setCallback(callMainPage);
+
+	fontPage.invalidateAll();
+	fontPage.prepare();
+
+	menuText.erase();
+	topBar.invalidateAll();
+	currPage->erase();
+	menuText.setText(FONT_PAGE);
+	menuText.prepare();
+	currPage = &fontPage;
 	topBar.draw();
 	currPage->draw();
 }
@@ -561,6 +638,7 @@ void buildMainPage()
 	ru_menu1[2] = SETTINGS;
 	ru_menu1[3] = DIAG;
 	ru_menu1[4] = TEST_PAGE;
+	ru_menu1[5] = FONT_PAGE;
 
 	int j = 0;
 
@@ -576,6 +654,7 @@ void buildMainPage()
 
 	menu_items[2].setCallback(callSettingsPage);
 	menu_items[4].setCallback(callTestPage);
+	menu_items[5].setCallback(callFontPage);
 
 	for (int i = 0; i < menu1_size; i++) {
 		mainPage.addItem(&menu_items[i]);
@@ -593,7 +672,7 @@ void buildSettingsPage()
 {
 	dispStrings_t ru_menu_settings[settings_size];
 	ru_menu_settings[0] = TIMEDATE;
-	ru_menu_settings[1] = WIFI;   
+	ru_menu_settings[1] = WIFI;
 	ru_menu_settings[2] = SCREENLANG;
 	ru_menu_settings[3] = CALIB;
 	ru_menu_settings[4] = THRES;
@@ -702,8 +781,8 @@ uint8_t g_curr_brightness;
 
 void setBacklight(uint8_t br)
 {
-	uint8_t mapped_br = map(br, 0, 100, 0, 255); 
-	Serial.println(mapped_br);
+	uint8_t mapped_br = map(br, 0, 100, 0, 255);
+	//Serial.println(mapped_br);
 	analogWrite(LED_PIN, mapped_br);
 }
 
@@ -731,6 +810,7 @@ void setup(void)
 	pinMode(BTN_MIN, INPUT_PULLUP);
 	pinMode(BTN_PLU, INPUT_PULLUP);
 
+	buildFontPage();
 	buildTestPage();
 	buildLangPage();
 	buildSettingsPage();

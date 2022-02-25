@@ -75,16 +75,24 @@
 
 // fonts
 typedef enum {
+	SMALLESTFONT,
 	SMALLFONT,
+	MIDFONT,
 	LARGEFONT,
+	LARGESTFONT,
 	BOLDFONT,
+	BOLDFONT2,
 	END_OF_FONTS
 } fonts_t;
 
 const char* FONTS[END_OF_FONTS] = {
 	"SegoeUI-12",
+	"SegoeUI-14",
+	"SegoeUI-16",
 	"SegoeUI-18",
-	"SegoeUI-Bold-16"
+	"SegoeUI-20",
+	"SegoeUI-Bold-16",
+	"SegoeUI-Bold-18"
 };
 
 // pointer to current language strings
@@ -207,12 +215,12 @@ class ScrObj {
 		}
 
 		bool isCircle()
-		{	
+		{
 			return _isCircle;
 		}
 
 		bool isSquare()
-		{	
+		{
 			return _isSquare;
 		}
 
@@ -244,7 +252,7 @@ class ScrObj {
 		{
 			return;
 		}
-		
+
 		bool isInvalid()
 		{
 			return _invalid;
@@ -633,7 +641,7 @@ class InputField: public ScrObj {
 		{
 			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
 			tft.fillRect(
-					_x+_w+_paddingX, 
+					_x+_w+_paddingX,
 					_y,
 					_textw,
 					_h,
@@ -687,7 +695,7 @@ class CheckBox: public ScrObj {
 		{
 			reload();
 		}
-		
+
 		~CheckBox()
 		{
 			freeRes();
@@ -783,7 +791,7 @@ class CheckBox: public ScrObj {
 #define TGL_RAD 10
 #define TGL_W 33
 #define TGL_H 17
-//#define TGL_ON_COL 
+//#define TGL_ON_COL
 #define TGL_OFF_COL 0x6E
 #define TGL_SHF_RAD 6
 
@@ -806,7 +814,7 @@ class Toggle: public ScrObj {
 			if (_isOn) {
 				// TODO: draw on image
 				_col = tft.color565(0x4C, 0xAF, 0x50);
-				_shaftX = _x + _w - TGL_RAD; 
+				_shaftX = _x + _w - TGL_RAD;
 				_shaftY = _y + _h/2;
 				_invalid = false;
 			}
@@ -817,14 +825,14 @@ class Toggle: public ScrObj {
 				_shaftY = _y + _h/2;
 				_invalid = false;
 			}
-			
+
 			tft.fillCircle(_shaftX, _shaftY, TGL_SHF_RAD, _col);
 		}
 
 		virtual void freeRes() override
 		{
 		}
-		
+
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
@@ -910,7 +918,7 @@ class CircRadBtn: public ScrObj {
 		virtual void freeRes() override
 		{
 		}
-		
+
 		/*
 		virtual void onClick() override
 		{
@@ -931,7 +939,7 @@ class CircRadBtn: public ScrObj {
 			_curCol = col;
 		}
 
-		/*	
+		/*
 		virtual uint16_t getCurCol() override
 		{
 			return greyscaleColor(GR_BTN_BG_COLOR);
@@ -994,7 +1002,7 @@ class TestPageRadio: public ScrObj {
 		virtual void freeRes() override
 		{
 		}
-		
+
 		/*
 		virtual void onClick() override
 		{
@@ -1050,7 +1058,7 @@ class TestPageRadio: public ScrObj {
 			_curCol = col;
 		}
 
-		/*	
+		/*
 		virtual uint16_t getCurCol() override
 		{
 			return greyscaleColor(GR_BTN_BG_COLOR);
@@ -1100,7 +1108,7 @@ class Cursor {
 			if (!currItem)
 				return;
 			_setCoord(currItem);
-			
+
 			if (blink)
 				_draw();
 			else
@@ -1112,9 +1120,9 @@ class Cursor {
 		{
 			if (_isCircle) {
 				tft.drawCircle(
-						_x, 
-						_y, 
-						_h/2 + 1, 
+						_x,
+						_y,
+						_h/2 + 1,
 						greyscaleColor(CURCOL)
 					      );
 
@@ -1134,9 +1142,9 @@ class Cursor {
 		{
 			if (_isCircle) {
 				tft.drawCircle(
-						_x, 
-						_y, 
-						_h/2 + 1, 
+						_x,
+						_y,
+						_h/2 + 1,
 						currItem->getCurCol()
 					      );
 

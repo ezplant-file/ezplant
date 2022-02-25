@@ -11,6 +11,7 @@ typedef enum {
 	SETTINGS,
 	DIAG,
 	TEST_PAGE,
+	FONT_PAGE,
 
 	// settings strings
 	TIMEDATE,
@@ -36,6 +37,15 @@ typedef enum {
 	INPUT_TEXT,
 	GREY_BUTTON,
 	BLUE_BUTTON,
+
+	// font page
+	SMALLESTFONT_TEXT,
+	SMALLFONT_TEXT,
+	MIDFONT_TEXT,
+	LARGEFONT_TEXT,
+	LARGESTFONT_TEXT,
+	BOLDFONT_TEXT,
+	BOLDFONT2_TEXT,
 
 	END_OF_STRINGS
 } dispStrings_t;

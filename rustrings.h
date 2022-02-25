@@ -11,6 +11,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Настройки",
 	"Диагностика оборудования",
 	"Тест-страница",
+	"Шрифты",
 
 	// settings strings
 	"Дата и время",
@@ -35,7 +36,18 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Радио-кнопка",
 	"Поле ввода",
 	"Пункт меню",
-	"Синяя кнопка"
+	"Синяя кнопка",
+
+	// font page
+	"Шрифт SegoeUI-12",
+	"Шрифт SegoeUI-14",
+	"Шрифт SegoeUI-16",
+	"Шрифт SegoeUI-18",
+	"Шрифт SegoeUI-20",
+	"Шрифт SegoeUI-Bold-16",
+	"Шрифт SegoeUI-Bold-18"
+
+
 };
 
 #endif

@@ -1,3 +1,4 @@
-.*.swp
+.*.sw*
 *.bin
 data/*.h
+data/old/*
