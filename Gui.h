@@ -1,4 +1,4 @@
-//TODO:
+//TODO: banish global pointers
 //
 // precalculate all colors to uint16_t
 //
@@ -727,7 +727,7 @@ class CheckBox: public ScrObj {
 
 		virtual void prepare() override
 		{
-			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding());
+			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding()/2);
 			_tglText.setColors(
 					greyscaleColor(FONT_COLOR),
 					greyscaleColor(BACKGROUND)
@@ -834,7 +834,7 @@ class Toggle: public ScrObj {
 
 		virtual void prepare() override
 		{
-			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding());
+			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding()/2);
 			_tglText.setColors(
 					greyscaleColor(FONT_COLOR),
 					greyscaleColor(BACKGROUND)
@@ -1012,7 +1012,7 @@ class TestPageRadio: public ScrObj {
 
 		virtual void prepare() override
 		{
-			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding());
+			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding()/2);
 			_tglText.setColors(
 					greyscaleColor(FONT_COLOR),
 					greyscaleColor(BACKGROUND)
