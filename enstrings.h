@@ -37,6 +37,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Input field",
 	"Grey menu button",
 	"Blue button",
+	"Please wait...",
 
 	// font page
 	"Font SegoeUI-12",

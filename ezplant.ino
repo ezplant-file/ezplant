@@ -10,8 +10,8 @@
 #define BTN_PLU 17
 
 // GUI & strings
-//#include "data/wifi.h"
-//#include <WiFi.h>
+#include "data/wifi.h"
+#include <WiFi.h>
 //#include <WebServer.h>
 #include "GfxUi.h"
 #include "rustrings.h"
@@ -25,6 +25,7 @@ static App app;
 bool gBackBtnOnScreen = false;
 bool gFwdBtnOnScreen = false;
 
+/*
 static Page topBar;
 static SimpleBox topBox;
 static Image statusWIFI;
@@ -43,7 +44,7 @@ void buildTopBar()
 	menuText.setText(MENU);
 	menuText.prepare();
 
-	statusWIFI.loadRes("/wifi_ok.jpg");
+	statusWIFI.loadRes("/wifi_no.jpg");
 	statusWIFI.setXYpos(213, 0);
 	statusWIFI.freeRes();
 
@@ -56,6 +57,11 @@ void buildTopBar()
 	topBar.addItem(&statusInternet);
 	topBar.addItem(&statusWIFI);
 }
+*/
+
+//static Panel topBar;
+
+#define menuText topBar
 
 static Page mainPage;
 static Page settingsPage;
@@ -288,6 +294,10 @@ void buildTestPage()
 	testBlueButton.setFont(SMALLFONT);
 	testBlueButton.setCallback(nop);
 
+	static Wait wait;
+	wait.setFont(SMALLESTFONT);
+	wait.setText(WAIT_TEXT);
+	wait.setXYpos(83, 240);
 
 	testPage.addItem(&testTgl);
 	testPage.addItem(&testChBox);
@@ -295,6 +305,7 @@ void buildTestPage()
 	testPage.addItem(&testInput);
 	testPage.addItem(&testGreyButton);
 	testPage.addItem(&testBlueButton);
+	testPage.addItem(&wait);
 
 	testPage.addItem(&back);
 }
@@ -793,7 +804,6 @@ void setup(void)
 	// init all stuff in Gui.h
 	app.init();
 
-	/*
 	// wifi stuff
 	WiFi.begin(ssid, password);
 	while (WiFi.status() != WL_CONNECTED) {
@@ -801,7 +811,6 @@ void setup(void)
 	}
 	Serial.println();
 	Serial.println(WiFi.localIP());
-*/
 
 	// buttons
 	pinMode(BTN_PREV, INPUT_PULLUP);
@@ -815,6 +824,7 @@ void setup(void)
 	buildLangPage();
 	buildSettingsPage();
 	buildMainPage();
+	topBar.build();
 
 	// backlight
 	g_curr_brightness = brightness.getValue();
@@ -828,7 +838,7 @@ void setup(void)
 	currItem = currPage->getCurrItem();
 	currPage->prepare();
 
-	buildTopBar();
+	//buildTopBar();
 
 	currPage->draw();
 	topBar.draw();
@@ -900,7 +910,6 @@ void loop() {
 	}
 
 	app.update();
-	//app.draw();
 	delay(10);
 #endif
 }

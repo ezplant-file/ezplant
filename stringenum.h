@@ -37,6 +37,7 @@ typedef enum {
 	INPUT_TEXT,
 	GREY_BUTTON,
 	BLUE_BUTTON,
+	WAIT_TEXT,
 
 	// font page
 	SMALLESTFONT_TEXT,

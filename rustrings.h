@@ -37,6 +37,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Поле ввода",
 	"Пункт меню",
 	"Синяя кнопка",
+	"Ожидайте...",
 
 	// font page
 	"Шрифт SegoeUI-12",

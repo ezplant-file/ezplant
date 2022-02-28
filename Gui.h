@@ -17,6 +17,8 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>
 
+#include "images.h"
+
 
 /***************************** defines *************************/
 // debug print object address
@@ -357,6 +359,8 @@ class GreyTextButton: public ScrObj {
 
 		virtual void draw() override
 		{
+			if (!_invalid)
+				return;
 			_btnSpr.pushSprite(_x, _y);
 			_invalid = false;
 		}
@@ -394,8 +398,10 @@ class Text: public ScrObj {
 
 		virtual void draw() override
 		{
-			_invalid = false;
+			if (!_invalid)
+				return;
 			_txtSp.pushSprite(_x, _y, TFT_TRANSPARENT);
+			_invalid = false;
 		}
 
 		void prepare()
@@ -459,8 +465,10 @@ class BodyText: public ScrObj {
 
 		virtual void draw() override
 		{
-			_invalid = false;
+			if (!_invalid)
+				return;
 			_txtSp.pushSprite(_x, _y, TFT_TRANSPARENT);
+			_invalid = false;
 		}
 
 		void prepare()
@@ -499,6 +507,9 @@ class Image: public ScrObj {
 	public:
 		virtual void draw() override
 		{
+			if (!_invalid)
+				return;
+
 			if (_invalid)
 				reload();
 
@@ -543,6 +554,9 @@ class ImageButton: public ScrObj {
 
 		virtual void draw() override
 		{
+			if (!_invalid)
+				return;
+
 			if (_invalid)
 				reload();
 
@@ -912,7 +926,7 @@ class CircRadBtn: public ScrObj {
 			int x = _x + _w/2 - 1;
 			int y = _y + _h/2 - 1;
 			tft.fillCircle(x, y, _r, _col);
-			_invalid = true;
+			_invalid = false;
 		}
 
 		virtual void freeRes() override
@@ -996,7 +1010,7 @@ class TestPageRadio: public ScrObj {
 			int x = _x + _w/2 - 1;
 			int y = _y + _h/2 - 1;
 			tft.fillCircle(x, y, _r, _col);
-			_invalid = true;
+			_invalid = false;
 		}
 
 		virtual void freeRes() override
@@ -1082,24 +1096,102 @@ class TestPageRadio: public ScrObj {
 		uint8_t _bgcol = RAD_BG_COL;
 };
 
-/*
+#define WAIT_RECT_SIZ 10
+#define WAIT_WDTH 75
+#define WAIT_DARK 0x8F
+#define WAIT_LIGHT 0xE3
+#define DRAW_INTERVAL 1000
+
 class Wait: public ScrObj {
 	public:
-		Wait(): public ScrObj(10, 10)
+		Wait(): ScrObj(WAIT_WDTH, WAIT_RECT_SIZ)
 		{
+		}
 
+		void setInterval(unsigned long interval)
+		{
+			_interval = interval;
+		}
+
+		virtual void freeRes() override
+		{
+			//_waitText.freeRes();
 		}
 
 		virtual void draw() override
 		{
+			if (_invalid)
+				_waitText.draw();
+
+			//if (!_invalid)
+				//return;
+
+			if (millis() - _timestamp < _interval)
+				return;
+			else
+				_timestamp = millis();
+
+			if (_darkSquare > _squares)
+				_darkSquare = 0;
+
+			uint8_t gap = 0;
+			for (int i = 0; i < _squares; i++) {
+				uint16_t color = 0;
+				if (i == _darkSquare)
+					color = greyscaleColor(WAIT_DARK);
+				else
+					color = greyscaleColor(WAIT_LIGHT);
+				tft.fillRect(_x + (_h+gap)*i, _y, _h, _h, color);
+				gap = _gap;
+			}
+			_darkSquare++;
+		}
+
+		virtual void erase() override
+		{
+			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_waitText.erase();
+			freeRes();
+		}
+
+		virtual void prepare() override
+		{
+			_waitText.setXYpos(_x + _waitText.getXpadding(), _y - _waitText.getYpadding()*2);
+			_waitText.setColors(
+					greyscaleColor(FONT_COLOR),
+					greyscaleColor(BACKGROUND)
+					);
+			_waitText.invalidate();
+			_waitText.prepare();
 
 		}
 
+		virtual void setText(dispStrings_t index) override
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_waitText.setText(index);
+			_invalid = true;
+		}
+
+		virtual void setFont(fonts_t fontIndex) override
+		{
+			if (fontIndex > END_OF_FONTS)
+				return;
+			_waitText.setFont(fontIndex);
+			_invalid = true;
+		}
+
 	private:
-		uint16_t _dark = ;
-		uint16_t _light = ;
+		uint16_t _dark = WAIT_DARK;
+		uint16_t _light = WAIT_LIGHT;
+		uint8_t _darkSquare = 0;
+		uint8_t _gap = 3;
+		uint8_t _squares = 6;
+		Text _waitText;
+		unsigned long _timestamp = 0;
+		unsigned long _interval = DRAW_INTERVAL;
 };
-*/
 
 class Cursor {
 	public:
@@ -1260,6 +1352,110 @@ class Page {
 		ScrObj* _currItem;
 };
 
+#define WIFI_UPDATE_INTERVAL 500
+#define WIFI_IMG_X 213
+#define NET_IMG_X 186
+
+class Panel {
+	public:
+		void setText(dispStrings_t index)
+		{
+			_menuText.setText(index);
+			_menuText.prepare();
+
+		}
+
+		void invalidateAll()
+		{
+			_topBox.invalidate();
+			_menuText.invalidate();
+			_statusWIFI.invalidate();
+			_statusInternet.invalidate();
+		}
+
+		void prepare()
+		{
+		}
+
+		void erase()
+		{
+			_menuText.erase();
+		}
+
+		void draw()
+		{
+			_topBox.draw();
+			_menuText.draw();
+
+			_statusWIFI.reload();
+			_statusWIFI.draw();
+			_statusWIFI.freeRes();
+
+			_statusInternet.reload();
+			_statusInternet.draw();
+			_statusInternet.freeRes();
+		}
+
+		void update()
+		{
+			if (millis() - _timestamp < _interval)
+				return;
+
+			_timestamp = millis();
+
+			int w = WiFi.RSSI();
+			uint8_t strength = map(w, -95, -45, 0, 4);
+
+			if (strength > 4)
+				strength = 0;
+			//Serial.println(w);
+			//Serial.println(strength);
+
+			switch (strength) {
+				case 0: curWiFiImage = IMG_NO_WIFI; break;
+				case 1: curWiFiImage = IMG_WIFI1; break;
+				case 2: curWiFiImage = IMG_WIFI2; break;
+				case 3: curWiFiImage = IMG_WIFI3; break;
+				case 4: curWiFiImage = IMG_WIFI4; break;
+				default: curWiFiImage = IMG_NO_WIFI; break;
+			}
+			//_statusWIFI.reload();
+			_statusWIFI.loadRes(images[curWiFiImage]);
+			_statusWIFI.draw();
+			_statusWIFI.freeRes();
+		}
+
+		void build()
+		{
+			_topBox.setColor(greyscaleColor(TOP_BAR_BG_COL));
+			_topBox.setWH(SCR_WIDTH, TOP_BAR_HEIGHT);
+			_topBox.invalidate();
+			_menuText.setFont(MIDFONT);
+			_menuText.setXYpos(LEFTMOST, TOPMOST);
+			_menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
+			_menuText.setText(MENU);
+			_menuText.prepare();
+
+			_statusWIFI.loadRes(images[curWiFiImage]);
+			_statusWIFI.setXYpos(WIFI_IMG_X, 0);
+			//_statusWIFI.freeRes();
+
+			_statusInternet.loadRes(images[curNetImage]);
+			_statusInternet.setXYpos(NET_IMG_X, 0);
+			//_statusInternet.freeRes();
+		}
+	private:
+		SimpleBox _topBox;
+		Image _statusWIFI;
+		Image _statusInternet;
+		Text _menuText;
+	private:
+		unsigned long _timestamp = 0;
+		unsigned long _interval = WIFI_UPDATE_INTERVAL;
+		images_t curWiFiImage = IMG_NO_WIFI;
+		images_t curNetImage = IMG_NET_NO;
+} topBar;
+
 Page* currPage;
 
 #define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
@@ -1293,18 +1489,22 @@ class App {
 
 		void update()
 		{
+
+			topBar.update();
+			draw();
 #ifdef TASKS
 			yield();
 			sleep(10);
 #endif
 
+			// cursor blink
 			if (millis() - _oldMils > TIMER) {
 				cursor.draw(_blink);
 				_oldMils = millis();
 				_blink = !_blink;
 			}
 
-			//TODO: change to REG_READ
+			// debounce
 			if (INPUT_READ) {
 				if (millis() - _dbMils > DEBOUNCE) {
 					if (INPUT_READ){
@@ -1314,7 +1514,11 @@ class App {
 				}
 			}
 
-			if (!digitalRead(BTN_PREV) && _dbFlag) {
+			// input proc
+			if (!_dbFlag)
+				return;
+
+			if (!digitalRead(BTN_PREV)) {
 				_oldMils = millis();
 				cursor.draw(false);
 				_iterator--;
@@ -1324,7 +1528,7 @@ class App {
 				cursor.draw(true);
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_NEXT) && _dbFlag) {
+			else if (!digitalRead(BTN_NEXT)) {
 				_oldMils = millis();
 				cursor.draw(false);
 				_iterator++;
@@ -1334,19 +1538,19 @@ class App {
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_MIN) && _dbFlag) {
+			else if (!digitalRead(BTN_MIN)) {
 				_oldMils = millis();
 				currItem->setValue(currItem->getValue() - 1);
 				currItem->draw();
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_PLU) && _dbFlag) {
+			else if (!digitalRead(BTN_PLU)) {
 				_oldMils = millis();
 				currItem->setValue(currItem->getValue() + 1);
 				currItem->draw();
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_OK) && _dbFlag) {
+			else if (!digitalRead(BTN_OK)) {
 				_oldMils = millis();
 				_cursor.draw(false);
 				currItem->onClick();
