@@ -1,6 +1,7 @@
 //TODO: consider resource manager and page builder classes
 
 //#define TASKS
+#define  __APP_DEBUG__
 
 // buttons defines
 #define BTN_PREV 18
@@ -25,42 +26,7 @@ static App app;
 bool gBackBtnOnScreen = false;
 bool gFwdBtnOnScreen = false;
 
-/*
-static Page topBar;
-static SimpleBox topBox;
-static Image statusWIFI;
-static Image statusInternet;
-static Text menuText;
-
-
-void buildTopBar()
-{
-	topBox.setColor(greyscaleColor(TOP_BAR_BG_COL));
-	topBox.setWH(SCR_WIDTH, TOP_BAR_HEIGHT);
-	topBox.invalidate();
-	menuText.setFont(MIDFONT);
-	menuText.setXYpos(LEFTMOST, TOPMOST);
-	menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
-	menuText.setText(MENU);
-	menuText.prepare();
-
-	statusWIFI.loadRes("/wifi_no.jpg");
-	statusWIFI.setXYpos(213, 0);
-	statusWIFI.freeRes();
-
-	statusInternet.loadRes("/internet_ok.jpg");
-	statusInternet.setXYpos(186, 0);
-	statusInternet.freeRes();
-
-	topBar.addItem(&topBox);
-	topBar.addItem(&menuText);
-	topBar.addItem(&statusInternet);
-	topBar.addItem(&statusWIFI);
-}
-*/
-
-//static Panel topBar;
-
+// TODO: redo callbacks
 #define menuText topBar
 
 static Page mainPage;
@@ -76,7 +42,7 @@ static BlueTextButton next;
 
 
 
-void cursorDraw(bool);
+//void cursorDraw(bool);
 bool gRapidBlink = false;
 
 void rapidblink(void* par)
@@ -210,8 +176,6 @@ Page fontPage;
 
 void buildFontPage()
 {
-
-
 	smallestFont.setFont(SMALLESTFONT);
 	smallFont.setFont(SMALLFONT);
 	midFont.setFont(MIDFONT);
@@ -577,12 +541,8 @@ void callSettingsPage()
 	menuText.setText(SETTINGS);
 	menuText.prepare();
 	currPage = &settingsPage;
-	//currPage->invalidateAll();
-	//currPage->prepare();
-	//while(gRapidBlink){};
 	topBar.draw();
 	currPage->draw();
-	//DrawTopBar("Настройки");
 }
 
 void callMainPage()
@@ -602,41 +562,13 @@ void callMainPage()
 	menuText.setText(MENU);
 	menuText.prepare();
 	currPage = &mainPage;
-	//currPage->invalidateAll();
-	//currPage->prepare();
-	//while(gRapidBlink){};
 	topBar.draw();
 	currPage->draw();
-	//DrawTopBar("Меню");
 }
 
-bool initDone = false;
+//bool initDone = false;
 
-//static Cursor cursor;
-
-// Cursor task function
 /*
-void cursorDraw(bool blink)
-{
-	if (!currItem)
-		return;
-	//DEBUG_PRINT(currItem);
-
-	cursor.setCoord(currItem);
-
-	if (blink) {
-		cursor.draw();
-	}
-	else {
-		cursor.erase();
-	}
-}
-*/
-
-bool gblink = false;
-
-
-
 void buildMainPage()
 {
 
@@ -678,6 +610,7 @@ void buildMainPage()
 
 	mainPage.addItem(&back);
 }
+*/
 
 void buildSettingsPage()
 {
@@ -806,9 +739,12 @@ void setup(void)
 
 	// wifi stuff
 	WiFi.begin(ssid, password);
+	/*
 	while (WiFi.status() != WL_CONNECTED) {
 		Serial.print(".");
 	}
+	*/
+
 	Serial.println();
 	Serial.println(WiFi.localIP());
 
@@ -819,12 +755,14 @@ void setup(void)
 	pinMode(BTN_MIN, INPUT_PULLUP);
 	pinMode(BTN_PLU, INPUT_PULLUP);
 
+	/*
 	buildFontPage();
 	buildTestPage();
 	buildLangPage();
 	buildSettingsPage();
 	buildMainPage();
 	topBar.build();
+	*/
 
 	// backlight
 	g_curr_brightness = brightness.getValue();
@@ -834,8 +772,9 @@ void setup(void)
 	//mainPage.prepare();
 
 	currPage = &mainPage;
-	currPage->setCurrItem(0);
-	currItem = currPage->getCurrItem();
+	//currPage->setCurrItem(0);
+	//currItem = currPage->getCurrItem();
+	currItem = currPage->getItemAt(0);
 	currPage->prepare();
 
 	//buildTopBar();
@@ -895,12 +834,10 @@ void loop() {
 			setBacklight(new_br);
 			g_curr_brightness = new_br;
 		}
-	/*
-		Serial.print("Free heap: ");
-		Serial.println(ESP.getFreeHeap());
-		Serial.print("WiFi strength: ");
-		Serial.println(WiFi.RSSI());
-	*/
+
+		//Serial.print("WiFi strength: ");
+		//Serial.println(WiFi.RSSI());
+
 		/*
 		Serial.print("REG: ");
 		// NEXT - 28, PREV - 23, OK - 5, PLUS - 22, MINUS - 21

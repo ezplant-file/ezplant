@@ -1,14 +1,16 @@
 //TODO: banish global pointers
+//TODO: fix lang change menu title
 //
 // precalculate all colors to uint16_t
 //
 // Obj:
 // progress bar -
 // input field -
-// checkbox -
-// switch -
-// wifi -
+// checkbox - done
+// switch - done
+// wifi - done
 // internet -
+//
 //
 
 #include <vector>
@@ -61,7 +63,7 @@
 #define CURCOL 0x70
 
 // debounce stuff
-#define TIMER 500
+#define BLINK_T 500
 #define DEBOUNCE 200
 
 // checkbox
@@ -105,8 +107,14 @@ TFT_eSPI tft = TFT_eSPI();
 
 GfxUi ui = GfxUi(&tft);
 
+// utils
 void nop()
 {
+}
+
+int clamp(int n)
+{
+	return max(min(4, n), 0);
 }
 
 uint16_t greyscaleColor(uint8_t g)
@@ -114,7 +122,7 @@ uint16_t greyscaleColor(uint8_t g)
 	return tft.color565(g,g,g);
 }
 
-
+// base class
 class ScrObj {
 	public:
 		ScrObj(uint16_t w = 0, uint16_t h = 0, bool isSelectable = false):
@@ -281,7 +289,7 @@ class ScrObj {
 };
 
 // current selected item
-ScrObj* currItem = nullptr;
+//ScrObj* currItem = nullptr;
 typedef std::vector<ScrObj*> obj_list;
 
 
@@ -342,19 +350,18 @@ class GreyTextButton: public ScrObj {
 
 		virtual void prepare() override
 		{
-			//_w = GREY_BUTTON_WIDTH;
-			//_h = GREY_BUTTON_HEIGHT;
-			if (_invalid) {
-				_btnSpr.createSprite(_w, _h);
-				_btnSpr.fillSprite(_bg);
-				_btnSpr.loadFont(FONTS[_fontIndex]);
-				_btnSpr.setTextColor(_fg, _bg);
-				_btnSpr.setCursor(_paddingX, _paddingY);
-				_btnSpr.print(scrStrings[_index]);
-				_btnSpr.setCursor(197, _paddingY);
-				_btnSpr.print(">");
-				_btnSpr.unloadFont();
-			}
+			if (!_invalid)
+				return;
+
+			_btnSpr.createSprite(_w, _h);
+			_btnSpr.fillSprite(_bg);
+			_btnSpr.loadFont(FONTS[_fontIndex]);
+			_btnSpr.setTextColor(_fg, _bg);
+			_btnSpr.setCursor(_paddingX, _paddingY);
+			_btnSpr.print(scrStrings[_index]);
+			_btnSpr.setCursor(197, _paddingY);
+			_btnSpr.print(">");
+			_btnSpr.unloadFont();
 		}
 
 		virtual void draw() override
@@ -406,17 +413,17 @@ class Text: public ScrObj {
 
 		void prepare()
 		{
-			//_h = TOP_BAR_HEIGHT - 12;
-			if (_invalid) {
-				_txtSp.loadFont(FONTS[_fontIndex]);
-				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
-				_txtSp.createSprite(_w, _h);
-				_txtSp.fillSprite(TFT_TRANSPARENT);
-				_txtSp.setTextColor(_fg, _bg);
-				//_txtSp.print(_text);
-				_txtSp.print(scrStrings[_index]);
-				_txtSp.unloadFont();
-			}
+			if (!_invalid)
+				return;
+
+			_txtSp.loadFont(FONTS[_fontIndex]);
+			_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
+			_txtSp.createSprite(_w, _h);
+			_txtSp.fillSprite(TFT_TRANSPARENT);
+			_txtSp.setTextColor(_fg, _bg);
+			//_txtSp.print(_text);
+			_txtSp.print(scrStrings[_index]);
+			_txtSp.unloadFont();
 		}
 
 		virtual void erase() override
@@ -467,23 +474,24 @@ class BodyText: public ScrObj {
 		{
 			if (!_invalid)
 				return;
+
 			_txtSp.pushSprite(_x, _y, TFT_TRANSPARENT);
 			_invalid = false;
 		}
 
 		void prepare()
 		{
-			//_h = TOP_BAR_HEIGHT - 12;
-			if (_invalid) {
-				_txtSp.loadFont(FONTS[_fontIndex]);
-				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
-				_txtSp.createSprite(_w, _h);
-				_txtSp.fillSprite(TFT_TRANSPARENT);
-				_txtSp.setTextColor(_fg, _bg);
-				//_txtSp.print(_text);
-				_txtSp.print(scrStrings[_index]);
-				_txtSp.unloadFont();
-			}
+			if (!_invalid)
+				return;
+
+			_txtSp.loadFont(FONTS[_fontIndex]);
+			_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
+			_txtSp.createSprite(_w, _h);
+			_txtSp.fillSprite(TFT_TRANSPARENT);
+			_txtSp.setTextColor(_fg, _bg);
+			//_txtSp.print(_text);
+			_txtSp.print(scrStrings[_index]);
+			_txtSp.unloadFont();
 		}
 
 		void setColors(uint16_t fg, uint16_t bg)
@@ -526,9 +534,7 @@ class Image: public ScrObj {
 
 		void loadRes(const String& filename)
 		{
-			//_jpegFile = SPIFFS.open(filename, "r");
 			_invalid = true;
-			//_isSelectable = true;
 			_filename = filename;
 		}
 
@@ -700,9 +706,6 @@ class InputField: public ScrObj {
 		uint8_t _paddingY = BL_BTN_Y_PADDING;
 };
 
-//TODO: manually decode JPG, push array to sprite
-TFT_eSprite checkSprite = TFT_eSprite(&tft);
-
 class CheckBox: public ScrObj {
 	public:
 		CheckBox(): ScrObj(CHK_BOX_SIZE, CHK_BOX_SIZE, SELECTABLE)
@@ -762,8 +765,8 @@ class CheckBox: public ScrObj {
 		{
 			if (index > END_OF_STRINGS)
 				return;
+
 			_tglText.setText(index);
-			//_index = index;
 			_invalid = true;
 		}
 
@@ -771,6 +774,7 @@ class CheckBox: public ScrObj {
 		{
 			if (fontIndex > END_OF_FONTS)
 				return;
+
 			_tglText.setFont(fontIndex);
 			_invalid = true;
 		}
@@ -796,7 +800,6 @@ class CheckBox: public ScrObj {
 		uint16_t _bg;
 		bool _textAligned = false;
 		bool _isOn = false;
-		//TFT_eSprite* spr;
 		fs::File _jpegFile;
 		const char* _filename = CHK_BOX_FILE;
 };
@@ -1100,8 +1103,9 @@ class TestPageRadio: public ScrObj {
 #define WAIT_WDTH 75
 #define WAIT_DARK 0x8F
 #define WAIT_LIGHT 0xE3
-#define DRAW_INTERVAL 1000
+#define DRAW_INTERVAL 333
 
+//TODO: draw/erase conditions (invalid?)
 class Wait: public ScrObj {
 	public:
 		Wait(): ScrObj(WAIT_WDTH, WAIT_RECT_SIZ)
@@ -1134,15 +1138,13 @@ class Wait: public ScrObj {
 			if (_darkSquare > _squares)
 				_darkSquare = 0;
 
-			uint8_t gap = 0;
 			for (int i = 0; i < _squares; i++) {
 				uint16_t color = 0;
 				if (i == _darkSquare)
 					color = greyscaleColor(WAIT_DARK);
 				else
 					color = greyscaleColor(WAIT_LIGHT);
-				tft.fillRect(_x + (_h+gap)*i, _y, _h, _h, color);
-				gap = _gap;
+				tft.fillRect(_x + (_h+_gap)*i, _y, _h, _h, color);
 			}
 			_darkSquare++;
 		}
@@ -1197,9 +1199,11 @@ class Cursor {
 	public:
 		void draw(bool blink)
 		{
-			if (!currItem)
+			ScrObj* _currItem = app.getCurrItem();
+			if (_currItem)
 				return;
-			_setCoord(currItem);
+
+			_setCoord(_currItem);
 
 			if (blink)
 				_draw();
@@ -1237,7 +1241,7 @@ class Cursor {
 						_x,
 						_y,
 						_h/2 + 1,
-						currItem->getCurCol()
+						_currItem->getCurCol()
 					      );
 
 			}
@@ -1247,7 +1251,7 @@ class Cursor {
 						_y,
 						_w,
 						_h,
-						currItem->getCurCol()
+						_currItem->getCurCol()
 					    );
 			}
 
@@ -1260,29 +1264,30 @@ class Cursor {
 
 			if (obj->isCircle()) {
 				_isCircle = true;
-				int x = currItem->getX();
-				int y = currItem->getY();
-				_h = currItem->getH();
-				_w = currItem->getW();
+				int x = obj->getX();
+				int y = obj->getY();
+				_h = obj->getH();
+				_w = obj->getW();
 				_x = x+(_w/2) - 1;
 				_y = y+(_h/2) - 1;
 			}
 			else {
 				_isCircle = false;
-				_x = currItem->getX() - 1;
-				_y = currItem->getY() - 1;
-				_w = currItem->getW() + 1;
-				_h = currItem->getH() + 1;
+				_x = obj->getX() - 1;
+				_y = obj->getY() - 1;
+				_w = obj->getW() + 1;
+				_h = obj->getH() + 1;
 			}
 		}
 
 	private:
+		ScrObj* _currItem;
 		bool _isCircle;
 		int _x;
 		int _y;
 		int _w;
 		int _h;
-} cursor;
+};
 
 class Page {
 	public:
@@ -1320,12 +1325,14 @@ class Page {
 				obj->prepare();
 		}
 
+		/*
 		ScrObj* getCurrItem()
 		{
 			return _currItem;
 		}
+		*/
 
-		ScrObj* getCurrItemAt(size_t i)
+		ScrObj* getItemAt(size_t i)
 		{
 			return _selectable.at(i);
 		}
@@ -1335,11 +1342,13 @@ class Page {
 			return _selectable.size();
 		}
 
+		/*
 		void setCurrItem(size_t i)
 		{
 			if (i < _selectable.size())
 				_currItem = _selectable.at(i);
 		}
+		*/
 
 		size_t selSize()
 		{
@@ -1349,8 +1358,10 @@ class Page {
 	private:
 		obj_list _items;
 		obj_list _selectable;
-		ScrObj* _currItem;
+		//ScrObj* _currItem;
 };
+
+typedef std::vector<Page*> pg_list;
 
 #define WIFI_UPDATE_INTERVAL 500
 #define WIFI_IMG_X 213
@@ -1403,21 +1414,24 @@ class Panel {
 
 			_timestamp = millis();
 
-			int w = WiFi.RSSI();
-			uint8_t strength = map(w, -95, -45, 0, 4);
+			int dBm = WiFi.RSSI();
+			uint8_t strength = map(dBm, -95, -45, 0, 4);
 
-			if (strength > 4)
-				strength = 0;
-			//Serial.println(w);
-			//Serial.println(strength);
+			strength = clamp(strength);
 
-			switch (strength) {
-				case 0: curWiFiImage = IMG_NO_WIFI; break;
-				case 1: curWiFiImage = IMG_WIFI1; break;
-				case 2: curWiFiImage = IMG_WIFI2; break;
-				case 3: curWiFiImage = IMG_WIFI3; break;
-				case 4: curWiFiImage = IMG_WIFI4; break;
-				default: curWiFiImage = IMG_NO_WIFI; break;
+			if (WiFi.status() != WL_CONNECTED) {
+				curWiFiImage = IMG_NO_WIFI;
+				curNetImage = IMG_NET_NO;
+			}
+			else {
+				switch (strength) {
+					case 0: curWiFiImage = IMG_NO_WIFI; break;
+					case 1: curWiFiImage = IMG_WIFI1; break;
+					case 2: curWiFiImage = IMG_WIFI2; break;
+					case 3: curWiFiImage = IMG_WIFI3; break;
+					case 4: curWiFiImage = IMG_WIFI4; break;
+					default: curWiFiImage = IMG_NO_WIFI; break;
+				}
 			}
 			//_statusWIFI.reload();
 			_statusWIFI.loadRes(images[curWiFiImage]);
@@ -1456,10 +1470,93 @@ class Panel {
 		images_t curNetImage = IMG_NET_NO;
 } topBar;
 
-Page* currPage;
+//Page* currPage;
+//TODO: consider where callbacks should be...
+class Builder {
+	private:
+		pg_list pages;
+	public:
+		Builder()
+		{
+			// no, no, no...
+			// build top bar,
+			// build controls,
+			// build pages
+		}
+
+	private:
+		void buildPages()
+		{
+			pg_list.push_back(buildFontPage());
+			pg_list.push_back(buildTestPage());
+			pg_list.push_back(buildLangPage());
+			pg_list.push_back(buildSettingsPage());
+			pg_list.push_back(buildMainPage());
+		}
+
+		Page* buildFontPage()
+		{
+			//////// TODO: calculate gap?
+			int gap = 5;
+
+			dispStrings_t ru_menu1[menu1_size];
+			ru_menu1[0] = NEW_PLANT;
+			ru_menu1[1] = ONLINE_MON;
+			ru_menu1[2] = SETTINGS;
+			ru_menu1[3] = DIAG;
+			ru_menu1[4] = TEST_PAGE;
+			ru_menu1[5] = FONT_PAGE;
+
+			int j = 0;
+
+			// omg, change that...
+			for (auto& i:menu_items) {
+				i.setCallback(nop);
+				i.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
+				i.setFont(SMALLFONT);
+				i.setXYpos(PG_LEFT_PADD, MB_Y_START+(GREY_BUTTON_HEIGHT+gap)*j);
+				i.setText(ru_menu1[j]);
+				j++;
+			}
+
+			menu_items[2].setCallback(callSettingsPage);
+			menu_items[4].setCallback(callTestPage);
+			menu_items[5].setCallback(callFontPage);
+
+			for (int i = 0; i < menu1_size; i++) {
+				mainPage.addItem(&menu_items[i]);
+			}
+
+			back.setCallback(nop);
+			back.loadRes(images[PREV]);
+			back.setXYpos(7, 284);
+			back.setCircle();
+
+			mainPage.addItem(&back);
+
+		}
+
+		Page* buildTestPage()
+		{
+		}
+
+		Page* buildLangPage()
+		{
+		}
+
+		Page* buildSettingsPage()
+		{
+		}
+
+		Page* buildMainPage()
+		{
+		}
+
+} assets;
 
 #define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
 class App {
+	friend class Builder;
 	private:
 		unsigned long _oldMils = 0;
 		unsigned long _dbMils = 0;
@@ -1467,11 +1564,32 @@ class App {
 		bool _dbFlag = false;
 		Cursor _cursor;
 		int _iterator = 0;
+		Page* _currPage = nullptr;
+		ScrObj* _currItem = nullptr;
 
 	public:
+		ScrObj* getCurrItem()
+		{
+			if (_currItem) {
+				return _currItem;
+			}
+			else
+				return nullptr;
+		}
+
+		void setCurPage(Page* page)
+		{
+			_currPage = page;
+		}
+
+		void setCurrItem(size_t i)
+		{
+			_currItem = _currPage->getItemAt(i);
+		}
+
 		void draw()
 		{
-			currPage->draw();
+			_currPage->draw();
 		}
 
 		void resetIterator()
@@ -1485,6 +1603,7 @@ class App {
 			tft.init();
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
+			topBar.build();
 		}
 
 		void update()
@@ -1498,10 +1617,14 @@ class App {
 #endif
 
 			// cursor blink
-			if (millis() - _oldMils > TIMER) {
+			if (millis() - _oldMils > BLINK_T) {
 				cursor.draw(_blink);
 				_oldMils = millis();
 				_blink = !_blink;
+#ifdef __APP_DEBUG__
+				Serial.print("Free heap: ");
+				Serial.println(ESP.getFreeHeap());
+#endif
 			}
 
 			// debounce
@@ -1515,48 +1638,48 @@ class App {
 			}
 
 			// input proc
-			if (!_dbFlag)
+			if (!_dbFlag || !_currItem)
 				return;
 
 			if (!digitalRead(BTN_PREV)) {
 				_oldMils = millis();
-				cursor.draw(false);
+				_cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
-					_iterator = currPage->selSize() - 1;
-				currItem = currPage->getCurrItemAt(_iterator);
-				cursor.draw(true);
+					_iterator = _currPage->selSize() - 1;
+				_currItem = _currPage->getItemAt(_iterator);
+				_cursor.draw(true);
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_NEXT)) {
 				_oldMils = millis();
-				cursor.draw(false);
+				_cursor.draw(false);
 				_iterator++;
-				if (_iterator > currPage->selSize() - 1)
+				if (_iterator > _currPage->selSize() - 1)
 					_iterator = 0;
-				currItem = currPage->getCurrItemAt(_iterator);
+				_currItem = _currPage->getItemAt(_iterator);
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_MIN)) {
 				_oldMils = millis();
-				currItem->setValue(currItem->getValue() - 1);
-				currItem->draw();
+				_currItem->setValue(_currItem->getValue() - 1);
+				_currItem->draw();
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_PLU)) {
 				_oldMils = millis();
-				currItem->setValue(currItem->getValue() + 1);
-				currItem->draw();
+				_currItem->setValue(_currItem->getValue() + 1);
+				_currItem->draw();
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_OK)) {
 				_oldMils = millis();
 				_cursor.draw(false);
-				currItem->onClick();
-				if (_iterator >= currPage->nItems())
+				_currItem->onClick();
+				if (_iterator >= _currPage->nItems())
 					_iterator = 0;
-				currItem = currPage->getCurrItemAt(_iterator);
+				_currItem = _currPage->getItemAt(_iterator);
 				_dbFlag = false;
 			}
 		}
