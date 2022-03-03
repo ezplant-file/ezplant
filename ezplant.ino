@@ -806,11 +806,14 @@ void setup(void)
 
 	// wifi stuff
 	WiFi.begin(ssid, password);
+
+	/*
 	while (WiFi.status() != WL_CONNECTED) {
 		Serial.print(".");
 	}
 	Serial.println();
 	Serial.println(WiFi.localIP());
+	*/
 
 	// buttons
 	pinMode(BTN_PREV, INPUT_PULLUP);

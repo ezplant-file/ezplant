@@ -17,7 +17,11 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>
 
+// ping
+//#include <ESP32Ping.h>
+
 #include "images.h"
+
 
 
 /***************************** defines *************************/
@@ -69,7 +73,7 @@
 #define CHK_BOX_SIZE 21
 #define CHK_BOX_FILE "/check.jpg"
 
-// input field
+// input field height
 #define INPUT_H 24
 
 // radio button
@@ -105,8 +109,31 @@ TFT_eSPI tft = TFT_eSPI();
 
 GfxUi ui = GfxUi(&tft);
 
+// utils
+const char* REMOTE_HOST = "www.iocontrol.ru";
+
+WiFiClient client;
+
+/*
+bool ping_success = false;
+
+void ping_task_callback(void* arg)
+{
+	if (Ping.ping(REMOTE_HOST), 1)
+		ping_success = true;
+	else
+		ping_success = false;
+	sleep(10000);
+}
+*/
+
 void nop()
 {
+}
+
+int clamp(int n, int n_min, int n_max)
+{
+	return max(min(n_max, n), n_min);
 }
 
 uint16_t greyscaleColor(uint8_t g)
@@ -1100,7 +1127,7 @@ class TestPageRadio: public ScrObj {
 #define WAIT_WDTH 75
 #define WAIT_DARK 0x8F
 #define WAIT_LIGHT 0xE3
-#define DRAW_INTERVAL 1000
+#define DRAW_INTERVAL 333
 
 class Wait: public ScrObj {
 	public:
@@ -1282,7 +1309,7 @@ class Cursor {
 		int _y;
 		int _w;
 		int _h;
-} cursor;
+};
 
 class Page {
 	public:
@@ -1403,23 +1430,38 @@ class Panel {
 
 			_timestamp = millis();
 
-			int w = WiFi.RSSI();
-			uint8_t strength = map(w, -95, -45, 0, 4);
+			int dBm = WiFi.RSSI();
+			uint8_t strength = map(dBm, -95, -45, 0, 4);
 
-			if (strength > 4)
-				strength = 0;
-			//Serial.println(w);
-			//Serial.println(strength);
+			strength = clamp(strength, 0, 4);
 
-			switch (strength) {
-				case 0: curWiFiImage = IMG_NO_WIFI; break;
-				case 1: curWiFiImage = IMG_WIFI1; break;
-				case 2: curWiFiImage = IMG_WIFI2; break;
-				case 3: curWiFiImage = IMG_WIFI3; break;
-				case 4: curWiFiImage = IMG_WIFI4; break;
-				default: curWiFiImage = IMG_NO_WIFI; break;
+			if (WiFi.status() != WL_CONNECTED) {
+				curWiFiImage = IMG_NO_WIFI;
+				curNetImage = IMG_NET_NO;
+				//WiFi.reconnect();
 			}
-			//_statusWIFI.reload();
+			else {
+				if (client.connect(REMOTE_HOST, 80))
+					curNetImage = IMG_NET_OK;
+				else
+					curNetImage = IMG_NET_NO;
+
+				client.stop();
+
+				switch (strength) {
+					case 0: curWiFiImage = IMG_NO_WIFI; break;
+					case 1: curWiFiImage = IMG_WIFI1; break;
+					case 2: curWiFiImage = IMG_WIFI2; break;
+					case 3: curWiFiImage = IMG_WIFI3; break;
+					case 4: curWiFiImage = IMG_WIFI4; break;
+					default: curWiFiImage = IMG_NO_WIFI; break;
+				}
+			}
+
+			_statusInternet.loadRes(images[curNetImage]);
+			_statusInternet.draw();
+			_statusInternet.freeRes();
+
 			_statusWIFI.loadRes(images[curWiFiImage]);
 			_statusWIFI.draw();
 			_statusWIFI.freeRes();
@@ -1485,7 +1527,23 @@ class App {
 			tft.init();
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
+			//createTasks();
 		}
+
+		/*
+		void createTasks()
+		{
+			xTaskCreate(
+					ping_task_callback,
+					"ping task",
+					20000,
+					NULL,
+					3,
+					NULL
+				   );
+
+		}
+		*/
 
 		void update()
 		{
@@ -1499,7 +1557,7 @@ class App {
 
 			// cursor blink
 			if (millis() - _oldMils > TIMER) {
-				cursor.draw(_blink);
+				_cursor.draw(_blink);
 				_oldMils = millis();
 				_blink = !_blink;
 			}
@@ -1520,17 +1578,17 @@ class App {
 
 			if (!digitalRead(BTN_PREV)) {
 				_oldMils = millis();
-				cursor.draw(false);
+				_cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
 					_iterator = currPage->selSize() - 1;
 				currItem = currPage->getCurrItemAt(_iterator);
-				cursor.draw(true);
+				_cursor.draw(true);
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_NEXT)) {
 				_oldMils = millis();
-				cursor.draw(false);
+				_cursor.draw(false);
 				_iterator++;
 				if (_iterator > currPage->selSize() - 1)
 					_iterator = 0;
