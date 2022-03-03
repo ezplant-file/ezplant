@@ -12,13 +12,14 @@
 //
 
 #include <vector>
+#include <atomic>
 
 // hardware... stuff
 #include <SPI.h>
 #include <TFT_eSPI.h>
 
 // ping
-//#include <ESP32Ping.h>
+#include <ESP32Ping.h>
 
 #include "images.h"
 
@@ -112,20 +113,20 @@ GfxUi ui = GfxUi(&tft);
 // utils
 const char* REMOTE_HOST = "www.iocontrol.ru";
 
-WiFiClient client;
+//WiFiClient client;
 
-/*
-bool ping_success = false;
+//std::atomic<bool> g_ping_success = false;
+//atomic_bool g_ping_success = false;
+volatile bool g_ping_success = false;
 
 void ping_task_callback(void* arg)
 {
 	if (Ping.ping(REMOTE_HOST), 1)
-		ping_success = true;
+		g_ping_success = true;
 	else
-		ping_success = false;
+		g_ping_success = false;
 	sleep(10000);
 }
-*/
 
 void nop()
 {
@@ -1441,12 +1442,13 @@ class Panel {
 				//WiFi.reconnect();
 			}
 			else {
-				if (client.connect(REMOTE_HOST, 80))
+				//if (client.connect(REMOTE_HOST, 80))
+				if (g_ping_success)
 					curNetImage = IMG_NET_OK;
 				else
 					curNetImage = IMG_NET_NO;
 
-				client.stop();
+				//client.stop();
 
 				switch (strength) {
 					case 0: curWiFiImage = IMG_NO_WIFI; break;
@@ -1523,6 +1525,7 @@ class App {
 
 		void init()
 		{
+			//g_ping_success = false;
 			SPIFFS.begin();
 			tft.init();
 			tft.setRotation(0);
@@ -1530,20 +1533,18 @@ class App {
 			//createTasks();
 		}
 
-		/*
 		void createTasks()
 		{
 			xTaskCreate(
 					ping_task_callback,
 					"ping task",
-					20000,
+					2000,
 					NULL,
 					3,
 					NULL
 				   );
 
 		}
-		*/
 
 		void update()
 		{
