@@ -1,6 +1,6 @@
 //TODO: consider resource manager and page builder classes
 
-//#define TASKS
+#define TASKS
 
 // buttons defines
 #define BTN_PREV 18
@@ -73,11 +73,6 @@ static GreyTextButton settings_items[settings_size];
 static ImageButton back;
 //static ImageButton sett_back;
 static BlueTextButton next;
-
-
-
-void cursorDraw(bool);
-bool gRapidBlink = false;
 
 void rapidblink(void* par)
 {
@@ -610,7 +605,7 @@ void callMainPage()
 	//DrawTopBar("Меню");
 }
 
-bool initDone = false;
+//bool initDone = false;
 
 //static Cursor cursor;
 
@@ -633,7 +628,7 @@ void cursorDraw(bool blink)
 }
 */
 
-bool gblink = false;
+//bool gblink = false;
 
 
 
@@ -868,7 +863,7 @@ void setup(void)
 			"gui",
 			20000,
 			NULL,
-			0,
+			1,
 			NULL
 		   );
 
@@ -878,10 +873,11 @@ void setup(void)
 	   "nav",
 	   10000,
 	   NULL,
-	   2,
+	   1,
 	   NULL
 	   );
 	 */
+	vTaskDelete(NULL);
 #endif
 }
 

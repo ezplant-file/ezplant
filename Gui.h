@@ -12,7 +12,7 @@
 //
 
 #include <vector>
-#include <atomic>
+//#include <atomic>
 
 // hardware... stuff
 #include <SPI.h>
@@ -115,18 +115,45 @@ const char* REMOTE_HOST = "www.iocontrol.ru";
 
 //WiFiClient client;
 
-//std::atomic<bool> g_ping_success = false;
+std::atomic<bool> g_rapid_blink;
+std::atomic<bool> g_ping_success;
 //atomic_bool g_ping_success = false;
-volatile bool g_ping_success = false;
+//bool g_ping_success = false;
 
+#ifdef TASKS
 void ping_task_callback(void* arg)
 {
-	if (Ping.ping(REMOTE_HOST), 1)
-		g_ping_success = true;
-	else
-		g_ping_success = false;
-	sleep(10000);
+	for(;;) {
+		//Serial.println("Bang!");
+		if (Ping.ping(REMOTE_HOST), 1)
+			g_ping_success = true;
+		else
+			g_ping_success = false;
+		sleep(10000);
+	}
 }
+
+void rapid_blink_callback(void* arg)
+{
+	gRapidBlink = true;
+	cursorDraw(false);
+	sleep(50);
+	cursorDraw(true);
+	sleep(50);
+	cursorDraw(false);
+	sleep(50);
+	cursorDraw(true);
+	sleep(50);
+	cursorDraw(false);
+	sleep(50);
+	cursorDraw(true);
+	sleep(50);
+	cursorDraw(false);
+	gRapidBlink = false;
+	vTaskDelete(NULL);
+}
+
+#endif
 
 void nop()
 {
@@ -1525,12 +1552,13 @@ class App {
 
 		void init()
 		{
-			//g_ping_success = false;
+			g_ping_success = false;
 			SPIFFS.begin();
 			tft.init();
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
-			//createTasks();
+#ifdef TASKS
+			createTasks();
 		}
 
 		void createTasks()
@@ -1538,12 +1566,12 @@ class App {
 			xTaskCreate(
 					ping_task_callback,
 					"ping task",
-					2000,
+					10000,
 					NULL,
 					3,
 					NULL
 				   );
-
+#endif
 		}
 
 		void update()
@@ -1552,7 +1580,7 @@ class App {
 			topBar.update();
 			draw();
 #ifdef TASKS
-			yield();
+			//yield();
 			sleep(10);
 #endif
 
