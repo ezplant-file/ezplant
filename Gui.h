@@ -12,7 +12,7 @@
 //
 
 #include <vector>
-//#include <atomic>
+#include <atomic>
 
 // hardware... stuff
 #include <SPI.h>
@@ -124,18 +124,25 @@ std::atomic<bool> g_ping_success;
 void ping_task_callback(void* arg)
 {
 	for(;;) {
-		//Serial.println("Bang!");
-		if (Ping.ping(REMOTE_HOST), 1)
+		if (Ping.ping(REMOTE_HOST), 1) {
 			g_ping_success = true;
-		else
+		}
+		else {
 			g_ping_success = false;
+		}
+#ifdef APP_DEBUG
+		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
+		Serial.print("ping task unused stack: ");
+		Serial.println(unused);
+#endif
 		sleep(10000);
 	}
 }
 
+/*
 void rapid_blink_callback(void* arg)
 {
-	gRapidBlink = true;
+	g_rapid_blink = true;
 	cursorDraw(false);
 	sleep(50);
 	cursorDraw(true);
@@ -149,9 +156,10 @@ void rapid_blink_callback(void* arg)
 	cursorDraw(true);
 	sleep(50);
 	cursorDraw(false);
-	gRapidBlink = false;
+	g_rapid_blink = false;
 	vTaskDelete(NULL);
 }
+*/
 
 #endif
 
@@ -1566,7 +1574,7 @@ class App {
 			xTaskCreate(
 					ping_task_callback,
 					"ping task",
-					10000,
+					2000,
 					NULL,
 					3,
 					NULL
@@ -1582,6 +1590,15 @@ class App {
 #ifdef TASKS
 			//yield();
 			sleep(10);
+#endif
+#ifdef APP_DEBUG
+#define DEBUG_TIMER 1000
+			static unsigned long debugMils = 0;
+			if (millis() - debugMils > DEBUG_TIMER) {
+				debugMils = millis();
+				Serial.print("Free heap: ");
+				Serial.println(ESP.getFreeHeap());
+			}
 #endif
 
 			// cursor blink
@@ -1606,7 +1623,6 @@ class App {
 				return;
 
 			if (!digitalRead(BTN_PREV)) {
-				_oldMils = millis();
 				_cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
@@ -1616,7 +1632,6 @@ class App {
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_NEXT)) {
-				_oldMils = millis();
 				_cursor.draw(false);
 				_iterator++;
 				if (_iterator > currPage->selSize() - 1)
@@ -1626,19 +1641,16 @@ class App {
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_MIN)) {
-				_oldMils = millis();
 				currItem->setValue(currItem->getValue() - 1);
 				currItem->draw();
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_PLU)) {
-				_oldMils = millis();
 				currItem->setValue(currItem->getValue() + 1);
 				currItem->draw();
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_OK)) {
-				_oldMils = millis();
 				_cursor.draw(false);
 				currItem->onClick();
 				if (_iterator >= currPage->nItems())
@@ -1646,5 +1658,7 @@ class App {
 				currItem = currPage->getCurrItemAt(_iterator);
 				_dbFlag = false;
 			}
+
+			_oldMils = millis();
 		}
 };

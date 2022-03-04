@@ -1,6 +1,7 @@
 //TODO: consider resource manager and page builder classes
 
 #define TASKS
+#define APP_DEBUG
 
 // buttons defines
 #define BTN_PREV 18
@@ -74,9 +75,10 @@ static ImageButton back;
 //static ImageButton sett_back;
 static BlueTextButton next;
 
+/*
 void rapidblink(void* par)
 {
-	gRapidBlink = true;
+	g_rapid_blink = true;
 	cursorDraw(false);
 	sleep(50);
 	cursorDraw(true);
@@ -90,9 +92,10 @@ void rapidblink(void* par)
 	cursorDraw(true);
 	sleep(50);
 	cursorDraw(false);
-	gRapidBlink = false;
+	g_rapid_blink = false;
 	vTaskDelete(NULL);
 }
+*/
 
 /***********************************************************************
   Lang select and screen settings page
@@ -574,7 +577,7 @@ void callSettingsPage()
 	currPage = &settingsPage;
 	//currPage->invalidateAll();
 	//currPage->prepare();
-	//while(gRapidBlink){};
+	//while(g_rapid_blink){};
 	topBar.draw();
 	currPage->draw();
 	//DrawTopBar("Настройки");
@@ -599,7 +602,7 @@ void callMainPage()
 	currPage = &mainPage;
 	//currPage->invalidateAll();
 	//currPage->prepare();
-	//while(gRapidBlink){};
+	//while(g_rapid_blink){};
 	topBar.draw();
 	currPage->draw();
 	//DrawTopBar("Меню");
@@ -714,10 +717,18 @@ void buildSettingsPage()
 
 
 #ifdef TASKS
+#define STCHINTERVAL 10000
 void gui(void* arg)
 {
+	unsigned long oldMillis = millis();
 	for(;;) {
 		app.update();
+		if (millis() - oldMillis > STCHINTERVAL) {
+			uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
+			Serial.print("gui task unused stack: ");
+			Serial.println(unused);
+			oldMillis = millis();
+		}
 		//yield();
 		//sleep(10);
 	}
@@ -861,7 +872,7 @@ void setup(void)
 	xTaskCreate(
 			gui,
 			"gui",
-			20000,
+			3000,
 			NULL,
 			1,
 			NULL
@@ -888,6 +899,7 @@ void loop() {
 #ifndef TASKS
 	//server.handleClient();
 
+	//TODO: deal with input field callbacks
 	if (millis() - oldMils > INTERVAL) {
 		uint8_t new_br = brightness.getValue();
 		if (new_br != g_curr_brightness) {
