@@ -339,6 +339,7 @@ void buildLangPage()
 	brightness.setXYpos(PG_LEFT_PADD, 83);
 	brightness.setValue(50);
 	brightness.setText(PERCENT);
+	brightness.setCallback(gSetBacklight);
 	brightness.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
@@ -800,6 +801,12 @@ void setBacklight(uint8_t br)
 {
 	uint8_t mapped_br = map(br, 0, 100, 0, 255);
 	//Serial.println(mapped_br);
+	analogWrite(LED_PIN, mapped_br);
+}
+
+void gSetBacklight()
+{
+	uint8_t mapped_br = map(brightness.getValue(), 0, 100, 0, 255);
 	analogWrite(LED_PIN, mapped_br);
 }
 

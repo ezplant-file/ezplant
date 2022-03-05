@@ -17,6 +17,8 @@
 // hardware... stuff
 #include <SPI.h>
 #include <TFT_eSPI.h>
+#include <iarduino_RTC.h>
+
 
 // ping
 #include <ESP32Ping.h>
@@ -119,12 +121,13 @@ std::atomic<bool> g_rapid_blink;
 std::atomic<bool> g_ping_success;
 //atomic_bool g_ping_success = false;
 //bool g_ping_success = false;
+iarduino_RTC rtc(RTC_DS3231);
 
 #ifdef TASKS
 void ping_task_callback(void* arg)
 {
 	for(;;) {
-		if (Ping.ping(REMOTE_HOST), 1) {
+		if (Ping.ping(REMOTE_HOST, 3)) {
 			g_ping_success = true;
 		}
 		else {
@@ -138,6 +141,18 @@ void ping_task_callback(void* arg)
 		sleep(10000);
 	}
 }
+
+/*
+void rtc_task(void* arg)
+{
+	iarduino_RTC rtc(RTC_DS3231);
+	rtc.begin();
+	for (;;) {
+		Serial.println(rtc.gettime("H:i"));
+		sleep(10000);
+	}
+}
+*/
 
 /*
 void rapid_blink_callback(void* arg)
@@ -204,9 +219,9 @@ class ScrObj {
 			freeRes();
 		}
 
-		void setCallback(void(*callback)())
+		virtual bool hasInput()
 		{
-			_callback = callback;
+			return false;
 		}
 
 		virtual void onClick()
@@ -214,10 +229,18 @@ class ScrObj {
 			_callback();
 		}
 
+
+		void setCallback(void(*callback)())
+		{
+			_callback = callback;
+		}
+
+
 		bool isVisible()
 		{
 			return _isVisible;
 		}
+
 
 		void invalidate()
 		{
@@ -725,6 +748,11 @@ class InputField: public ScrObj {
 					TFT_WHITE
 					);
 			freeRes();
+		}
+
+		virtual bool hasInput() override
+		{
+			return true;
 		}
 
 		void setColors(uint16_t fg, uint16_t bg)
@@ -1515,6 +1543,12 @@ class Panel {
 			_menuText.setText(MENU);
 			_menuText.prepare();
 
+			_time.setFont(MIDFONT);
+			_time.setXYpos(LEFTMOST, TOPMOST);
+			_time.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
+			_time.setText(MENU); // special case
+			_time.prepare();
+//rtc.gettime("H:i")
 			_statusWIFI.loadRes(images[curWiFiImage]);
 			_statusWIFI.setXYpos(WIFI_IMG_X, 0);
 			//_statusWIFI.freeRes();
@@ -1528,6 +1562,7 @@ class Panel {
 		Image _statusWIFI;
 		Image _statusInternet;
 		Text _menuText;
+		Text _time;
 	private:
 		unsigned long _timestamp = 0;
 		unsigned long _interval = WIFI_UPDATE_INTERVAL;
@@ -1560,6 +1595,7 @@ class App {
 
 		void init()
 		{
+			rtc.begin();
 			g_ping_success = false;
 			SPIFFS.begin();
 			tft.init();
@@ -1579,6 +1615,16 @@ class App {
 					3,
 					NULL
 				   );
+			/*
+			xTaskCreate(
+					rtc_task,
+					"rtc",
+					2000,
+					NULL,
+					1,
+					NULL
+				   );
+				   */
 #endif
 		}
 
@@ -1642,11 +1688,15 @@ class App {
 			}
 			else if (!digitalRead(BTN_MIN)) {
 				currItem->setValue(currItem->getValue() - 1);
+				if (currItem->hasInput())
+					currItem->onClick();
 				currItem->draw();
 				_dbFlag = false;
 			}
 			else if (!digitalRead(BTN_PLU)) {
 				currItem->setValue(currItem->getValue() + 1);
+				if (currItem->hasInput())
+					currItem->onClick();
 				currItem->draw();
 				_dbFlag = false;
 			}
