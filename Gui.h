@@ -1,4 +1,7 @@
+//TODO: page container, generic call procedure
+//TODO: page builder
 //TODO: banish global pointers
+//
 //
 // precalculate all colors to uint16_t
 //
@@ -706,7 +709,7 @@ class SimpleBox: public ScrObj {
 		uint16_t _col = 0;
 };
 
-//TODO: set upper/lower limits
+
 class InputField: public ScrObj {
 	public:
 		InputField(): ScrObj(0, INPUT_H, SELECTABLE)
@@ -1569,6 +1572,13 @@ class Panel {
 		images_t curWiFiImage = IMG_NO_WIFI;
 		images_t curNetImage = IMG_NET_NO;
 } topBar;
+
+class Builder {
+	public:
+		void buildTimePate()
+		{
+		}
+};
 
 Page* currPage;
 
