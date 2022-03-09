@@ -23,8 +23,8 @@
 static App app;
 
 // prevent redrawing control buttons... Maybe make control bar object?
-bool gBackBtnOnScreen = false;
-bool gFwdBtnOnScreen = false;
+//bool gBackBtnOnScreen = false;
+//bool gFwdBtnOnScreen = false;
 
 /*
 static Page topBar;
@@ -108,9 +108,9 @@ static Page langPage;
 static ExclusiveRadio ruSelect;
 static ExclusiveRadio enSelect;
 
-void changeLangRus()
+void changeLangRus(void* arg)
 {
-	gBackBtnOnScreen = true;
+	//gBackBtnOnScreen = true;
 	ruSelect.on(true);
 	enSelect.on(false);
 
@@ -129,9 +129,9 @@ void changeLangRus()
 	currPage->draw();
 }
 
-void changeLangEng()
+void changeLangEng(void* arg)
 {
-	gBackBtnOnScreen = true;
+	//gBackBtnOnScreen = true;
 	ruSelect.on(false);
 	enSelect.on(true);
 
@@ -160,7 +160,7 @@ static InputField testInput;
 static GreyTextButton testGreyButton;
 static BlueTextButton testBlueButton;
 
-void tglCallback()
+void tglCallback(void* arg)
 {
 	if (testTgl.isOn())
 		testTgl.on(false);
@@ -170,7 +170,7 @@ void tglCallback()
 	testTgl.draw();
 }
 
-void chkCallback()
+void chkCallback(void* arg)
 {
 	if (testChBox.isOn())
 		testChBox.on(false);
@@ -180,7 +180,7 @@ void chkCallback()
 	testChBox.draw();
 }
 
-void radCallback()
+void radCallback(void* arg)
 {
 	if (testRad.isOn())
 		testRad.on(false);
@@ -208,8 +208,6 @@ Page fontPage;
 
 void buildFontPage()
 {
-
-
 	smallestFont.setFont(SMALLESTFONT);
 	smallFont.setFont(SMALLFONT);
 	midFont.setFont(MIDFONT);
@@ -246,8 +244,23 @@ void buildFontPage()
 	fontPage.addItem(&back);
 }
 
+
+typedef enum {
+	MENU_PG,
+	SETT_PG,
+	LANG_PG,
+	FONT_PG,
+	TEST_PG,
+	NPAGES
+} pages_t;
+
+Page* pages[NPAGES];
+
+
+
 void buildTestPage()
 {
+	pages[TEST_PG] = &testPage;
 	testTgl.setFont(SMALLFONT);
 	testTgl.setXYpos(17, 41);
 	testTgl.setText(TOGGLE_TEXT);
@@ -304,6 +317,8 @@ void buildTestPage()
 	testPage.addItem(&testGreyButton);
 	testPage.addItem(&testBlueButton);
 	testPage.addItem(&wait);
+
+	testPage.setTitle(TEST_PAGE);
 
 	testPage.addItem(&back);
 }
@@ -496,30 +511,56 @@ void buildLangPage()
 /*******************************************************************************
 callback functions
 *******************************************************************************/
-void callTestPage()
+
+void callPage(void* page_ptr)
 {
-	gBackBtnOnScreen = true;
+	if (page_ptr == nullptr)
+		return;
+
+	Page* page = (Page*) page_ptr;
 
 	app.resetIterator();
 
-	back.setCallback(callMainPage);
+	back.setCallback(callPage, currPage);
 
-	testPage.invalidateAll();
-	testPage.prepare();
+	page->invalidateAll();
+	page->prepare();
 
-	menuText.erase();
+	topBar.erase();
 	topBar.invalidateAll();
 	currPage->erase();
-	menuText.setText(TEST_PAGE);
-	menuText.prepare();
-	currPage = &testPage;
+	topBar.setText(page->getTitle());
+	topBar.prepare();
+	currPage = page;
 	topBar.draw();
 	currPage->draw();
+
 }
 
-void callFontPage()
+void callTestPage(void* arg)			// callPage(pages_t page)
+{						//
+	//gBackBtnOnScreen = true;		//
+						//
+	app.resetIterator();			// 
+						//
+	back.setCallback(callMainPage);		// back.setCallback(callPage, currPage);
+						//
+	testPage.invalidateAll();		// pages[page].invalidateAll();
+	testPage.prepare();			// pages[page].prepare();
+						//
+	menuText.erase();			// topBar.erase();
+	topBar.invalidateAll();			// topBar.invalidateAll();
+	currPage->erase();			// currPage->erase();
+	menuText.setText(TEST_PAGE);		// topBar.setText(titles[page]);
+	menuText.prepare();			// topBar.prepare();
+	currPage = &testPage;			// currPage = &pages[page];
+	topBar.draw();				// topBar.draw();
+	currPage->draw();			// currPage->draw();
+}
+
+void callFontPage(void* arg)
 {
-	gBackBtnOnScreen = true;
+	//gBackBtnOnScreen = true;
 
 	app.resetIterator();
 
@@ -538,9 +579,9 @@ void callFontPage()
 	currPage->draw();
 }
 
-void callLangPage()
+void callLangPage(void* arg)
 {
-	gBackBtnOnScreen = true;
+	//gBackBtnOnScreen = true;
 
 	app.resetIterator();
 
@@ -559,9 +600,9 @@ void callLangPage()
 	currPage->draw();
 }
 
-void callSettingsPage()
+void callSettingsPage(void* arg)
 {
-	gBackBtnOnScreen = true;
+	//gBackBtnOnScreen = true;
 
 	app.resetIterator();
 
@@ -584,9 +625,9 @@ void callSettingsPage()
 	//DrawTopBar("Настройки");
 }
 
-void callMainPage()
+void callMainPage(void* arg)
 {
-	gBackBtnOnScreen = true;
+	//gBackBtnOnScreen = true;
 
 	app.resetIterator();
 
@@ -663,7 +704,8 @@ void buildMainPage()
 	}
 
 	menu_items[2].setCallback(callSettingsPage);
-	menu_items[4].setCallback(callTestPage);
+	//menu_items[4].setCallback(callTestPage);
+	menu_items[4].setCallback(callPage, pages[TEST_PG]);
 	menu_items[5].setCallback(callFontPage);
 
 	for (int i = 0; i < menu1_size; i++) {
@@ -804,7 +846,7 @@ void setBacklight(uint8_t br)
 	analogWrite(LED_PIN, mapped_br);
 }
 
-void gSetBacklight()
+void gSetBacklight(void* arg)
 {
 	uint8_t mapped_br = map(brightness.getValue(), 0, 100, 0, 255);
 	analogWrite(LED_PIN, mapped_br);

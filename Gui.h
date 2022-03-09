@@ -20,7 +20,7 @@
 // hardware... stuff
 #include <SPI.h>
 #include <TFT_eSPI.h>
-#include <iarduino_RTC.h>
+//#include <iarduino_RTC.h>
 
 
 // ping
@@ -31,7 +31,7 @@
 
 
 /***************************** defines *************************/
-// debug print object address
+// print object address
 #define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
 
 // grey button
@@ -124,7 +124,7 @@ std::atomic<bool> g_rapid_blink;
 std::atomic<bool> g_ping_success;
 //atomic_bool g_ping_success = false;
 //bool g_ping_success = false;
-iarduino_RTC rtc(RTC_DS3231);
+//iarduino_RTC rtc(RTC_DS3231);
 
 #ifdef TASKS
 void ping_task_callback(void* arg)
@@ -181,7 +181,7 @@ void rapid_blink_callback(void* arg)
 
 #endif
 
-void nop()
+void nop(void* arg)
 {
 }
 
@@ -213,7 +213,7 @@ class ScrObj {
 		virtual void freeRes() = 0;
 		virtual void prepare()
 		{
-			nop();
+			nop(nullptr);
 		}
 
 		virtual void erase()
@@ -229,11 +229,17 @@ class ScrObj {
 
 		virtual void onClick()
 		{
-			_callback();
+			_callback(_page_ptr);
 		}
 
 
-		void setCallback(void(*callback)())
+		void setCallback(void(*callback)(void*), void* page_ptr)
+		{
+			_callback = callback;
+			_page_ptr = page_ptr;
+		}
+
+		void setCallback(void(*callback)(void*))
 		{
 			_callback = callback;
 		}
@@ -356,7 +362,8 @@ class ScrObj {
 		uint16_t _y = 0;
 		uint16_t _w;
 		uint16_t _h;
-		void (*_callback)() = nop;
+		void (*_callback)(void*) = nop;
+		void* _page_ptr = nullptr;
 		bool _isVisible = true;
 		bool _isSelectable;
 		bool _isPressed = false;
@@ -1075,7 +1082,7 @@ class ExclusiveRadio: public CircRadBtn {
 		virtual void onClick() override
 		{
 			if (!this->isOn()) {
-				_callback();
+				_callback(nullptr);
 			}
 		}
 };
@@ -1440,7 +1447,21 @@ class Page {
 			return _selectable.size();
 		}
 
+		void setTitle(dispStrings_t index)
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_title = index;
+		}
+
+		dispStrings_t getTitle()
+		{
+			return _title;
+		}
+
+
 	private:
+		dispStrings_t _title;
 		obj_list _items;
 		obj_list _selectable;
 		ScrObj* _currItem;
@@ -1575,7 +1596,7 @@ class Panel {
 
 class Builder {
 	public:
-		void buildTimePate()
+		void buildTimePage()
 		{
 		}
 };
@@ -1605,7 +1626,7 @@ class App {
 
 		void init()
 		{
-			rtc.begin();
+			//rtc.begin();
 			g_ping_success = false;
 			SPIFFS.begin();
 			tft.init();
