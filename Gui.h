@@ -1459,8 +1459,19 @@ class Page {
 			return _title;
 		}
 
+		Page* prev()
+		{
+			return _prev;
+		}
+
+		void setPrev(Page* page)
+		{
+			_prev = page;
+		}
+
 
 	private:
+		Page* _prev = nullptr;
 		dispStrings_t _title;
 		obj_list _items;
 		obj_list _selectable;

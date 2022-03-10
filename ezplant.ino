@@ -22,47 +22,19 @@
 
 static App app;
 
-// prevent redrawing control buttons... Maybe make control bar object?
-//bool gBackBtnOnScreen = false;
-//bool gFwdBtnOnScreen = false;
-
-/*
-static Page topBar;
-static SimpleBox topBox;
-static Image statusWIFI;
-static Image statusInternet;
-static Text menuText;
-
-
-void buildTopBar()
-{
-	topBox.setColor(greyscaleColor(TOP_BAR_BG_COL));
-	topBox.setWH(SCR_WIDTH, TOP_BAR_HEIGHT);
-	topBox.invalidate();
-	menuText.setFont(MIDFONT);
-	menuText.setXYpos(LEFTMOST, TOPMOST);
-	menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
-	menuText.setText(MENU);
-	menuText.prepare();
-
-	statusWIFI.loadRes("/wifi_no.jpg");
-	statusWIFI.setXYpos(213, 0);
-	statusWIFI.freeRes();
-
-	statusInternet.loadRes("/internet_ok.jpg");
-	statusInternet.setXYpos(186, 0);
-	statusInternet.freeRes();
-
-	topBar.addItem(&topBox);
-	topBar.addItem(&menuText);
-	topBar.addItem(&statusInternet);
-	topBar.addItem(&statusWIFI);
-}
-*/
-
-//static Panel topBar;
-
 #define menuText topBar
+
+typedef enum {
+	MENU_PG,
+	SETT_PG,
+	LANG_PG,
+	FONT_PG,
+	TEST_PG,
+	NPAGES
+} pages_t;
+
+Page* pages[NPAGES];
+
 
 static Page mainPage;
 static Page settingsPage;
@@ -75,38 +47,85 @@ static ImageButton back;
 //static ImageButton sett_back;
 static BlueTextButton next;
 
-/*
-void rapidblink(void* par)
-{
-	g_rapid_blink = true;
-	cursorDraw(false);
-	sleep(50);
-	cursorDraw(true);
-	sleep(50);
-	cursorDraw(false);
-	sleep(50);
-	cursorDraw(true);
-	sleep(50);
-	cursorDraw(false);
-	sleep(50);
-	cursorDraw(true);
-	sleep(50);
-	cursorDraw(false);
-	g_rapid_blink = false;
-	vTaskDelete(NULL);
-}
-*/
-
-/***********************************************************************
-  Lang select and screen settings page
-************************************************************************/
-
+// Lang select and screen settings page items
 static Page langPage;
 
 //static CircRadBtn ruSelect;
 //static CircRadBtn enSelect;
 static ExclusiveRadio ruSelect;
 static ExclusiveRadio enSelect;
+
+// Test page items
+Page testPage;
+static Toggle testTgl;
+static CheckBox testChBox;
+static TestPageRadio testRad;
+static InputField testInput;
+static GreyTextButton testGreyButton;
+static BlueTextButton testBlueButton;
+
+
+
+/*******************************************************************************
+callback functions
+*******************************************************************************/
+
+void callPage(void* page_ptr)
+{
+	if (page_ptr == nullptr)
+		return;
+
+	Page* page = (Page*) page_ptr;
+
+	app.resetIterator();
+
+	//back.setCallback(callPage, currPage);
+	back.setCallback(callPage, page->prev());
+
+	page->invalidateAll();
+	page->prepare();
+
+	topBar.erase();
+	topBar.invalidateAll();
+	currPage->erase();
+	topBar.setText(page->getTitle());
+	topBar.prepare();
+	currPage = page;
+	topBar.draw();
+	currPage->draw();
+}
+
+
+void tglCallback(void* arg)
+{
+	if (testTgl.isOn())
+		testTgl.on(false);
+	else
+		testTgl.on(true);
+	testTgl.invalidate();
+	testTgl.draw();
+}
+
+void chkCallback(void* arg)
+{
+	if (testChBox.isOn())
+		testChBox.on(false);
+	else
+		testChBox.on(true);
+	testChBox.invalidate();
+	testChBox.draw();
+}
+
+void radCallback(void* arg)
+{
+	if (testRad.isOn())
+		testRad.on(false);
+	else
+		testRad.on(true);
+	testRad.invalidate();
+	testRad.draw();
+}
+
 
 void changeLangRus(void* arg)
 {
@@ -150,113 +169,11 @@ void changeLangEng(void* arg)
 	currPage->draw();
 }
 
+/*******************************************************************************
+page builders TODO: move to Gui
+*******************************************************************************/
+
 /************************ TEST PAGE ******************************/
-
-Page testPage;
-static Toggle testTgl;
-static CheckBox testChBox;
-static TestPageRadio testRad;
-static InputField testInput;
-static GreyTextButton testGreyButton;
-static BlueTextButton testBlueButton;
-
-void tglCallback(void* arg)
-{
-	if (testTgl.isOn())
-		testTgl.on(false);
-	else
-		testTgl.on(true);
-	testTgl.invalidate();
-	testTgl.draw();
-}
-
-void chkCallback(void* arg)
-{
-	if (testChBox.isOn())
-		testChBox.on(false);
-	else
-		testChBox.on(true);
-	testChBox.invalidate();
-	testChBox.draw();
-}
-
-void radCallback(void* arg)
-{
-	if (testRad.isOn())
-		testRad.on(false);
-	else
-		testRad.on(true);
-	testRad.invalidate();
-	testRad.draw();
-}
-
-static Text smallestFont, smallFont, \
-		    midFont, largeFont, \
-		    largestFont, boldFont, \
-		    boldFont2;
-Text* fonts[] = {
-	&smallestFont,
-	&smallFont,
-	&midFont,
-	&largeFont,
-	&largestFont,
-	&boldFont,
-	&boldFont2
-};
-
-Page fontPage;
-
-void buildFontPage()
-{
-	smallestFont.setFont(SMALLESTFONT);
-	smallFont.setFont(SMALLFONT);
-	midFont.setFont(MIDFONT);
-	largeFont.setFont(LARGEFONT);
-	largestFont.setFont(LARGESTFONT);
-	boldFont.setFont(BOLDFONT);
-	boldFont2.setFont(BOLDFONT2);
-
-	smallestFont.setText(SMALLESTFONT_TEXT);
-	smallFont.setText(SMALLFONT_TEXT);
-	midFont.setText(MIDFONT_TEXT);
-	largeFont.setText(LARGEFONT_TEXT);
-	largestFont.setText(LARGESTFONT_TEXT);
-	boldFont.setText(BOLDFONT_TEXT);
-	boldFont2.setText(BOLDFONT2_TEXT);
-
-	int gap = 5;
-	int j = 0;
-
-	for (auto i:fonts) {
-		i->setCallback(nop);
-		i->setXYpos(
-				PG_LEFT_PADD,
-				MB_Y_START
-				+(GREY_BUTTON_HEIGHT+gap)*j
-				);
-		i->setColors(
-			greyscaleColor(FONT_COLOR),
-			greyscaleColor(BACKGROUND)
-			);
-		j++;
-		fontPage.addItem(i);
-	}
-	fontPage.addItem(&back);
-}
-
-
-typedef enum {
-	MENU_PG,
-	SETT_PG,
-	LANG_PG,
-	FONT_PG,
-	TEST_PG,
-	NPAGES
-} pages_t;
-
-Page* pages[NPAGES];
-
-
 
 void buildTestPage()
 {
@@ -320,15 +237,78 @@ void buildTestPage()
 
 	testPage.setTitle(TEST_PAGE);
 
+	testPage.setPrev(&mainPage);
 	testPage.addItem(&back);
 }
 
-/************************ END TEST PAGE *************************/
 
+/************************ FONT PAGE ******************************/
+
+Page fontPage;
+
+static Text smallestFont, smallFont, \
+		    midFont, largeFont, \
+		    largestFont, boldFont, \
+		    boldFont2;
+Text* fonts[] = {
+	&smallestFont,
+	&smallFont,
+	&midFont,
+	&largeFont,
+	&largestFont,
+	&boldFont,
+	&boldFont2
+};
+
+
+
+void buildFontPage()
+{
+	pages[FONT_PG] = &fontPage;
+	smallestFont.setFont(SMALLESTFONT);
+	smallFont.setFont(SMALLFONT);
+	midFont.setFont(MIDFONT);
+	largeFont.setFont(LARGEFONT);
+	largestFont.setFont(LARGESTFONT);
+	boldFont.setFont(BOLDFONT);
+	boldFont2.setFont(BOLDFONT2);
+
+	smallestFont.setText(SMALLESTFONT_TEXT);
+	smallFont.setText(SMALLFONT_TEXT);
+	midFont.setText(MIDFONT_TEXT);
+	largeFont.setText(LARGEFONT_TEXT);
+	largestFont.setText(LARGESTFONT_TEXT);
+	boldFont.setText(BOLDFONT_TEXT);
+	boldFont2.setText(BOLDFONT2_TEXT);
+
+	int gap = 5;
+	int j = 0;
+
+	for (auto i:fonts) {
+		i->setCallback(nop);
+		i->setXYpos(
+				PG_LEFT_PADD,
+				MB_Y_START
+				+(GREY_BUTTON_HEIGHT+gap)*j
+				);
+		i->setColors(
+			greyscaleColor(FONT_COLOR),
+			greyscaleColor(BACKGROUND)
+			);
+		j++;
+		fontPage.addItem(i);
+	}
+	fontPage.setPrev(&mainPage);
+	fontPage.addItem(&back);
+}
+
+
+/************************************ LANG PAGE ******************************/
 static InputField brightness;
 // hardcoded
 void buildLangPage()
 {
+	pages[LANG_PG] = &langPage;
 	// Экран
 	static Text boldScreen;
 	boldScreen.setFont(BOLDFONT);
@@ -397,25 +377,6 @@ void buildLangPage()
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
-	/*
-	static Text secText;
-	secText.setFont(SMALLFONT);
-	//secText.setXYpos(PG_LEFT_PADD, 127);
-	secText.setXYpos(
-			PG_LEFT_PADD
-			//+ brightness.getW()
-			+ 40
-			+ 3,
-			130 + GR_BTN_Y_PADDING
-			);
-
-	secText.setText(SEC);
-	secText.setColors(
-			greyscaleColor(FONT_COLOR),
-			greyscaleColor(BACKGROUND)
-			);
-			*/
-
 	static Text boldLang;
 	boldLang.setFont(BOLDFONT);
 	boldLang.setText(LANG);
@@ -447,15 +408,6 @@ void buildLangPage()
 	enSelect.setCurCol(greyscaleColor(TOP_BAR_BG_COL));
 	enSelect.on(false);
 	enSelect.setCallback(changeLangEng);
-
-
-	/*
-	static ImageButton lang_back;
-	lang_back.setCallback(callSettingsPage);
-	lang_back.loadRes("/prev.jpg");
-	lang_back.setXYpos(7, 284);
-	lang_back.setCircle();
-	*/
 
 	static Image ruFlag;
 	ruFlag.loadRes("/ru.jpg");
@@ -505,180 +457,13 @@ void buildLangPage()
 	langPage.addItem(&langRu);
 	langPage.addItem(&langEng);
 
+	langPage.setPrev(&settingsPage);
 	langPage.addItem(&back);
 }
 
-/*******************************************************************************
-callback functions
-*******************************************************************************/
-
-void callPage(void* page_ptr)
-{
-	if (page_ptr == nullptr)
-		return;
-
-	Page* page = (Page*) page_ptr;
-
-	app.resetIterator();
-
-	back.setCallback(callPage, currPage);
-
-	page->invalidateAll();
-	page->prepare();
-
-	topBar.erase();
-	topBar.invalidateAll();
-	currPage->erase();
-	topBar.setText(page->getTitle());
-	topBar.prepare();
-	currPage = page;
-	topBar.draw();
-	currPage->draw();
-
-}
-
-void callTestPage(void* arg)			// callPage(pages_t page)
-{						//
-	//gBackBtnOnScreen = true;		//
-						//
-	app.resetIterator();			// 
-						//
-	back.setCallback(callMainPage);		// back.setCallback(callPage, currPage);
-						//
-	testPage.invalidateAll();		// pages[page].invalidateAll();
-	testPage.prepare();			// pages[page].prepare();
-						//
-	menuText.erase();			// topBar.erase();
-	topBar.invalidateAll();			// topBar.invalidateAll();
-	currPage->erase();			// currPage->erase();
-	menuText.setText(TEST_PAGE);		// topBar.setText(titles[page]);
-	menuText.prepare();			// topBar.prepare();
-	currPage = &testPage;			// currPage = &pages[page];
-	topBar.draw();				// topBar.draw();
-	currPage->draw();			// currPage->draw();
-}
-
-void callFontPage(void* arg)
-{
-	//gBackBtnOnScreen = true;
-
-	app.resetIterator();
-
-	back.setCallback(callMainPage);
-
-	fontPage.invalidateAll();
-	fontPage.prepare();
-
-	menuText.erase();
-	topBar.invalidateAll();
-	currPage->erase();
-	menuText.setText(FONT_PAGE);
-	menuText.prepare();
-	currPage = &fontPage;
-	topBar.draw();
-	currPage->draw();
-}
-
-void callLangPage(void* arg)
-{
-	//gBackBtnOnScreen = true;
-
-	app.resetIterator();
-
-	back.setCallback(callSettingsPage);
-
-	langPage.invalidateAll();
-	langPage.prepare();
-
-	menuText.erase();
-	topBar.invalidateAll();
-	currPage->erase();
-	menuText.setText(SCREENLANG);
-	menuText.prepare();
-	currPage = &langPage;
-	topBar.draw();
-	currPage->draw();
-}
-
-void callSettingsPage(void* arg)
-{
-	//gBackBtnOnScreen = true;
-
-	app.resetIterator();
-
-	back.setCallback(callMainPage);
-
-	settingsPage.invalidateAll();
-	settingsPage.prepare();
-
-	menuText.erase();
-	topBar.invalidateAll();
-	currPage->erase();
-	menuText.setText(SETTINGS);
-	menuText.prepare();
-	currPage = &settingsPage;
-	//currPage->invalidateAll();
-	//currPage->prepare();
-	//while(g_rapid_blink){};
-	topBar.draw();
-	currPage->draw();
-	//DrawTopBar("Настройки");
-}
-
-void callMainPage(void* arg)
-{
-	//gBackBtnOnScreen = true;
-
-	app.resetIterator();
-
-	back.setCallback(nop);
-
-	mainPage.invalidateAll();
-	mainPage.prepare();
-
-	menuText.erase();
-	topBar.invalidateAll();
-	currPage->erase();
-	menuText.setText(MENU);
-	menuText.prepare();
-	currPage = &mainPage;
-	//currPage->invalidateAll();
-	//currPage->prepare();
-	//while(g_rapid_blink){};
-	topBar.draw();
-	currPage->draw();
-	//DrawTopBar("Меню");
-}
-
-//bool initDone = false;
-
-//static Cursor cursor;
-
-// Cursor task function
-/*
-void cursorDraw(bool blink)
-{
-	if (!currItem)
-		return;
-	//DEBUG_PRINT(currItem);
-
-	cursor.setCoord(currItem);
-
-	if (blink) {
-		cursor.draw();
-	}
-	else {
-		cursor.erase();
-	}
-}
-*/
-
-//bool gblink = false;
-
-
-
 void buildMainPage()
 {
+	pages[MENU_PG] = &mainPage;
 
 	//////// TODO: calculate gap?
 	int gap = 5;
@@ -703,10 +488,12 @@ void buildMainPage()
 		j++;
 	}
 
-	menu_items[2].setCallback(callSettingsPage);
+	//menu_items[2].setCallback(callSettingsPage);
+	menu_items[2].setCallback(callPage, pages[SETT_PG]);
 	//menu_items[4].setCallback(callTestPage);
 	menu_items[4].setCallback(callPage, pages[TEST_PG]);
-	menu_items[5].setCallback(callFontPage);
+	//menu_items[5].setCallback(callFontPage);
+	menu_items[5].setCallback(callPage, pages[FONT_PG]);
 
 	for (int i = 0; i < menu1_size; i++) {
 		mainPage.addItem(&menu_items[i]);
@@ -722,6 +509,7 @@ void buildMainPage()
 
 void buildSettingsPage()
 {
+	pages[SETT_PG] = &settingsPage;
 	dispStrings_t ru_menu_settings[settings_size];
 	ru_menu_settings[0] = TIMEDATE;
 	ru_menu_settings[1] = WIFI;
@@ -741,25 +529,22 @@ void buildSettingsPage()
 		j++;
 	}
 
-	settings_items[2].setCallback(callLangPage);
+	//settings_items[2].setCallback(callLangPage);
+	settings_items[2].setCallback(callPage, pages[LANG_PG]);
 
 	for (int i = 0; i < settings_size; i++) {
 		settingsPage.addItem(&settings_items[i]);
 	}
 
-	/*
-	sett_back.setCallback(callMainPage);
-	sett_back.loadRes("/prev.jpg");
-	sett_back.setXYpos(7, 284);
-	sett_back.setCircle();
-	settingsPage.addItem(&sett_back);
-	*/
+	//settingsPage.setPrev(pages[MENU_PG]);
+	settingsPage.setPrev(&mainPage);
 	settingsPage.addItem(&back);
 
 }
 
 
 #ifdef TASKS
+// gui task
 #define STCHINTERVAL 10000
 void gui(void* arg)
 {
