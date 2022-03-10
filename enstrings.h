@@ -46,7 +46,20 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Font SegoeUI-18",
 	"Font SegoeUI-20",
 	"Font SegoeUI-Bold-16",
-	"Font SegoeUI-Bold-18"
+	"Font SegoeUI-Bold-18",
+
+	// wifi init
+	"WiFi settings",
+	"Access point created",
+	"WiFi name",
+	"ezplant_wifi",
+	"Password",
+	"ezplant",
+	"Open this site after\n joining access point",
+	"http://192.168.0.1",
+	"and follow\n instructions"
+
+	//end of strings
 };
 
 #endif

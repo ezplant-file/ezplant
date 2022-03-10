@@ -94,6 +94,7 @@ typedef enum {
 	LARGESTFONT,
 	BOLDFONT,
 	BOLDFONT2,
+	BOLDSMALL,
 	END_OF_FONTS
 } fonts_t;
 
@@ -104,7 +105,8 @@ const char* FONTS[END_OF_FONTS] = {
 	"SegoeUI-18",
 	"SegoeUI-20",
 	"SegoeUI-Bold-16",
-	"SegoeUI-Bold-18"
+	"SegoeUI-Bold-18",
+	"SegoeUI-Bold-14"
 };
 
 // pointer to current language strings
@@ -250,6 +252,16 @@ class ScrObj {
 			return _isVisible;
 		}
 
+		void setVisible()
+		{
+			_isVisible = true;
+		}
+
+		void setInvisible()
+		{
+			_isVisible = false;
+		}
+
 
 		void invalidate()
 		{
@@ -360,8 +372,8 @@ class ScrObj {
 		fonts_t _fontIndex;
 		uint16_t _x = 0;
 		uint16_t _y = 0;
-		uint16_t _w;
-		uint16_t _h;
+		int16_t _w;
+		int16_t _h;
 		void (*_callback)(void*) = nop;
 		void* _page_ptr = nullptr;
 		bool _isVisible = true;
@@ -505,6 +517,7 @@ class Text: public ScrObj {
 			//_h = TOP_BAR_HEIGHT - 12;
 			if (_invalid) {
 				_txtSp.loadFont(FONTS[_fontIndex]);
+				// TODO: calculate _w based on string wrap
 				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
 				_txtSp.createSprite(_w, _h);
 				_txtSp.fillSprite(TFT_TRANSPARENT);
@@ -527,6 +540,25 @@ class Text: public ScrObj {
 			_fg = fg;
 			_bg = bg;
 			_txtSp.setColorDepth(16);
+		}
+
+		virtual void setText(dispStrings_t index) override 
+		{
+			if (index > END_OF_STRINGS)
+				return;
+
+			_index = index;
+			_invalid = true;
+
+			int mult = 1;
+
+			// calculate sprite height based on newline occurrences
+			for (int i = 0; scrStrings[_index][i]; i++) {
+				if (scrStrings[_index][i] == '\n') {
+					mult++;
+				}
+			}
+			_h *= mult;
 		}
 
 		uint8_t getYpadding()
@@ -603,14 +635,19 @@ class Image: public ScrObj {
 	public:
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
-			if (_invalid)
-				reload();
+			reload();
 
-			if (_invalid && _jpegFile) {
+			if (_jpegFile) {
 				ui.drawJpeg(_jpegFile, _x, _y);
+				_w = JpegDec.width;
+				_h = JpegDec.height;
+#ifdef APP_DEBUG
+				Serial.print("jpeg width");
+				Serial.println(JpegDec.width);
+#endif
 				_invalid = false;
 			}
 		}
@@ -1469,8 +1506,19 @@ class Page {
 			_prev = page;
 		}
 
+		bool visibleIcons()
+		{
+			return _iconsVisible;
+		}
+
+		void setIconsVis(bool vis)
+		{
+			_iconsVisible = vis;
+		}
+
 
 	private:
+		bool _iconsVisible = true;
 		Page* _prev = nullptr;
 		dispStrings_t _title;
 		obj_list _items;
@@ -1488,7 +1536,6 @@ class Panel {
 		{
 			_menuText.setText(index);
 			_menuText.prepare();
-
 		}
 
 		void invalidateAll()
@@ -1506,6 +1553,18 @@ class Panel {
 		void erase()
 		{
 			_menuText.erase();
+		}
+
+		void hideIcons()
+		{
+			_statusWIFI.setInvisible();
+			_statusInternet.setInvisible();
+		}
+
+		void showIcons()
+		{
+			_statusWIFI.setVisible();
+			_statusInternet.setVisible();
 		}
 
 		void draw()
@@ -1535,36 +1594,42 @@ class Panel {
 			strength = clamp(strength, 0, 4);
 
 			if (WiFi.status() != WL_CONNECTED) {
-				curWiFiImage = IMG_NO_WIFI;
-				curNetImage = IMG_NET_NO;
+				_curWiFiImage = IMG_NO_WIFI;
+				_curNetImage = IMG_NET_NO;
 				//WiFi.reconnect();
 			}
 			else {
 				//if (client.connect(REMOTE_HOST, 80))
 				if (g_ping_success)
-					curNetImage = IMG_NET_OK;
+					_curNetImage = IMG_NET_OK;
 				else
-					curNetImage = IMG_NET_NO;
+					_curNetImage = IMG_NET_NO;
 
 				//client.stop();
 
 				switch (strength) {
-					case 0: curWiFiImage = IMG_NO_WIFI; break;
-					case 1: curWiFiImage = IMG_WIFI1; break;
-					case 2: curWiFiImage = IMG_WIFI2; break;
-					case 3: curWiFiImage = IMG_WIFI3; break;
-					case 4: curWiFiImage = IMG_WIFI4; break;
-					default: curWiFiImage = IMG_NO_WIFI; break;
+					case 0: _curWiFiImage = IMG_NO_WIFI; break;
+					case 1: _curWiFiImage = IMG_WIFI1; break;
+					case 2: _curWiFiImage = IMG_WIFI2; break;
+					case 3: _curWiFiImage = IMG_WIFI3; break;
+					case 4: _curWiFiImage = IMG_WIFI4; break;
+					default: _curWiFiImage = IMG_NO_WIFI; break;
 				}
 			}
 
-			_statusInternet.loadRes(images[curNetImage]);
-			_statusInternet.draw();
-			_statusInternet.freeRes();
+			if (_curNetImage != _prevNetImage) {
+				_statusInternet.loadRes(images[_curNetImage]);
+				_statusInternet.draw();
+				_statusInternet.freeRes();
+				_prevNetImage = _curNetImage;
+			}
 
-			_statusWIFI.loadRes(images[curWiFiImage]);
-			_statusWIFI.draw();
-			_statusWIFI.freeRes();
+			if (_curWiFiImage != _prevWiFiImage) {
+				_statusWIFI.loadRes(images[_curWiFiImage]);
+				_statusWIFI.draw();
+				_statusWIFI.freeRes();
+				_prevWiFiImage = _curWiFiImage;
+			}
 		}
 
 		void build()
@@ -1584,11 +1649,11 @@ class Panel {
 			_time.setText(MENU); // special case
 			_time.prepare();
 //rtc.gettime("H:i")
-			_statusWIFI.loadRes(images[curWiFiImage]);
+			_statusWIFI.loadRes(images[_curWiFiImage]);
 			_statusWIFI.setXYpos(WIFI_IMG_X, 0);
 			//_statusWIFI.freeRes();
 
-			_statusInternet.loadRes(images[curNetImage]);
+			_statusInternet.loadRes(images[_curNetImage]);
 			_statusInternet.setXYpos(NET_IMG_X, 0);
 			//_statusInternet.freeRes();
 		}
@@ -1601,8 +1666,10 @@ class Panel {
 	private:
 		unsigned long _timestamp = 0;
 		unsigned long _interval = WIFI_UPDATE_INTERVAL;
-		images_t curWiFiImage = IMG_NO_WIFI;
-		images_t curNetImage = IMG_NET_NO;
+		images_t _curWiFiImage = IMG_NO_WIFI;
+		images_t _curNetImage = IMG_NET_NO;
+		images_t _prevWiFiImage = IMG_NO_WIFI;
+		images_t _prevNetImage = IMG_NET_NO;
 } topBar;
 
 class Builder {
@@ -1638,6 +1705,7 @@ class App {
 		void init()
 		{
 			//rtc.begin();
+			tft.initDMA(true);
 			g_ping_success = false;
 			SPIFFS.begin();
 			tft.init();

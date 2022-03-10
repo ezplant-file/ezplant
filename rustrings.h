@@ -46,9 +46,20 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Шрифт SegoeUI-18",
 	"Шрифт SegoeUI-20",
 	"Шрифт SegoeUI-Bold-16",
-	"Шрифт SegoeUI-Bold-18"
+	"Шрифт SegoeUI-Bold-18",
 
-
+	// wifi init
+	"Настройка WiFi",
+	"Создана точка доступа",
+	"Имя сети",
+	"ezplant_wifi",
+	"Пароль",
+	"ezplant",
+	"Подключитесь к ней, после чего\n откройте в браузере сайт",
+	"http://192.168.0.1",
+	"Следуйте\n инструкциям."
+		
+	//end of strings
 };
 
 #endif

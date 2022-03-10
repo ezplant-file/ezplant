@@ -48,6 +48,17 @@ typedef enum {
 	BOLDFONT_TEXT,
 	BOLDFONT2_TEXT,
 
+	// wifi init
+	WI_TITLE,
+	WI_AP_CREATED,
+	WI_SSID_TEXT,
+	WI_SSID_NAME,
+	WI_PWD_TEXT,
+	WI_PASSWORD,
+	WI_CONNECT,
+	WI_IP,
+	WI_FOLLOW,
+
 	END_OF_STRINGS
 } dispStrings_t;
 

@@ -30,11 +30,12 @@ typedef enum {
 	LANG_PG,
 	FONT_PG,
 	TEST_PG,
+	WIFI_PG,
+	WIFI_SETT_PG,
 	NPAGES
 } pages_t;
 
 Page* pages[NPAGES];
-
 
 static Page mainPage;
 static Page settingsPage;
@@ -88,9 +89,18 @@ void callPage(void* page_ptr)
 	topBar.erase();
 	topBar.invalidateAll();
 	currPage->erase();
+	//Serial.println(page->getTitle());
 	topBar.setText(page->getTitle());
 	topBar.prepare();
 	currPage = page;
+
+	if (!currPage->visibleIcons()) {
+		topBar.hideIcons();
+	}
+	else {
+		topBar.showIcons();
+	}
+
 	topBar.draw();
 	currPage->draw();
 }
@@ -173,6 +183,108 @@ void changeLangEng(void* arg)
 page builders TODO: move to Gui
 *******************************************************************************/
 
+/************************ WIFI PAGE ******************************/
+Page wifiPage;
+
+#define WI_PG_FONT_COL 0x44
+
+void buildWifiPage()
+{
+	// TEXT
+	uint16_t bg_col = greyscaleColor(BACKGROUND);
+	uint16_t font1_col = greyscaleColor(FONT_COLOR);
+	uint16_t font2_col = greyscaleColor(WI_PG_FONT_COL);
+	pages[WIFI_PG] = &wifiPage;	
+
+	static Text accesPoint;
+	accesPoint.setFont(BOLDFONT);
+	// создана точка доступа
+	accesPoint.setText(WI_AP_CREATED);
+	accesPoint.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	accesPoint.setColors(font2_col, bg_col);
+
+	static Text ssid;
+	ssid.setFont(SMALLFONT);
+	// имя сети
+	ssid.setText(WI_SSID_TEXT);
+	ssid.setXYpos(PG_LEFT_PADD, 56);
+	ssid.setColors(font1_col, bg_col);
+
+	static Text wifiName;
+	wifiName.setFont(BOLDSMALL);
+	// ezplant_wifi
+	wifiName.setText(WI_SSID_NAME);
+	wifiName.setXYpos(PG_LEFT_PADD, 74);
+	wifiName.setColors(font1_col, bg_col);
+
+	static Text pwd_txt;
+	pwd_txt.setFont(SMALLFONT);
+	// пароль
+	pwd_txt.setText(WI_PWD_TEXT);
+	pwd_txt.setXYpos(PG_LEFT_PADD, 101);
+	pwd_txt.setColors(font1_col, bg_col);
+
+	static Text pwd;
+	pwd.setFont(BOLDSMALL);
+	// ezplant
+	pwd.setText(WI_PASSWORD);
+	pwd.setXYpos(PG_LEFT_PADD, 120);
+	pwd.setColors(font1_col, bg_col);
+
+	static Text con_inst;
+	con_inst.setFont(SMALLFONT);
+	// подключитесь к ней...
+	con_inst.setText(WI_CONNECT);
+	con_inst.setXYpos(PG_LEFT_PADD, 148);
+	con_inst.setColors(font2_col, bg_col);
+
+	static Text ip_addr;
+	ip_addr.setFont(BOLDSMALL);
+	// http://192...
+	ip_addr.setText(WI_IP);
+	ip_addr.setXYpos(PG_LEFT_PADD, 189);
+	ip_addr.setColors(font2_col, bg_col);
+
+	static Text follow;
+	follow.setFont(SMALLFONT);
+	// следуйте инструкциям
+	follow.setText(WI_FOLLOW);
+	follow.setXYpos(PG_LEFT_PADD, 211);
+	follow.setColors(font2_col, bg_col);
+
+	// IMAGES
+	static Image router;
+	router.loadRes(images[IMG_ROUTER]);
+	router.setXYpos(168, 60);
+
+	static Image qr;
+	qr.loadRes(images[IMG_QR_WI]);
+	qr.setXYpos(152, 186);
+
+	wifiPage.addItem(&accesPoint);
+	wifiPage.addItem(&ssid);
+	wifiPage.addItem(&wifiName);
+	wifiPage.addItem(&pwd_txt);
+	wifiPage.addItem(&pwd);
+	wifiPage.addItem(&con_inst);
+	wifiPage.addItem(&ip_addr);
+	wifiPage.addItem(&follow);
+	wifiPage.addItem(&router);
+	wifiPage.addItem(&qr);
+
+	wifiPage.setIconsVis(false);
+	wifiPage.setTitle(WI_TITLE);
+	wifiPage.setPrev(&settingsPage);
+	wifiPage.addItem(&back);
+}
+
+Page wifiSettPage;
+
+void buildWiFiSettPage()
+{
+	pages[WIFI_SETT_PG] = &wifiSettPage;
+}
+
 /************************ TEST PAGE ******************************/
 
 void buildTestPage()
@@ -236,7 +348,6 @@ void buildTestPage()
 	testPage.addItem(&wait);
 
 	testPage.setTitle(TEST_PAGE);
-
 	testPage.setPrev(&mainPage);
 	testPage.addItem(&back);
 }
@@ -298,6 +409,7 @@ void buildFontPage()
 		j++;
 		fontPage.addItem(i);
 	}
+	fontPage.setTitle(FONT_PAGE);
 	fontPage.setPrev(&mainPage);
 	fontPage.addItem(&back);
 }
@@ -410,11 +522,11 @@ void buildLangPage()
 	enSelect.setCallback(changeLangEng);
 
 	static Image ruFlag;
-	ruFlag.loadRes("/ru.jpg");
+	ruFlag.loadRes(images[IMG_RU]);
 	ruFlag.setXYpos(113, 180);
 
 	static Image usFlag;
-	usFlag.loadRes("/us.jpg");
+	usFlag.loadRes(images[IMG_US]);
 	usFlag.setXYpos(113, 232);
 
 	static BodyText langRu;
@@ -436,6 +548,7 @@ void buildLangPage()
 			);
 
 
+	langPage.setTitle(LANG);
 	langPage.addItem(&boldScreen);
 	langPage.addItem(&subtScreen);
 	langPage.addItem(&brightness);
@@ -500,7 +613,7 @@ void buildMainPage()
 	}
 
 	back.setCallback(nop);
-	back.loadRes("/prev.jpg");
+	back.loadRes(images[IMG_PREV]);
 	back.setXYpos(7, 284);
 	back.setCircle();
 
@@ -530,12 +643,14 @@ void buildSettingsPage()
 	}
 
 	//settings_items[2].setCallback(callLangPage);
+	settings_items[1].setCallback(callPage, pages[WIFI_PG]);
 	settings_items[2].setCallback(callPage, pages[LANG_PG]);
 
 	for (int i = 0; i < settings_size; i++) {
 		settingsPage.addItem(&settings_items[i]);
 	}
 
+	settingsPage.setTitle(SETTINGS);
 	//settingsPage.setPrev(pages[MENU_PG]);
 	settingsPage.setPrev(&mainPage);
 	settingsPage.addItem(&back);
@@ -662,6 +777,7 @@ void setup(void)
 	pinMode(BTN_MIN, INPUT_PULLUP);
 	pinMode(BTN_PLU, INPUT_PULLUP);
 
+	buildWifiPage();
 	buildFontPage();
 	buildTestPage();
 	buildLangPage();
