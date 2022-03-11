@@ -30,6 +30,7 @@ typedef enum {
 	IMG_WIFI4,
 	IMG_ROUTER,
 	IMG_QR_WI,
+	IMG_LOGO_WIFI,
 	END_OF_IMAGES
 
 } images_t;
@@ -62,7 +63,8 @@ const char* images[END_OF_IMAGES] = {
 	"/wifi_ok3.jpg",
 	"/wifi_ok4.jpg",
 	"/router.jpg",
-	"/qr_wifi.jpg"
+	"/qr_wifi.jpg",
+	"/logo_wifi.jpg"
 };
 
 

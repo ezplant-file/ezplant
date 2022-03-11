@@ -59,6 +59,15 @@ typedef enum {
 	WI_IP,
 	WI_FOLLOW,
 
+	// wifi settings
+	WS_TITLE,
+	WS_CHECK,
+	WS_PAR,
+	WS_SUBT,	
+	WS_SUCC,
+	WS_FAIL,
+	WS_CHANGE,
+
 	END_OF_STRINGS
 } dispStrings_t;
 

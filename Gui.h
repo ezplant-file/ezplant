@@ -34,6 +34,10 @@
 // print object address
 #define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
 
+// green and red macros
+#define RED_COL_MACRO (tft.color565(0xff, 0,0))
+#define GREEN_COL_MACRO (tft.color565(0x4c, 0xaf, 0x50))
+
 // grey button
 #define GREY_BUTTON_HEIGHT 24
 #define GREY_BUTTON_WIDTH 210
@@ -85,6 +89,7 @@
 // radio button
 #define RAD_BTN_SIZE 22
 
+
 // fonts
 typedef enum {
 	SMALLESTFONT,
@@ -108,6 +113,12 @@ const char* FONTS[END_OF_FONTS] = {
 	"SegoeUI-Bold-18",
 	"SegoeUI-Bold-14"
 };
+
+typedef enum {
+	RIGHT,
+	LEFT,
+	TOP
+} align_t;
 
 // pointer to current language strings
 const char** scrStrings = ruStrings;
@@ -367,7 +378,13 @@ class ScrObj {
 			return _invalid;
 		}
 
+		void setAlign(align_t align)
+		{
+			_align = align;
+		}
+
 	protected:
+		align_t _align = RIGHT;
 		dispStrings_t _index;
 		fonts_t _fontIndex;
 		uint16_t _x = 0;
@@ -425,7 +442,7 @@ class BlueTextButton: public ScrObj {
 		void _setColors()
 		{
 			_bg = tft.color565(0x61, 0xb4, 0xe4);
-			_fg = greyscaleColor(FONT_COLOR);
+			_fg = greyscaleColor(BACKGROUND);
 			_invalid = true;
 		}
 
@@ -495,6 +512,7 @@ class GreyTextButton: public ScrObj {
 class Text: public ScrObj {
 
 	public:
+		//TODO: calculate height based on font
 		Text(): ScrObj(0, TOP_BAR_HEIGHT - 12, false)
 		{
 		}
@@ -508,24 +526,51 @@ class Text: public ScrObj {
 		{
 			if (!_invalid)
 				return;
+			//freeRes();
+			//prepare();
 			_txtSp.pushSprite(_x, _y, TFT_TRANSPARENT);
 			_invalid = false;
+			//freeRes();
 		}
+
+		/*
+		void setTextPadding(uint16_t padding)
+		{
+			_padding = padding;
+		}
+		*/
 
 		void prepare()
 		{
+			if (!_invalid)
+				return;
+
 			//_h = TOP_BAR_HEIGHT - 12;
-			if (_invalid) {
-				_txtSp.loadFont(FONTS[_fontIndex]);
-				// TODO: calculate _w based on string wrap
-				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
-				_txtSp.createSprite(_w, _h);
-				_txtSp.fillSprite(TFT_TRANSPARENT);
-				_txtSp.setTextColor(_fg, _bg);
-				//_txtSp.print(_text);
-				_txtSp.print(scrStrings[_index]);
-				_txtSp.unloadFont();
-			}
+			//tft.setTextPadding(_padding);
+			_txtSp.loadFont(FONTS[_fontIndex]);
+
+			/*
+			// TODO: calculate based on longest substring
+			// calculate _w based on string wrap
+			char* tmp = strtok(const_cast<char*>(scrStrings[_index]), "\n");
+
+			_w = _txtSp.textWidth(tmp) + _paddingX*2;
+
+			// old way:
+			*/
+
+
+			_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
+
+			if (_w > SCR_WIDTH)
+				_w = SCR_WIDTH;
+
+			_txtSp.createSprite(_w, _h);
+			_txtSp.fillSprite(TFT_TRANSPARENT);
+			_txtSp.setTextColor(_fg, _bg);
+			//_txtSp.print(_text);
+			_txtSp.print(scrStrings[_index]);
+			_txtSp.unloadFont();
 		}
 
 		virtual void erase() override
@@ -544,6 +589,8 @@ class Text: public ScrObj {
 
 		virtual void setText(dispStrings_t index) override 
 		{
+			//_padding = tft.getTextPadding();
+
 			if (index > END_OF_STRINGS)
 				return;
 
@@ -561,6 +608,11 @@ class Text: public ScrObj {
 			_h *= mult;
 		}
 
+		fonts_t getFontIndex()
+		{
+			return _fontIndex;
+		}
+
 		uint8_t getYpadding()
 		{
 			return _paddingY;
@@ -572,12 +624,15 @@ class Text: public ScrObj {
 		}
 
 	private:
+		//uint16_t _padding;
 		uint16_t _fg, _bg;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
 };
 
+// global text from wifiSettPage
+Text gwsConnection;
 
 class BodyText: public ScrObj {
 
@@ -645,7 +700,7 @@ class Image: public ScrObj {
 				_w = JpegDec.width;
 				_h = JpegDec.height;
 #ifdef APP_DEBUG
-				Serial.print("jpeg width");
+				Serial.print("jpeg width: ");
 				Serial.println(JpegDec.width);
 #endif
 				_invalid = false;
@@ -887,7 +942,30 @@ class CheckBox: public ScrObj {
 
 		virtual void prepare() override
 		{
-			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding()/2);
+			// get length in current font
+			tft.loadFont(FONTS[_tglText.getFontIndex()]);
+
+			int textLength = tft.textWidth(scrStrings[_index]);
+
+			// calculate text position
+			switch (_align) {
+				case RIGHT: 
+					_tglText.setXYpos(_x + _w + _tglText.getXpadding(), 
+							_y + _tglText.getYpadding()/2);
+					break;
+				case LEFT: 
+					_tglText.setXYpos(_x - textLength - _tglText.getXpadding(),
+							_y + _tglText.getYpadding()/2);
+					break;
+				case TOP: 
+					// TODO: calculate this. Currently same as RIGHT
+					_tglText.setXYpos(_x + _w + _tglText.getXpadding(), 
+							_y + _tglText.getYpadding()/2);
+					break;
+			}
+
+			tft.unloadFont();
+
 			_tglText.setColors(
 					greyscaleColor(FONT_COLOR),
 					greyscaleColor(BACKGROUND)
@@ -1526,6 +1604,21 @@ class Page {
 		ScrObj* _currItem;
 };
 
+typedef enum {
+	MENU_PG,
+	SETT_PG,
+	LANG_PG,
+	FONT_PG,
+	TEST_PG,
+	WIFI_PG,
+	WIFI_SETT_PG,
+	NPAGES
+} pages_t;
+
+Page* pages[NPAGES];
+Page* currPage;
+
+
 #define WIFI_UPDATE_INTERVAL 500
 #define WIFI_IMG_X 213
 #define NET_IMG_X 186
@@ -1596,14 +1689,16 @@ class Panel {
 			if (WiFi.status() != WL_CONNECTED) {
 				_curWiFiImage = IMG_NO_WIFI;
 				_curNetImage = IMG_NET_NO;
-				//WiFi.reconnect();
+				g_ping_success = false;
 			}
 			else {
-				//if (client.connect(REMOTE_HOST, 80))
-				if (g_ping_success)
+				if (g_ping_success) {
 					_curNetImage = IMG_NET_OK;
-				else
+
+				}
+				else {
 					_curNetImage = IMG_NET_NO;
+				}
 
 				//client.stop();
 
@@ -1617,13 +1712,32 @@ class Panel {
 				}
 			}
 
+			// if connection status changed
 			if (_curNetImage != _prevNetImage) {
 				_statusInternet.loadRes(images[_curNetImage]);
 				_statusInternet.draw();
 				_statusInternet.freeRes();
 				_prevNetImage = _curNetImage;
+
+				// so many nested ifs..... So tired... Pepe, help!
+				// if we are on wifi settings page
+				if (currPage == pages[WIFI_SETT_PG]) {
+					// change one line at the bottom of this page
+					if (_curNetImage == IMG_NET_OK) {
+						gwsConnection.setText(WS_SUCC);
+						gwsConnection.setColors(GREEN_COL_MACRO, greyscaleColor(BACKGROUND));
+					}
+					else {
+						gwsConnection.setText(WS_FAIL);
+						gwsConnection.setColors(RED_COL_MACRO, greyscaleColor(BACKGROUND));
+					}
+					gwsConnection.erase();
+					gwsConnection.invalidate();
+					gwsConnection.prepare();
+				}
 			}
 
+			// if wifi status changed
 			if (_curWiFiImage != _prevWiFiImage) {
 				_statusWIFI.loadRes(images[_curWiFiImage]);
 				_statusWIFI.draw();
@@ -1679,7 +1793,6 @@ class Builder {
 		}
 };
 
-Page* currPage;
 
 #define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
 class App {

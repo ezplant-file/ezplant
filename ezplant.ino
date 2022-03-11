@@ -24,19 +24,6 @@ static App app;
 
 #define menuText topBar
 
-typedef enum {
-	MENU_PG,
-	SETT_PG,
-	LANG_PG,
-	FONT_PG,
-	TEST_PG,
-	WIFI_PG,
-	WIFI_SETT_PG,
-	NPAGES
-} pages_t;
-
-Page* pages[NPAGES];
-
 static Page mainPage;
 static Page settingsPage;
 // screen buttons
@@ -47,6 +34,9 @@ static GreyTextButton settings_items[settings_size];
 static ImageButton back;
 //static ImageButton sett_back;
 static BlueTextButton next;
+
+// wifiSettPage global items
+CheckBox gwsWifiChBox;
 
 // Lang select and screen settings page items
 static Page langPage;
@@ -66,10 +56,28 @@ static GreyTextButton testGreyButton;
 static BlueTextButton testBlueButton;
 
 
-
 /*******************************************************************************
 callback functions
 *******************************************************************************/
+
+bool checkWifi()
+{
+	// TODO: check if wifi file exist.
+	// if they do, connect using info in that file
+	// return true,
+	// else - return false
+}
+
+void wifiSetup(void* arg)
+{
+	// check if wifi has been set
+	bool status = checkWifi();
+	// if it was, normal init, set wifi settings menu
+	// to wifiSettPage
+	// if it wasn't - create webserver, set menu to
+	// wifiPage, figure out password and ssid interchange
+	
+}
 
 void callPage(void* page_ptr)
 {
@@ -105,6 +113,22 @@ void callPage(void* page_ptr)
 	currPage->draw();
 }
 
+
+void wifiChCallback(void* arg)
+{
+	// gwsConnection in topBar.update()
+	if (gwsWifiChBox.isOn()) {
+		gwsWifiChBox.on(false);
+		WiFi.disconnect();
+	}
+	else {
+		gwsWifiChBox.on(true);
+		WiFi.reconnect();
+	}
+
+	gwsWifiChBox.invalidate();
+	gwsWifiChBox.draw();
+}
 
 void tglCallback(void* arg)
 {
@@ -148,7 +172,7 @@ void changeLangRus(void* arg)
 	menuText.erase();
 	//menuText.invalidate();
 	topBar.invalidateAll();
-	//menuText.setText(SCREENLANG);
+	topBar.setText(SCREENLANG);
 	currPage->erase();
 	currPage->invalidateAll();
 	currPage->prepare();
@@ -169,7 +193,7 @@ void changeLangEng(void* arg)
 	menuText.erase();
 	//menuText.invalidate();
 	topBar.invalidateAll();
-	//menuText.setText(SCREENLANG);
+	topBar.setText(SCREENLANG);
 	currPage->erase();
 	currPage->invalidateAll();
 	currPage->prepare();
@@ -283,6 +307,96 @@ Page wifiSettPage;
 void buildWiFiSettPage()
 {
 	pages[WIFI_SETT_PG] = &wifiSettPage;
+
+	// colors
+	uint16_t bg_col = greyscaleColor(BACKGROUND);
+	uint16_t fg_col = greyscaleColor(FONT_COLOR);
+
+	static Image wsLogo;
+	wsLogo.loadRes(images[IMG_LOGO_WIFI]);
+	wsLogo.setXYpos(179, 35);
+
+	//static CheckBox gwsWifiChBox;
+	gwsWifiChBox.setAlign(LEFT);
+	gwsWifiChBox.setFont(BOLDFONT);
+	gwsWifiChBox.setXYpos(69, 37);
+	gwsWifiChBox.setText(WS_CHECK);
+	gwsWifiChBox.prepare();
+	gwsWifiChBox.on(true);
+	gwsWifiChBox.setCallback(wifiChCallback);
+
+	static Text wsPar;
+	wsPar.setFont(SMALLFONT);
+	// Для выгрузки статистики..
+	wsPar.setText(WS_PAR);
+	wsPar.setXYpos(PG_LEFT_PADD, 60);
+	wsPar.setColors(fg_col, bg_col);
+
+	static Text subTitle;
+	subTitle.setFont(BOLDFONT);
+	// Текущие настройки
+	subTitle.setText(WS_SUBT);
+	subTitle.setXYpos(PG_LEFT_PADD, 120);
+	subTitle.setColors(fg_col, bg_col);
+
+	static Text ssid;
+	ssid.setFont(SMALLFONT);
+	// TODO: change to current settings
+	// имя сети
+	ssid.setText(WI_SSID_TEXT);
+	ssid.setXYpos(PG_LEFT_PADD, 142);
+	ssid.setColors(fg_col, bg_col);
+
+	static Text wifiName;
+	wifiName.setFont(BOLDSMALL);
+	// ezplant_wifi
+	wifiName.setText(WI_SSID_NAME);
+	wifiName.setXYpos(PG_LEFT_PADD, 160);
+	wifiName.setColors(fg_col, bg_col);
+
+	static Text pwd_txt;
+	pwd_txt.setFont(SMALLFONT);
+	// пароль
+	pwd_txt.setText(WI_PWD_TEXT);
+	pwd_txt.setXYpos(PG_LEFT_PADD, 185);
+	pwd_txt.setColors(fg_col, bg_col);
+
+	static Text pwd;
+	pwd.setFont(BOLDSMALL);
+	// ezplant
+	pwd.setText(WI_PASSWORD);
+	pwd.setXYpos(PG_LEFT_PADD, 204);
+	pwd.setColors(fg_col, bg_col);
+
+	// Text gwsConnection
+	gwsConnection.setFont(SMALLFONT);
+	gwsConnection.setText(WS_FAIL);
+	gwsConnection.setXYpos(PG_LEFT_PADD, 227);
+	gwsConnection.setColors(RED_COL_MACRO, bg_col);
+
+	static BlueTextButton changeWifi;
+	changeWifi.setXYpos(PG_LEFT_PADD, 252);
+	changeWifi.setText(WS_CHANGE);
+	changeWifi.setFont(SMALLFONT);
+	changeWifi.setCallback(nop);
+
+	wifiSettPage.addItem(&wsLogo);
+	wifiSettPage.addItem(&gwsWifiChBox);
+
+	wifiSettPage.addItem(&wsPar);
+	wifiSettPage.addItem(&subTitle);
+	wifiSettPage.addItem(&ssid);
+	wifiSettPage.addItem(&wifiName);
+	wifiSettPage.addItem(&pwd_txt);
+	wifiSettPage.addItem(&pwd);
+
+	wifiSettPage.addItem(&gwsConnection);
+
+	wifiSettPage.addItem(&changeWifi);
+
+	wifiSettPage.setPrev(&settingsPage);
+	wifiSettPage.setTitle(WS_TITLE);
+	wifiSettPage.addItem(&back);
 }
 
 /************************ TEST PAGE ******************************/
@@ -643,7 +757,8 @@ void buildSettingsPage()
 	}
 
 	//settings_items[2].setCallback(callLangPage);
-	settings_items[1].setCallback(callPage, pages[WIFI_PG]);
+	//settings_items[1].setCallback(callPage, pages[WIFI_PG]);
+	settings_items[1].setCallback(callPage, pages[WIFI_SETT_PG]);
 	settings_items[2].setCallback(callPage, pages[LANG_PG]);
 
 	for (int i = 0; i < settings_size; i++) {
@@ -777,6 +892,7 @@ void setup(void)
 	pinMode(BTN_MIN, INPUT_PULLUP);
 	pinMode(BTN_PLU, INPUT_PULLUP);
 
+	buildWiFiSettPage();
 	buildWifiPage();
 	buildFontPage();
 	buildTestPage();

@@ -57,7 +57,16 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"ezplant",
 	"Open this site after\n joining access point",
 	"http://192.168.0.1",
-	"and follow\n instructions"
+	"and follow\n instructions",
+
+	// wifi settings
+	"WiFi",
+	"Wi-Fi",
+	"For data upload,\n updates and\n time sync",
+	"Current settings",
+	"Connection OK",
+	"No connection",
+	"Change"
 
 	//end of strings
 };
