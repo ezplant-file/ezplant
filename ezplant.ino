@@ -62,8 +62,8 @@ callback functions
 
 bool checkWifi()
 {
-	// TODO: check if wifi file exist.
-	// if they do, connect using info in that file
+	// TODO: check if wifi file exists.
+	// if it does, connect using info in that file
 	// return true,
 	// else - return false
 }
@@ -77,6 +77,11 @@ void wifiSetup(void* arg)
 	// if it wasn't - create webserver, set menu to
 	// wifiPage, figure out password and ssid interchange
 	
+}
+
+void changeWifi(void* arg)
+{
+	//unset wifi, so that checkWifi returns false
 }
 
 void callPage(void* page_ptr)
