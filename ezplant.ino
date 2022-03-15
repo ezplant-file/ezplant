@@ -76,7 +76,6 @@ void wifiSetup(void* arg)
 	// to wifiSettPage
 	// if it wasn't - create webserver, set menu to
 	// wifiPage, figure out password and ssid interchange
-	
 }
 
 void changeWifi(void* arg)
@@ -223,7 +222,7 @@ void buildWifiPage()
 	uint16_t bg_col = greyscaleColor(BACKGROUND);
 	uint16_t font1_col = greyscaleColor(FONT_COLOR);
 	uint16_t font2_col = greyscaleColor(WI_PG_FONT_COL);
-	pages[WIFI_PG] = &wifiPage;	
+	pages[WIFI_PG] = &wifiPage;
 
 	static Text accesPoint;
 	accesPoint.setFont(BOLDFONT);
@@ -762,8 +761,8 @@ void buildSettingsPage()
 	}
 
 	//settings_items[2].setCallback(callLangPage);
-	//settings_items[1].setCallback(callPage, pages[WIFI_PG]);
-	settings_items[1].setCallback(callPage, pages[WIFI_SETT_PG]);
+	settings_items[1].setCallback(callPage, pages[WIFI_PG]);
+	//settings_items[1].setCallback(callPage, pages[WIFI_SETT_PG]);
 	settings_items[2].setCallback(callPage, pages[LANG_PG]);
 
 	for (int i = 0; i < settings_size; i++) {
