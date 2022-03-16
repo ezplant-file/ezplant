@@ -28,6 +28,9 @@
 
 #include "images.h"
 
+// web server
+
+#include <WebServer.h>
 
 
 /***************************** defines *************************/
@@ -133,8 +136,11 @@ const char* REMOTE_HOST = "www.iocontrol.ru";
 
 //WiFiClient client;
 
+WebServer server(80);
+
 std::atomic<bool> g_rapid_blink;
 std::atomic<bool> g_ping_success;
+std::atomic<bool> g_wifi_set;
 //atomic_bool g_ping_success = false;
 //bool g_ping_success = false;
 //iarduino_RTC rtc(RTC_DS3231);
@@ -143,11 +149,13 @@ std::atomic<bool> g_ping_success;
 void ping_task_callback(void* arg)
 {
 	for(;;) {
-		if (Ping.ping(REMOTE_HOST, 3)) {
-			g_ping_success = true;
-		}
-		else {
-			g_ping_success = false;
+		if (g_wifi_set) {
+			if (Ping.ping(REMOTE_HOST, 3)) {
+				g_ping_success = true;
+			}
+			else {
+				g_ping_success = false;
+			}
 		}
 #ifdef APP_DEBUG
 		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
@@ -587,7 +595,7 @@ class Text: public ScrObj {
 			_txtSp.setColorDepth(16);
 		}
 
-		virtual void setText(dispStrings_t index) override 
+		virtual void setText(dispStrings_t index) override
 		{
 			//_padding = tft.getTextPadding();
 
@@ -949,17 +957,17 @@ class CheckBox: public ScrObj {
 
 			// calculate text position
 			switch (_align) {
-				case RIGHT: 
-					_tglText.setXYpos(_x + _w + _tglText.getXpadding(), 
+				case RIGHT:
+					_tglText.setXYpos(_x + _w + _tglText.getXpadding(),
 							_y + _tglText.getYpadding()/2);
 					break;
-				case LEFT: 
+				case LEFT:
 					_tglText.setXYpos(_x - textLength - _tglText.getXpadding(),
 							_y + _tglText.getYpadding()/2);
 					break;
-				case TOP: 
+				case TOP:
 					// TODO: calculate this. Currently same as RIGHT
-					_tglText.setXYpos(_x + _w + _tglText.getXpadding(), 
+					_tglText.setXYpos(_x + _w + _tglText.getXpadding(),
 							_y + _tglText.getYpadding()/2);
 					break;
 			}
@@ -1676,6 +1684,9 @@ class Panel {
 
 		void update()
 		{
+			if (!g_wifi_set)
+				server.handleClient();
+
 			if (millis() - _timestamp < _interval)
 				return;
 
@@ -1820,9 +1831,9 @@ class App {
 			//rtc.begin();
 			tft.initDMA(true);
 			g_ping_success = false;
-			SPIFFS.begin();
+			//SPIFFS.begin();
 			tft.init();
-			tft.setRotation(0);
+			tft.setRotation(2);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
 #ifdef TASKS
 			createTasks();

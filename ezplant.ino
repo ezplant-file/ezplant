@@ -11,8 +11,11 @@
 #define BTN_PLU 17
 
 // GUI & strings
-#include "data/wifi.h"
+//#include "data/wifi.h"
 #include <WiFi.h>
+
+#include <WiFiAP.h>
+
 //#include <WebServer.h>
 #include "GfxUi.h"
 #include "rustrings.h"
@@ -55,32 +58,154 @@ static InputField testInput;
 static GreyTextButton testGreyButton;
 static BlueTextButton testBlueButton;
 
+/****************** WiFi stuff ***************************************/
+
+const char* ap_ssid = "ezplant_wifi";
+const char* ap_password = "ezplantpassword";
+const char* PARAM_1 = "ssid";
+const char* PARAM_2 = "password";
+String ssid;
+String password;
+const char* cred_filename = "/wifi_creds";
+
+#include "index.h"
+#include "resp.h"
+
+void notFound()
+{
+	server.send(404, "text/plain", "Not found");
+}
+
+void saveFile()
+{
+	File file = SPIFFS.open(cred_filename, "w");
+	if (!file) {
+		Serial.println("error creating file");
+		return;
+	}
+
+	file.println(ssid);
+	file.println(password);
+	file.flush();
+	file.close();
+}
+
+void getCallback()
+{
+	String arg1 = server.arg(PARAM_1);
+	String arg2 = server.arg(PARAM_2);
+
+	if (arg1 != "") {
+		ssid = arg1;
+	}
+	else {
+		ssid = "none";
+	}
+
+	password = arg2;
+
+	server.send(
+			200,
+			"text/html",
+			resp_html
+		     );
+
+	if (ssid == "none")
+		return;
+
+	saveFile();
+	g_wifi_set = true;
+	buildSettingsPage();
+	callPage(pages[WIFI_SETT_PG]);
+	connectWithCred();
+}
+
+
+
+void softAP()
+{
+	IPAddress ap_ip(192,168,0,1);
+	IPAddress ap_gate(192,168,0,1);
+	IPAddress ap_sub(255,255,255,0);
+
+	WiFi.softAP(ap_ssid, ap_password);
+	WiFi.softAPConfig(ap_ip, ap_gate, ap_sub);
+
+	Serial.println();
+	Serial.print("IP Address: ");
+	Serial.println(WiFi.softAPIP());
+
+	server.on("/", HTTP_GET, [](){
+			server.send(200, "text/html", index_html);
+			});
+
+	server.on("/get", HTTP_GET, getCallback);
+
+	server.onNotFound(notFound);
+	server.begin();
+}
+
+void connectWithCred()
+{
+	//server.end();
+
+	WiFi.softAPdisconnect(true);
+
+	WiFi.begin(ssid.c_str(), password.c_str());
+
+	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+		Serial.println("WiFi Failed!");
+		return;
+	}
+
+	Serial.println(WiFi.localIP());
+}
+
+void checkWifi()
+{
+	File file;
+
+	if (SPIFFS.exists(cred_filename)) {
+		file = SPIFFS.open(cred_filename, "r");
+	}
+	else {
+		Serial.println("error opening file");
+	}
+
+	if (file) {
+		Serial.println("connecting without softAP");
+		ssid = file.readStringUntil('\n');
+		password = file.readStringUntil('\n');
+		ssid.trim();
+		password.trim();
+		//Serial.print("ssid: ");
+		//Serial.println(ssid.c_str());
+		//Serial.print("password: ");
+		//Serial.println(password.c_str());
+		connectWithCred();
+		file.close();
+		g_wifi_set = true;
+	}
+	else {
+		g_wifi_set = false;
+		Serial.println("creating softAP");
+		softAP();
+	}
+}
 
 /*******************************************************************************
 callback functions
 *******************************************************************************/
 
-bool checkWifi()
-{
-	// TODO: check if wifi file exists.
-	// if it does, connect using info in that file
-	// return true,
-	// else - return false
-}
 
-void wifiSetup(void* arg)
+void gChangeWifi(void* arg)
 {
-	// check if wifi has been set
-	bool status = checkWifi();
-	// if it was, normal init, set wifi settings menu
-	// to wifiSettPage
-	// if it wasn't - create webserver, set menu to
-	// wifiPage, figure out password and ssid interchange
-}
+	SPIFFS.remove(cred_filename);
+	g_wifi_set = false;
 
-void changeWifi(void* arg)
-{
-	//unset wifi, so that checkWifi returns false
+	checkWifi();
+	buildSettingsPage();
+	callPage(pages[WIFI_PG]);
 }
 
 void callPage(void* page_ptr)
@@ -382,7 +507,7 @@ void buildWiFiSettPage()
 	changeWifi.setXYpos(PG_LEFT_PADD, 252);
 	changeWifi.setText(WS_CHANGE);
 	changeWifi.setFont(SMALLFONT);
-	changeWifi.setCallback(nop);
+	changeWifi.setCallback(gChangeWifi);
 
 	wifiSettPage.addItem(&wsLogo);
 	wifiSettPage.addItem(&gwsWifiChBox);
@@ -761,8 +886,12 @@ void buildSettingsPage()
 	}
 
 	//settings_items[2].setCallback(callLangPage);
-	settings_items[1].setCallback(callPage, pages[WIFI_PG]);
-	//settings_items[1].setCallback(callPage, pages[WIFI_SETT_PG]);
+	if (g_wifi_set) {
+		settings_items[1].setCallback(callPage, pages[WIFI_SETT_PG]);
+	}
+	else {
+		settings_items[1].setCallback(callPage, pages[WIFI_PG]);
+	}
 	settings_items[2].setCallback(callPage, pages[LANG_PG]);
 
 	for (int i = 0; i < settings_size; i++) {
@@ -779,13 +908,13 @@ void buildSettingsPage()
 
 #ifdef TASKS
 // gui task
-#define STCHINTERVAL 10000
+#define STACK_CHECK_INTERVAL 10000
 void gui(void* arg)
 {
 	unsigned long oldMillis = millis();
 	for(;;) {
 		app.update();
-		if (millis() - oldMillis > STCHINTERVAL) {
+		if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
 			uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 			Serial.print("gui task unused stack: ");
 			Serial.println(unused);
@@ -874,12 +1003,15 @@ void gSetBacklight(void* arg)
 void setup(void)
 {
 	Serial.begin(115200);
+	SPIFFS.begin();
 
+	checkWifi();
 	// init all stuff in Gui.h
 	app.init();
 
 	// wifi stuff
-	WiFi.begin(ssid, password);
+	//WiFi.begin(ssid, password);
+
 
 	/*
 	while (WiFi.status() != WL_CONNECTED) {
