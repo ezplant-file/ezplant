@@ -59,13 +59,12 @@ static GreyTextButton testGreyButton;
 static BlueTextButton testBlueButton;
 
 /****************** WiFi stuff ***************************************/
-
 const char* ap_ssid = "ezplant_wifi";
 const char* ap_password = "ezplantpassword";
 const char* PARAM_1 = "ssid";
 const char* PARAM_2 = "password";
-String ssid;
-String password;
+String file_ssid;
+String file_password;
 const char* cred_filename = "/wifi_creds";
 
 #include "index.h"
@@ -84,8 +83,8 @@ void saveFile()
 		return;
 	}
 
-	file.println(ssid);
-	file.println(password);
+	file.println(file_ssid);
+	file.println(file_password);
 	file.flush();
 	file.close();
 }
@@ -96,13 +95,13 @@ void getCallback()
 	String arg2 = server.arg(PARAM_2);
 
 	if (arg1 != "") {
-		ssid = arg1;
+		file_ssid = arg1;
 	}
 	else {
-		ssid = "none";
+		file_ssid = "none";
 	}
 
-	password = arg2;
+	file_password = arg2;
 
 	server.send(
 			200,
@@ -110,13 +109,17 @@ void getCallback()
 			resp_html
 		     );
 
-	if (ssid == "none")
+	if (file_ssid == "none")
 		return;
 
 	saveFile();
+
 	g_wifi_set = true;
 	buildSettingsPage();
-	callPage(pages[WIFI_SETT_PG]);
+	if (currPage == pages[WIFI_PG]) {
+		callPage(pages[WIFI_SETT_PG]);
+	}
+
 	connectWithCred();
 }
 
@@ -151,7 +154,7 @@ void connectWithCred()
 
 	WiFi.softAPdisconnect(true);
 
-	WiFi.begin(ssid.c_str(), password.c_str());
+	WiFi.begin(file_ssid.c_str(), file_password.c_str());
 
 	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
 		Serial.println("WiFi Failed!");
@@ -168,27 +171,29 @@ void checkWifi()
 	if (SPIFFS.exists(cred_filename)) {
 		file = SPIFFS.open(cred_filename, "r");
 	}
+#ifdef APP_DEBUG
 	else {
 		Serial.println("error opening file");
 	}
+#endif
 
 	if (file) {
+#ifdef APP_DEBUG
 		Serial.println("connecting without softAP");
-		ssid = file.readStringUntil('\n');
-		password = file.readStringUntil('\n');
-		ssid.trim();
-		password.trim();
-		//Serial.print("ssid: ");
-		//Serial.println(ssid.c_str());
-		//Serial.print("password: ");
-		//Serial.println(password.c_str());
+#endif
+		file_ssid = file.readStringUntil('\n');
+		file_password = file.readStringUntil('\n');
+		file_ssid.trim();
+		file_password.trim();
 		connectWithCred();
 		file.close();
 		g_wifi_set = true;
 	}
 	else {
 		g_wifi_set = false;
+#ifdef APP_DEBUG
 		Serial.println("creating softAP");
+#endif
 		softAP();
 	}
 }
@@ -336,6 +341,16 @@ void changeLangEng(void* arg)
 page builders TODO: move to Gui
 *******************************************************************************/
 
+/************************ TIME PAGE ******************************/
+
+Page timePage;
+
+void buildTimePage()
+{
+	pages[TIME_PG] = &timePage;
+}
+
+
 /************************ WIFI PAGE ******************************/
 Page wifiPage;
 
@@ -476,10 +491,10 @@ void buildWiFiSettPage()
 	ssid.setXYpos(PG_LEFT_PADD, 142);
 	ssid.setColors(fg_col, bg_col);
 
-	static Text wifiName;
+	static StringText wifiName;
 	wifiName.setFont(BOLDSMALL);
-	// ezplant_wifi
-	wifiName.setText(WI_SSID_NAME);
+	// ssid from file
+	wifiName.setText(file_ssid);
 	wifiName.setXYpos(PG_LEFT_PADD, 160);
 	wifiName.setColors(fg_col, bg_col);
 
@@ -490,10 +505,10 @@ void buildWiFiSettPage()
 	pwd_txt.setXYpos(PG_LEFT_PADD, 185);
 	pwd_txt.setColors(fg_col, bg_col);
 
-	static Text pwd;
+	static StringText pwd;
 	pwd.setFont(BOLDSMALL);
-	// ezplant
-	pwd.setText(WI_PASSWORD);
+	// password from file
+	pwd.setText(file_password);
 	pwd.setXYpos(PG_LEFT_PADD, 204);
 	pwd.setColors(fg_col, bg_col);
 

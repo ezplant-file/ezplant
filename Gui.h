@@ -548,7 +548,7 @@ class Text: public ScrObj {
 		}
 		*/
 
-		void prepare()
+		virtual void prepare() override
 		{
 			if (!_invalid)
 				return;
@@ -631,6 +631,26 @@ class Text: public ScrObj {
 			return _paddingX;
 		}
 
+		TFT_eSprite* getSpritePtr()
+		{
+			return &_txtSp;
+		}
+
+		uint8_t getPaddingX()
+		{
+			return _paddingX;
+		}
+
+		uint16_t getFg()
+		{
+			return _fg;
+		}
+
+		uint16_t getBg()
+		{
+			return _bg;
+		}
+
 	private:
 		//uint16_t _padding;
 		uint16_t _fg, _bg;
@@ -641,6 +661,67 @@ class Text: public ScrObj {
 
 // global text from wifiSettPage
 Text gwsConnection;
+
+// text that doesn't have strings in static memory
+class StringText: public Text {
+		using Text::Text;
+	public:
+		StringText()
+		{
+		}
+		~StringText()
+		{
+			freeRes();
+		}
+
+		virtual void prepare() override
+		{
+			if (!_invalid)
+				return;
+
+			auto txtSp = this->getSpritePtr();
+			auto paddingX = this->getPaddingX();
+			auto bg = this->getBg();
+			auto fg = this->getFg();
+			//auto h = this->getH();
+
+			//_h = TOP_BAR_HEIGHT - 12;
+			//tft.setTextPadding(_padding);
+			txtSp->loadFont(FONTS[_fontIndex]);
+
+			/*
+			// TODO: calculate based on longest substring
+			// calculate _w based on string wrap
+			char* tmp = strtok(const_cast<char*>(scrStrings[_index]), "\n");
+
+			_w = _txtSp.textWidth(tmp) + _paddingX*2;
+
+			// old way:
+			*/
+
+
+			_w = txtSp->textWidth(*_txt) + paddingX*2;
+
+			if (_w > SCR_WIDTH)
+				_w = SCR_WIDTH;
+
+			txtSp->createSprite(_w, _h);
+			txtSp->fillSprite(TFT_TRANSPARENT);
+			txtSp->setTextColor(fg, bg);
+			//_txtSp.print(_text);
+			txtSp->print(*_txt);
+			txtSp->unloadFont();
+
+		}
+
+		void setText(String& txt)
+		{
+			_txt = &txt;
+		}
+	private:
+		String* _txt;
+
+};
 
 class BodyText: public ScrObj {
 
@@ -662,7 +743,7 @@ class BodyText: public ScrObj {
 			_invalid = false;
 		}
 
-		void prepare()
+		virtual void prepare() override
 		{
 			//_h = TOP_BAR_HEIGHT - 12;
 			if (_invalid) {
@@ -1620,6 +1701,7 @@ typedef enum {
 	TEST_PG,
 	WIFI_PG,
 	WIFI_SETT_PG,
+	TIME_PG,
 	NPAGES
 } pages_t;
 
@@ -1729,23 +1811,8 @@ class Panel {
 				_statusInternet.draw();
 				_statusInternet.freeRes();
 				_prevNetImage = _curNetImage;
+				_changed = true;
 
-				// so many nested ifs..... So tired... Pepe, help!
-				// if we are on wifi settings page
-				if (currPage == pages[WIFI_SETT_PG]) {
-					// change one line at the bottom of this page
-					if (_curNetImage == IMG_NET_OK) {
-						gwsConnection.setText(WS_SUCC);
-						gwsConnection.setColors(GREEN_COL_MACRO, greyscaleColor(BACKGROUND));
-					}
-					else {
-						gwsConnection.setText(WS_FAIL);
-						gwsConnection.setColors(RED_COL_MACRO, greyscaleColor(BACKGROUND));
-					}
-					gwsConnection.erase();
-					gwsConnection.invalidate();
-					gwsConnection.prepare();
-				}
 			}
 
 			// if wifi status changed
@@ -1755,6 +1822,16 @@ class Panel {
 				_statusWIFI.freeRes();
 				_prevWiFiImage = _curWiFiImage;
 			}
+		}
+
+		bool netChanged()
+		{
+			return _changed;
+		}
+
+		void resetChange()
+		{
+			_changed = false;
 		}
 
 		void build()
@@ -1788,6 +1865,7 @@ class Panel {
 		Image _statusInternet;
 		Text _menuText;
 		Text _time;
+		bool _changed = false;
 	private:
 		unsigned long _timestamp = 0;
 		unsigned long _interval = WIFI_UPDATE_INTERVAL;
@@ -1866,6 +1944,25 @@ class App {
 		{
 
 			topBar.update();
+
+			// if we are on wifi settings page and net status changed
+			if (currPage == pages[WIFI_SETT_PG] && topBar.netChanged()) {
+				// reset flag
+				topBar.resetChange();
+				// change one line at the bottom of wifi settings page
+				if (g_ping_success) {
+					gwsConnection.setText(WS_SUCC);
+					gwsConnection.setColors(GREEN_COL_MACRO, greyscaleColor(BACKGROUND));
+				}
+				else {
+					gwsConnection.setText(WS_FAIL);
+					gwsConnection.setColors(RED_COL_MACRO, greyscaleColor(BACKGROUND));
+				}
+				gwsConnection.erase();
+				gwsConnection.invalidate();
+				gwsConnection.prepare();
+			}
+
 			draw();
 #ifdef TASKS
 			//yield();
