@@ -348,6 +348,20 @@ Page timePage;
 void buildTimePage()
 {
 	pages[TIME_PG] = &timePage;
+
+	static CheckBox sync;
+	sync.setXYpos(17, 45);
+	sync.setText(DT_SYNC);
+	sync.adjustTextY(-15);
+	sync.prepare();
+	sync.on(false);
+	sync.setCallback(nop);
+
+	timePage.setTitle(DT_TITLE);
+	timePage.setPrev(&settingsPage);
+
+	timePage.addItem(&sync);
+	timePage.addItem(&back);
 }
 
 
@@ -900,6 +914,7 @@ void buildSettingsPage()
 		j++;
 	}
 
+	settings_items[0].setCallback(callPage, pages[TIME_PG]);
 	//settings_items[2].setCallback(callLangPage);
 	if (g_wifi_set) {
 		settings_items[1].setCallback(callPage, pages[WIFI_SETT_PG]);
@@ -1043,6 +1058,7 @@ void setup(void)
 	pinMode(BTN_MIN, INPUT_PULLUP);
 	pinMode(BTN_PLU, INPUT_PULLUP);
 
+	buildTimePage();
 	buildWiFiSettPage();
 	buildWifiPage();
 	buildFontPage();

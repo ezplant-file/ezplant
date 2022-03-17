@@ -4,6 +4,7 @@
 
 
 typedef enum {
+	NO_STRING,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
@@ -63,10 +64,18 @@ typedef enum {
 	WS_TITLE,
 	WS_CHECK,
 	WS_PAR,
-	WS_SUBT,	
+	WS_SUBT,
 	WS_SUCC,
 	WS_FAIL,
 	WS_CHANGE,
+
+	//date and time settings
+	DT_TITLE,
+	DT_SYNC,
+	DT_ZONE,
+	DT_UTC,
+	DT_CURR,
+	DT_MANUAL,
 
 	END_OF_STRINGS
 } dispStrings_t;

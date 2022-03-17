@@ -393,8 +393,8 @@ class ScrObj {
 
 	protected:
 		align_t _align = RIGHT;
-		dispStrings_t _index;
-		fonts_t _fontIndex;
+		dispStrings_t _index = NO_STRING;
+		fonts_t _fontIndex = SMALLFONT;
 		uint16_t _x = 0;
 		uint16_t _y = 0;
 		int16_t _w;
@@ -1029,6 +1029,11 @@ class CheckBox: public ScrObj {
 			freeRes();
 		}
 
+		void adjustTextY(int8_t dy)
+		{
+			_dy = dy;
+		}
+
 		virtual void prepare() override
 		{
 			// get length in current font
@@ -1040,16 +1045,16 @@ class CheckBox: public ScrObj {
 			switch (_align) {
 				case RIGHT:
 					_tglText.setXYpos(_x + _w + _tglText.getXpadding(),
-							_y + _tglText.getYpadding()/2);
+							_y + _dy + _tglText.getYpadding()/2);
 					break;
 				case LEFT:
 					_tglText.setXYpos(_x - textLength - _tglText.getXpadding(),
-							_y + _tglText.getYpadding()/2);
+							_y + _dy + _tglText.getYpadding()/2);
 					break;
 				case TOP:
 					// TODO: calculate this. Currently same as RIGHT
 					_tglText.setXYpos(_x + _w + _tglText.getXpadding(),
-							_y + _tglText.getYpadding()/2);
+							_y + _dy + _tglText.getYpadding()/2);
 					break;
 			}
 
@@ -1099,6 +1104,7 @@ class CheckBox: public ScrObj {
 	private:
 		Text _tglText;
 		uint16_t _bg;
+		int8_t _dy = 0;
 		bool _textAligned = false;
 		bool _isOn = false;
 		//TFT_eSprite* spr;

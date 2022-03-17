@@ -4,6 +4,7 @@
 
 
 const char* engStrings[END_OF_STRINGS] PROGMEM = {
+	"String not set",
 	// main menu strings
 	"Menu",
 	"New planting",
@@ -55,18 +56,26 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"ezplant_wifi",
 	"Password",
 	"ezplant",
-	"Open this site after\n joining access point",
+	"Open this site after\njoining access point",
 	"http://192.168.0.1",
-	"and follow\n instructions",
+	"and follow\ninstructions",
 
 	// wifi settings
 	"WiFi",
 	"Wi-Fi",
-	"For data upload,\n updates and\n time sync",
+	"For data upload,\nupdates and\ntime sync",
 	"Current settings",
 	"Connection OK",
 	"No connection",
-	"Change"
+	"Change",
+
+	// date and time settings
+	"Date and time",
+	"Sync time from\ninternet",
+	"Timezone",
+	"UTC",
+	"Current time and date",
+	"Manual setup"
 
 	//end of strings
 };
