@@ -1,4 +1,4 @@
-const char resp_html[] PROGMEM = R"rawliteral(
+const char ru_resp_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <head>
 <meta charset="UTF-8">

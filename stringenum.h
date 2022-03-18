@@ -5,6 +5,7 @@
 
 typedef enum {
 	NO_STRING,
+	EMPTY_STR,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
@@ -76,6 +77,9 @@ typedef enum {
 	DT_UTC,
 	DT_CURR,
 	DT_MANUAL,
+
+	// utility
+	NOT_FOUND,
 
 	END_OF_STRINGS
 } dispStrings_t;

@@ -5,6 +5,7 @@
 
 const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"String not set",
+	"",
 	// main menu strings
 	"Menu",
 	"New planting",
@@ -71,11 +72,14 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 
 	// date and time settings
 	"Date and time",
-	"Sync time from\ninternet",
+	"Sync time with\ninternet",
 	"Timezone",
 	"UTC",
 	"Current time and date",
-	"Manual setup"
+	"Manual setup",
+
+	// utility
+	"Not found"
 
 	//end of strings
 };

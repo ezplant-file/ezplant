@@ -1,7 +1,7 @@
 //TODO: consider resource manager and page builder classes
 
 #define TASKS
-#define APP_DEBUG
+//#define APP_DEBUG
 
 // buttons defines
 #define BTN_PREV 18
@@ -68,11 +68,12 @@ String file_password;
 const char* cred_filename = "/wifi_creds";
 
 #include "index.h"
-#include "resp.h"
+#include "ru_resp.h"
+#include "en_resp.h"
 
 void notFound()
 {
-	server.send(404, "text/plain", "Not found");
+	server.send(404, "text/plain", scrStrings[NOT_FOUND]);
 }
 
 void saveFile()
@@ -103,10 +104,19 @@ void getCallback()
 
 	file_password = arg2;
 
+	const char* resp;
+
+	if (g_selected_lang == RU_LANG) {
+		resp = ru_resp_html;
+	}
+	else if (g_selected_lang == EN_LANG) {
+		resp = en_resp_html;
+	}
+
 	server.send(
 			200,
 			"text/html",
-			resp_html
+			resp
 		     );
 
 	if (file_ssid == "none")
@@ -116,6 +126,7 @@ void getCallback()
 
 	g_wifi_set = true;
 	buildSettingsPage();
+
 	if (currPage == pages[WIFI_PG]) {
 		callPage(pages[WIFI_SETT_PG]);
 	}
@@ -156,10 +167,12 @@ void connectWithCred()
 
 	WiFi.begin(file_ssid.c_str(), file_password.c_str());
 
+	/*
 	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
 		Serial.println("WiFi Failed!");
 		return;
 	}
+	*/
 
 	Serial.println(WiFi.localIP());
 }
@@ -297,11 +310,14 @@ void radCallback(void* arg)
 
 void changeLangRus(void* arg)
 {
+	g_selected_lang = RU_LANG;
 	//gBackBtnOnScreen = true;
 	ruSelect.on(true);
 	enSelect.on(false);
 
 	scrStrings = ruStrings;
+
+	//callPage(currPage);
 
 	menuText.erase();
 	//menuText.invalidate();
@@ -318,11 +334,14 @@ void changeLangRus(void* arg)
 
 void changeLangEng(void* arg)
 {
+	g_selected_lang = EN_LANG;
 	//gBackBtnOnScreen = true;
 	ruSelect.on(false);
 	enSelect.on(true);
 
 	scrStrings = engStrings;
+
+	//callPage(currPage);
 
 	menuText.erase();
 	//menuText.invalidate();
@@ -345,22 +364,75 @@ page builders TODO: move to Gui
 
 Page timePage;
 
+enum {
+	HOUR,
+	MIN,
+	DAY,
+	MON,
+	YEAR,
+	NTIMEPAGEFIELDS
+};
+
+
+InputField date[NTIMEPAGEFIELDS];
+
 void buildTimePage()
 {
 	pages[TIME_PG] = &timePage;
 
+	static Image timeCal;
+	timeCal.setXYpos(167, 82);
+	timeCal.loadRes(images[IMG_TIME_CAL]);
+
 	static CheckBox sync;
-	sync.setXYpos(17, 45);
+	sync.setXYpos(PG_LEFT_PADD, 45);
 	sync.setText(DT_SYNC);
-	sync.adjustTextY(-15);
-	sync.prepare();
+	sync.adjustTextY(-7);
+	//sync.prepare();
 	sync.on(false);
 	sync.setCallback(nop);
+
+	static Text timeZone;
+	timeZone.setXYpos(PG_LEFT_PADD, 97);
+	timeZone.setText(DT_ZONE);
+
+	static InputField utc;
+	//utc.setWidth(TWO_CHR);
+	utc.setXYpos(48, 117);
+	utc.showPlus(true);
+	utc.setLimits(-11, 14);
+	utc.setFont(MIDFONT);
+	utc.setAlign(LEFT);
+	utc.setText(DT_UTC);
+
+	static Text currTime;
+	currTime.setXYpos(PG_LEFT_PADD, 150);
+	currTime.setText(DT_CURR);
+
+	/*
+	// Hour Y = 225
+	*/
+
+	int Y = 225;
+	int j = 0;
+	int gap = 5;
+	for (auto& i:date) {
+		i.setFont(MIDFONT);
+		i.setXYpos(PG_LEFT_PADD + (gap+i.getW())*j, Y);
+		i.setText(EMPTY_STR);
+		timePage.addItem(&i);
+		j++;
+	}
 
 	timePage.setTitle(DT_TITLE);
 	timePage.setPrev(&settingsPage);
 
+	timePage.addItem(&timeCal);
 	timePage.addItem(&sync);
+	timePage.addItem(&timeZone);
+	timePage.addItem(&utc);
+	timePage.addItem(&currTime);
+
 	timePage.addItem(&back);
 }
 
@@ -479,6 +551,7 @@ void buildWiFiSettPage()
 	gwsWifiChBox.setFont(BOLDFONT);
 	gwsWifiChBox.setXYpos(69, 37);
 	gwsWifiChBox.setText(WS_CHECK);
+	//gwsWifiChBox.adjustTextY(0);
 	gwsWifiChBox.prepare();
 	gwsWifiChBox.on(true);
 	gwsWifiChBox.setCallback(wifiChCallback);
@@ -938,18 +1011,22 @@ void buildSettingsPage()
 
 #ifdef TASKS
 // gui task
+#ifdef APP_DEBUG
 #define STACK_CHECK_INTERVAL 10000
+#endif
 void gui(void* arg)
 {
 	unsigned long oldMillis = millis();
 	for(;;) {
 		app.update();
+#ifdef APP_DEBUG
 		if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
 			uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 			Serial.print("gui task unused stack: ");
 			Serial.println(unused);
 			oldMillis = millis();
 		}
+#endif
 		//yield();
 		//sleep(10);
 	}

@@ -14,6 +14,9 @@
 // internet -
 //
 
+#ifndef __GUI_H__
+#define __GUI_H__
+
 #include <vector>
 #include <atomic>
 
@@ -62,7 +65,13 @@
 #define LEFTMOST 17
 #define TOPMOST 11
 
+// input field
+#define IN_FLD_X_PADDING 8
+#define IN_FLD_Y_PADDING 7
 
+
+
+// common
 #define SCR_WIDTH 240
 #define SCR_HEIGHT 320
 #define BACKGROUND 0xFF
@@ -76,6 +85,11 @@
 
 //cursor color
 #define CURCOL 0x70
+
+/* calculated colors to 565 */
+// default font color precalculated from 0x70
+#define FONT_COL_565 0x738E
+#define COL_GREY_E3_565 0xE71C
 
 // debounce stuff
 #define TIMER 500
@@ -122,6 +136,13 @@ typedef enum {
 	LEFT,
 	TOP
 } align_t;
+
+typedef enum {
+	RU_LANG,
+	EN_LANG
+} lang_t;
+
+lang_t g_selected_lang = RU_LANG;
 
 // pointer to current language strings
 const char** scrStrings = ruStrings;
@@ -616,6 +637,11 @@ class Text: public ScrObj {
 			_h *= mult;
 		}
 
+		dispStrings_t getStrIndex()
+		{
+			return _index;
+		}
+
 		fonts_t getFontIndex()
 		{
 			return _fontIndex;
@@ -653,7 +679,8 @@ class Text: public ScrObj {
 
 	private:
 		//uint16_t _padding;
-		uint16_t _fg, _bg;
+		uint16_t _fg = FONT_COL_565;
+		uint16_t _bg = TFT_WHITE;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
@@ -669,6 +696,7 @@ class StringText: public Text {
 		StringText()
 		{
 		}
+
 		~StringText()
 		{
 			freeRes();
@@ -898,6 +926,20 @@ class SimpleBox: public ScrObj {
 };
 
 
+typedef enum {
+	ONE_CHR,
+	TWO_CHR,
+	THREE_CHR,
+	FOUR_CHR
+} placeholder_t;
+
+const char* placeholder[] = {
+	"0",
+	"00",
+	"000",
+	"0000"
+};
+
 class InputField: public ScrObj {
 	public:
 		InputField(): ScrObj(0, INPUT_H, SELECTABLE)
@@ -909,18 +951,36 @@ class InputField: public ScrObj {
 			if (!_invalid)
 				return;
 
+			_text.draw();
+
 			tft.setTextColor(_fg, _bg);
 			tft.loadFont(FONTS[_fontIndex]);
 			//_w = tft.textWidth(String(_value)) + _paddingX*2;
-			_w = tft.textWidth("000") + _paddingX*2;
 			tft.fillRect(_x, _y, _w, _h, _bg);
-			tft.setCursor(_x+_paddingX, _y+_paddingY);
-			tft.print(_value);
+
+			if (_showPlus) {
+				tft.setCursor(_x, _y+_paddingY);
+			}
+			else {
+				tft.setCursor(_x+_paddingX, _y+_paddingY);
+			}
+
+			String tmp = String(_value);
+			if (_showPlus && _value >= 0) {
+				tmp = "+" + tmp;
+			}
+
+			tft.print(tmp);
+			//tft.print(_value);
+
+			/*
 			tft.setCursor(_x+_w+_paddingX, _y+_paddingY);
 			tft.setTextColor(_fg, TFT_WHITE);
 			_textw = tft.textWidth(scrStrings[_index]) + _paddingX*2;
 			tft.print(scrStrings[_index]);
+			*/
 			tft.unloadFont();
+
 			_invalid = false;
 		}
 
@@ -928,18 +988,81 @@ class InputField: public ScrObj {
 		{
 		}
 
+		void setWidth(placeholder_t width)
+		{
+			_width = width;
+		}
+
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
-			tft.fillRect(
-					_x+_w+_paddingX,
-					_y,
-					_textw,
-					_h,
-					TFT_WHITE
-					);
+			_text.erase();
 			freeRes();
 		}
+
+		virtual void prepare() override
+		{
+			_w = tft.textWidth(placeholder[_width]) + _paddingX*2;
+			// get length in current font
+			tft.loadFont(FONTS[_text.getFontIndex()]);
+
+			int textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
+
+			if (textLength > SCR_WIDTH) {
+				textLength = 0;
+			}
+
+			// calculate text position
+			switch (_align) {
+				default:
+				case RIGHT:
+					_text.setXYpos(_x + _w + _text.getXpadding(),
+							_y + _dy + int(_h/2) - int(_text.getH()/2));
+							//+  _text.getYpadding()/2);
+					break;
+				case LEFT:
+					_text.setXYpos(_x - textLength - _text.getXpadding(),
+							_y + _dy + int(_h/2) - int(_text.getH()/2));
+							//+ _text.getYpadding()/2);
+					break;
+				case TOP:
+					// TODO: calculate this. Currently same as RIGHT
+					_text.setXYpos(_x + _w + _text.getXpadding(),
+							_y + _dy + _text.getYpadding()/2);
+					break;
+			}
+
+			tft.unloadFont();
+
+			/*
+			_text.setColors(
+					greyscaleColor(FONT_COLOR),
+					greyscaleColor(BACKGROUND)
+					);
+					*/
+
+			_text.invalidate();
+			_text.prepare();
+		}
+
+		virtual void setText(dispStrings_t index) override
+		{
+			if (index > END_OF_STRINGS)
+				return;
+			_text.setText(index);
+			//_index = index;
+			_invalid = true;
+		}
+
+		virtual void setFont(fonts_t fontIndex) override
+		{
+			if (fontIndex > END_OF_FONTS)
+				return;
+			_fontIndex = fontIndex;
+			_text.setFont(fontIndex);
+			_invalid = true;
+		}
+
 
 		virtual bool hasInput() override
 		{
@@ -968,18 +1091,29 @@ class InputField: public ScrObj {
 			return _value;
 		}
 
-		void setLimits(uint8_t upper, uint8_t lower)
+		void setLimits(int16_t lower, int16_t upper)
 		{
 			_upper = upper;
 			_lower = lower;
 		}
 
+		void showPlus(bool show)
+		{
+			_showPlus = show;
+		}
+
 	private:
-		uint16_t _fg, _bg, _textw;
-		uint8_t _upper = 100;
-		uint8_t _lower = 0;
-		uint8_t _paddingX = BL_BTN_X_PADDING;
-		uint8_t _paddingY = BL_BTN_Y_PADDING;
+		Text _text;
+		bool _showPlus = false;
+		uint16_t _fg = FONT_COL_565;
+		uint16_t _bg = COL_GREY_E3_565;
+		int8_t _dy = 0;
+		//uint16_t _textw;
+		int16_t _upper = 100;
+		int16_t _lower = 0;
+		uint8_t _paddingX = IN_FLD_X_PADDING;
+		uint8_t _paddingY = IN_FLD_Y_PADDING;
+		placeholder_t _width = THREE_CHR;
 };
 
 //TODO: manually decode JPG, push array to sprite
@@ -1004,7 +1138,7 @@ class CheckBox: public ScrObj {
 
 			reload();
 
-			_tglText.draw();
+			_text.draw();
 
 			if (!_isOn) {
 				tft.fillRect(_x, _y, _w, _h, greyscaleColor(CHK_BOX_COL));
@@ -1025,7 +1159,7 @@ class CheckBox: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
-			_tglText.erase();
+			_text.erase();
 			freeRes();
 		}
 
@@ -1037,42 +1171,47 @@ class CheckBox: public ScrObj {
 		virtual void prepare() override
 		{
 			// get length in current font
-			tft.loadFont(FONTS[_tglText.getFontIndex()]);
+			tft.loadFont(FONTS[_text.getFontIndex()]);
 
-			int textLength = tft.textWidth(scrStrings[_index]);
+			int textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
+
+			if (textLength > SCR_WIDTH) {
+				textLength = 0;
+			}
 
 			// calculate text position
 			switch (_align) {
+				default:
 				case RIGHT:
-					_tglText.setXYpos(_x + _w + _tglText.getXpadding(),
-							_y + _dy + _tglText.getYpadding()/2);
+					_text.setXYpos(_x + _w + _text.getXpadding(),
+							_y + _dy +  _text.getYpadding()/2);
 					break;
 				case LEFT:
-					_tglText.setXYpos(_x - textLength - _tglText.getXpadding(),
-							_y + _dy + _tglText.getYpadding()/2);
+					_text.setXYpos(_x - textLength - _text.getXpadding(),
+							_y + _dy + _text.getYpadding()/2);
 					break;
 				case TOP:
 					// TODO: calculate this. Currently same as RIGHT
-					_tglText.setXYpos(_x + _w + _tglText.getXpadding(),
-							_y + _dy + _tglText.getYpadding()/2);
+					_text.setXYpos(_x + _w + _text.getXpadding(),
+							_y + _dy + _text.getYpadding()/2);
 					break;
 			}
 
 			tft.unloadFont();
 
-			_tglText.setColors(
+			_text.setColors(
 					greyscaleColor(FONT_COLOR),
 					greyscaleColor(BACKGROUND)
 					);
-			_tglText.invalidate();
-			_tglText.prepare();
+			_text.invalidate();
+			_text.prepare();
 		}
 
 		virtual void setText(dispStrings_t index) override
 		{
 			if (index > END_OF_STRINGS)
 				return;
-			_tglText.setText(index);
+			_text.setText(index);
 			//_index = index;
 			_invalid = true;
 		}
@@ -1081,7 +1220,7 @@ class CheckBox: public ScrObj {
 		{
 			if (fontIndex > END_OF_FONTS)
 				return;
-			_tglText.setFont(fontIndex);
+			_text.setFont(fontIndex);
 			_invalid = true;
 		}
 
@@ -1102,10 +1241,10 @@ class CheckBox: public ScrObj {
 		}
 
 	private:
-		Text _tglText;
+		Text _text;
 		uint16_t _bg;
 		int8_t _dy = 0;
-		bool _textAligned = false;
+		//bool _textAligned = false;
 		bool _isOn = false;
 		//TFT_eSprite* spr;
 		fs::File _jpegFile;
@@ -1134,7 +1273,7 @@ class Toggle: public ScrObj {
 
 			tft.fillRoundRect(_x, _y, _w, _h, TGL_RAD, greyscaleColor(TGL_BG));
 
-			_tglText.draw();
+			_text.draw();
 
 			if (_isOn) {
 				// TODO: draw on image
@@ -1161,26 +1300,26 @@ class Toggle: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
-			_tglText.erase();
+			_text.erase();
 			freeRes();
 		}
 
 		virtual void prepare() override
 		{
-			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding()/2);
-			_tglText.setColors(
+			_text.setXYpos(_x + _w + _text.getXpadding(), _y + _text.getYpadding()/2);
+			_text.setColors(
 					greyscaleColor(FONT_COLOR),
 					greyscaleColor(BACKGROUND)
 					);
-			_tglText.invalidate();
-			_tglText.prepare();
+			_text.invalidate();
+			_text.prepare();
 		}
 
 		virtual void setText(dispStrings_t index) override
 		{
 			if (index > END_OF_STRINGS)
 				return;
-			_tglText.setText(index);
+			_text.setText(index);
 			//_index = index;
 			_invalid = true;
 		}
@@ -1189,7 +1328,7 @@ class Toggle: public ScrObj {
 		{
 			if (fontIndex > END_OF_FONTS)
 				return;
-			_tglText.setFont(fontIndex);
+			_text.setFont(fontIndex);
 			_invalid = true;
 		}
 
@@ -1205,10 +1344,10 @@ class Toggle: public ScrObj {
 
 	private:
 		//dispStrings_t _index;
-		Text _tglText;
+		Text _text;
 		//fonts_t _fontIndex;
 		uint16_t _bg, _fg, _col, _shaftX, _shaftY;
-		bool _textAligned = false;
+		//bool _textAligned = false;
 		bool _isOn = false;
 };
 
@@ -1310,7 +1449,7 @@ class TestPageRadio: public ScrObj {
 
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(_bgcol));
 
-			_tglText.draw();
+			_text.draw();
 
 			if (_isOn)
 				//#4CAF50 - checked green
@@ -1339,26 +1478,26 @@ class TestPageRadio: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
-			_tglText.erase();
+			_text.erase();
 			freeRes();
 		}
 
 		virtual void prepare() override
 		{
-			_tglText.setXYpos(_x + _w + _tglText.getXpadding(), _y + _tglText.getYpadding()/2);
-			_tglText.setColors(
+			_text.setXYpos(_x + _w + _text.getXpadding(), _y + _text.getYpadding()/2);
+			_text.setColors(
 					greyscaleColor(FONT_COLOR),
 					greyscaleColor(BACKGROUND)
 					);
-			_tglText.invalidate();
-			_tglText.prepare();
+			_text.invalidate();
+			_text.prepare();
 		}
 
 		virtual void setText(dispStrings_t index) override
 		{
 			if (index > END_OF_STRINGS)
 				return;
-			_tglText.setText(index);
+			_text.setText(index);
 			//_index = index;
 			_invalid = true;
 		}
@@ -1367,7 +1506,7 @@ class TestPageRadio: public ScrObj {
 		{
 			if (fontIndex > END_OF_FONTS)
 				return;
-			_tglText.setFont(fontIndex);
+			_text.setFont(fontIndex);
 			_invalid = true;
 		}
 
@@ -1400,7 +1539,7 @@ class TestPageRadio: public ScrObj {
 		}
 
 	private:
-		Text _tglText;
+		Text _text;
 		bool _isOn = false;
 		int _r = 5;
 		uint16_t _col = 0xffff;
@@ -2049,3 +2188,5 @@ class App {
 			_oldMils = millis();
 		}
 };
+
+#endif
