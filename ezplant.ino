@@ -1,14 +1,22 @@
 //TODO: consider resource manager and page builder classes
 
 #define TASKS
-//#define APP_DEBUG
+#define APP_DEBUG
 
 // buttons defines
+#define BTN_PREV 	0b00000001
+#define BTN_MIN 	0b00000010
+#define BTN_OK 		0b00000100
+#define BTN_HOME 	0b00001000
+#define BTN_NEXT 	0b00010000
+#define BTN_PLU 	0b00100000
+/*
 #define BTN_PREV 18
 #define BTN_NEXT 23
 #define BTN_OK 5
 #define BTN_MIN 16
 #define BTN_PLU 17
+*/
 
 // GUI & strings
 //#include "data/wifi.h"
@@ -41,8 +49,10 @@ static BlueTextButton next;
 // wifiSettPage global items
 CheckBox gwsWifiChBox;
 
+
 // Lang select and screen settings page items
 static Page langPage;
+static InputField gDimseconds;
 
 //static CircRadBtn ruSelect;
 //static CircRadBtn enSelect;
@@ -215,6 +225,10 @@ void checkWifi()
 callback functions
 *******************************************************************************/
 
+void gDimAfter(void* arg)
+{
+	g_dimafter = gDimseconds.getValue();
+}
 
 void gChangeWifi(void* arg)
 {
@@ -356,6 +370,32 @@ void changeLangEng(void* arg)
 	currPage->draw();
 }
 
+void syncTimeCallback(void* arg)
+{
+	if (arg == nullptr)
+		return;
+
+	CheckBox* checkbox = (CheckBox*)arg;
+
+	bool checked = checkbox->isOn();
+
+	if (checked) {
+		checkbox->on(false);
+	}
+	else {
+		checkbox->on(true);
+	}
+
+	datetime.setSync(checkbox->isOn());
+	datetime.invalidate();
+	datetime.prepare();
+
+	pages[TIME_PG]->restock();
+
+	checkbox->invalidate();
+}
+
+
 /*******************************************************************************
 page builders TODO: move to Gui
 *******************************************************************************/
@@ -371,25 +411,25 @@ void buildTimePage()
 	timeCal.setXYpos(167, 82);
 	timeCal.loadRes(images[IMG_TIME_CAL]);
 
-	static CheckBox sync;
-	sync.setXYpos(PG_LEFT_PADD, 45);
-	sync.setText(DT_SYNC);
-	sync.adjustTextY(-7);
-	//sync.prepare();
-	sync.on(false);
-	sync.setCallback(nop);
+	static CheckBox syncCheck;
+	syncCheck.setXYpos(PG_LEFT_PADD, 45);
+	syncCheck.setText(DT_SYNC);
+	syncCheck.adjustTextY(-7);
+	syncCheck.on(false);
+	syncCheck.setCallback(syncTimeCallback, &syncCheck);
 
 	static Text timeZone;
 	timeZone.setXYpos(PG_LEFT_PADD, 97);
 	timeZone.setText(DT_ZONE);
 
 	static InputField utc;
-	//utc.setWidth(TWO_CHR);
+	//utc.setCallback(setUTC);
+	utc.setWidth(TWO_CHR);
 	utc.setXYpos(48, 117);
 	utc.showPlus(true);
 	utc.setLimits(-11, 14);
 	utc.setFont(MIDFONT);
-	utc.setAlign(LEFT);
+	//utc.setAlign(LEFT);
 	utc.setText(DT_UTC);
 
 	static Text currTime;
@@ -417,7 +457,7 @@ void buildTimePage()
 	timePage.setPrev(&settingsPage);
 
 	timePage.addItem(&timeCal);
-	timePage.addItem(&sync);
+	timePage.addItem(&syncCheck);
 	timePage.addItem(&timeZone);
 	timePage.addItem(&utc);
 	timePage.addItem(&currTime);
@@ -753,7 +793,6 @@ void buildFontPage()
 
 
 /************************************ LANG PAGE ******************************/
-static InputField brightness;
 // hardcoded
 void buildLangPage()
 {
@@ -779,12 +818,12 @@ void buildLangPage()
 			);
 
 	// Поле ввода
-	brightness.setFont(SMALLFONT);
-	brightness.setXYpos(PG_LEFT_PADD, 83);
-	brightness.setValue(50);
-	brightness.setText(PERCENT);
-	brightness.setCallback(gSetBacklight);
-	brightness.setColors(
+	gBrightness.setFont(SMALLFONT);
+	gBrightness.setXYpos(PG_LEFT_PADD, 83);
+	gBrightness.setValue(init_brightness);
+	gBrightness.setText(PERCENT);
+	gBrightness.setCallback(gSetBacklight);
+	gBrightness.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
@@ -794,8 +833,8 @@ void buildLangPage()
 	percent.setFont(SMALLFONT);
         percent.setText(PERCENT);
 	percent.setXYpos(
-			brightness.getX()
-			//+ brightness.getW()
+			gBrightness.getX()
+			//+ gBrightness.getW()
 			+ 40
 			+ 3,
 			83 + GR_BTN_Y_PADDING
@@ -806,22 +845,32 @@ void buildLangPage()
 		     );
 		     */
 
-	static Text sleepAfter;
-	sleepAfter.setFont(SMALLFONT);
-	sleepAfter.setText(DIMAFTER);
-	sleepAfter.setXYpos(PG_LEFT_PADD, 110);
-	sleepAfter.setColors(
+	static Text sleep;
+	sleep.setFont(SMALLFONT);
+	sleep.setText(DIM);
+	sleep.setXYpos(PG_LEFT_PADD, 110);
+	sleep.setColors(
+			greyscaleColor(FONT_COLOR),
+			greyscaleColor(BACKGROUND)
+			);
+
+	static Text after;
+	after.setFont(SMALLFONT);
+	after.setText(AFTER);
+	after.setXYpos(PG_LEFT_PADD, 130);
+	after.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(BACKGROUND)
 			);
 
 
-	static InputField seconds;
-	seconds.setFont(SMALLFONT);
-	seconds.setXYpos(PG_LEFT_PADD, 130);
-	seconds.setValue(100);
-	seconds.setText(SEC);
-	seconds.setColors(
+	gDimseconds.setFont(SMALLFONT);
+	gDimseconds.setXYpos(55, 125);
+	gDimseconds.setValue(g_dimafter);
+	gDimseconds.setLimits(LOWER_DIMAFTER, HIGHER_DIMAFTER);
+	gDimseconds.setText(SEC);
+	gDimseconds.setCallback(gDimAfter);
+	gDimseconds.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
@@ -888,10 +937,11 @@ void buildLangPage()
 	langPage.setTitle(LANG);
 	langPage.addItem(&boldScreen);
 	langPage.addItem(&subtScreen);
-	langPage.addItem(&brightness);
+	langPage.addItem(&gBrightness);
 	//langPage.addItem(&percent);
-	langPage.addItem(&sleepAfter);
-	langPage.addItem(&seconds);
+	langPage.addItem(&sleep);
+	langPage.addItem(&after);
+	langPage.addItem(&gDimseconds);
 	//langPage.addItem(&secText);
 	langPage.addItem(&boldLang);
 
@@ -954,6 +1004,7 @@ void buildMainPage()
 	back.setXYpos(7, 284);
 	back.setCircle();
 
+	mainPage.setTitle(MENU);
 	mainPage.addItem(&back);
 }
 
@@ -1006,13 +1057,27 @@ void buildSettingsPage()
 #ifdef APP_DEBUG
 #define STACK_CHECK_INTERVAL 10000
 #endif
+//static iarduino_PCA9555 buttons(0x20);
 void gui(void* arg)
 {
+
 	unsigned long oldMillis = millis();
+
+	Serial.print("gpio begin status: ");
+	Serial.println(buttons.begin());
+	rtc.begin();
+	buttons.portMode(0, pinsAll(INPUT));
+
+	//delay(500);
+
 	for(;;) {
 		app.update();
 #ifdef APP_DEBUG
 		if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
+
+			//Serial.print("gpio status: ");
+			//Serial.println(buttons.portRead(0), BIN);
+
 			uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 			Serial.print("gui task unused stack: ");
 			Serial.println(unused);
@@ -1082,26 +1147,28 @@ void listRootToHtml()
 }
 */
 
-#define LED_PIN 19
+#define LED_PIN 23
 
-uint8_t g_curr_brightness;
 
+/*
 void setBacklight(uint8_t br)
 {
 	uint8_t mapped_br = map(br, 0, 100, 0, 255);
 	//Serial.println(mapped_br);
 	analogWrite(LED_PIN, mapped_br);
 }
+*/
 
 void gSetBacklight(void* arg)
 {
-	uint8_t mapped_br = map(brightness.getValue(), 0, 100, 0, 255);
+	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
 	analogWrite(LED_PIN, mapped_br);
 }
 
 void setup(void)
 {
 	Serial.begin(115200);
+	//Serial.println("Start INIT");
 	SPIFFS.begin();
 
 	checkWifi();
@@ -1113,19 +1180,21 @@ void setup(void)
 
 
 	/*
-	while (WiFi.status() != WL_CONNECTED) {
-		Serial.print(".");
-	}
-	Serial.println();
-	Serial.println(WiFi.localIP());
-	*/
+	   while (WiFi.status() != WL_CONNECTED) {
+	   Serial.print(".");
+	   }
+	   Serial.println();
+	   Serial.println(WiFi.localIP());
+	 */
 
 	// buttons
-	pinMode(BTN_PREV, INPUT_PULLUP);
-	pinMode(BTN_NEXT, INPUT_PULLUP);
-	pinMode(BTN_OK, INPUT_PULLUP);
-	pinMode(BTN_MIN, INPUT_PULLUP);
-	pinMode(BTN_PLU, INPUT_PULLUP);
+	/*
+	   pinMode(BTN_PREV, INPUT_PULLUP);
+	   pinMode(BTN_NEXT, INPUT_PULLUP);
+	   pinMode(BTN_OK, INPUT_PULLUP);
+	   pinMode(BTN_MIN, INPUT_PULLUP);
+	   pinMode(BTN_PLU, INPUT_PULLUP);
+	 */
 
 	buildTimePage();
 	buildWiFiSettPage();
@@ -1138,9 +1207,10 @@ void setup(void)
 	topBar.build();
 
 	// backlight
-	g_curr_brightness = brightness.getValue();
+	//g_curr_brightness = gBrightness.getValue();
 	pinMode(LED_PIN, OUTPUT);
-	setBacklight(g_curr_brightness);
+	//setBacklight(g_curr_brightness);
+	gBrightness.onClick();
 
 	//mainPage.prepare();
 
@@ -1161,13 +1231,13 @@ void setup(void)
 	// webserver stuff
 	server.on("/",  HTTP_GET, handleClient);
 	server.onNotFound([]() {
-			if (!handleFileRead(server.uri())) {
-			server.send(404, "text/plain", "FILE NOT FOUND");
-			}
-			});
+	if (!handleFileRead(server.uri())) {
+	server.send(404, "text/plain", "FILE NOT FOUND");
+	}
+	});
 
 	server.begin();
-	*/
+	 */
 
 	// cursor
 #ifdef TASKS
@@ -1179,17 +1249,6 @@ void setup(void)
 			1,
 			NULL
 		   );
-
-	/*
-	   xTaskCreate(
-	   nav,
-	   "nav",
-	   10000,
-	   NULL,
-	   1,
-	   NULL
-	   );
-	 */
 	vTaskDelete(NULL);
 #endif
 }
@@ -1201,13 +1260,6 @@ void loop() {
 #ifndef TASKS
 	//server.handleClient();
 
-	//TODO: deal with input field callbacks
-	if (millis() - oldMils > INTERVAL) {
-		uint8_t new_br = brightness.getValue();
-		if (new_br != g_curr_brightness) {
-			setBacklight(new_br);
-			g_curr_brightness = new_br;
-		}
 	/*
 		Serial.print("Free heap: ");
 		Serial.println(ESP.getFreeHeap());

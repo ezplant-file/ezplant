@@ -24,8 +24,14 @@
 // hardware... stuff
 #include <SPI.h>
 #include <TFT_eSPI.h>
-//#include <iarduino_RTC.h>
 
+// time
+#include <iarduino_RTC.h>
+iarduino_RTC rtc(RTC_RX8025);
+
+// buttons
+#include <iarduino_PCA9555.h>
+iarduino_PCA9555 buttons(0x20);
 
 // ping
 #include <ESP32Ping.h>
@@ -93,7 +99,7 @@
 #define COL_GREY_E3_565 0xE71C
 
 // debounce stuff
-#define TIMER 500
+#define CURSOR_TIMER 500
 #define DEBOUNCE 200
 
 // checkbox
@@ -107,6 +113,13 @@
 // radio button
 #define RAD_BTN_SIZE 22
 
+// dim screen after
+#define LOWER_DIMAFTER 3
+#define HIGHER_DIMAFTER 180
+
+uint8_t g_dimafter = 20;
+const int16_t init_brightness = 50;
+//unsigned long dimMils = 0;
 
 // fonts
 typedef enum {
@@ -275,6 +288,10 @@ class ScrObj {
 			_callback(_page_ptr);
 		}
 
+		void* returnPtr()
+		{
+			return _page_ptr;
+		}
 
 		void setCallback(void(*callback)(void*), void* page_ptr)
 		{
@@ -308,7 +325,7 @@ class ScrObj {
 		}
 
 
-		void invalidate()
+		virtual void invalidate()
 		{
 			_invalid = true;
 			freeRes();
@@ -562,7 +579,7 @@ class Text: public ScrObj {
 				return;
 			//freeRes();
 			//prepare();
-			_txtSp.pushSprite(_x, _y, TFT_TRANSPARENT);
+			_txtSp.pushSprite(_x + _dx, _y, TFT_TRANSPARENT);
 			_invalid = false;
 			//freeRes();
 		}
@@ -682,12 +699,18 @@ class Text: public ScrObj {
 			return _bg;
 		}
 
+		void adjustX(int8_t x)
+		{
+			_dx = x;
+		}
+
 	private:
 		//uint16_t _padding;
 		uint16_t _fg = FONT_COL_565;
 		uint16_t _bg = TFT_WHITE;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
+		int8_t _dx = 0;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
 };
 
@@ -964,16 +987,24 @@ class InputField: public ScrObj {
 			tft.fillRect(_x, _y, _w, _h, _bg);
 
 			if (_showPlus) {
-				tft.setCursor(_x, _y+_paddingY);
+				tft.setCursor(_x + _dx, _y+_paddingY);
 			}
 			else {
-				tft.setCursor(_x+_paddingX, _y+_paddingY);
+				tft.setCursor(_x + _dx +_paddingX, _y+_paddingY);
 			}
 
 			String tmp = String(_value);
+
+			// leading zeros
+			if (_showLead && _value < 10) {
+				tmp = "0" + tmp;
+			}
+
+			// draw positive
 			if (_showPlus && _value >= 0) {
 				tmp = "+" + tmp;
 			}
+
 
 			tft.print(tmp);
 			//tft.print(_value);
@@ -989,6 +1020,8 @@ class InputField: public ScrObj {
 			_invalid = false;
 		}
 
+
+
 		virtual void freeRes() override
 		{
 		}
@@ -996,6 +1029,23 @@ class InputField: public ScrObj {
 		void setWidth(placeholder_t width)
 		{
 			_width = width;
+		}
+
+		void adjustX(int8_t x)
+		{
+			_dx = x;
+		}
+
+		/*
+		void setXpadding(uint8_t padding)
+		{
+			_paddingX = padding;
+		}
+		*/
+
+		void adjustTextX(int8_t x)
+		{
+			_text.adjustX(x);
 		}
 
 		virtual void erase() override
@@ -1008,14 +1058,9 @@ class InputField: public ScrObj {
 		virtual void prepare() override
 		{
 			_w = tft.textWidth(placeholder[_width]) + _paddingX*2;
-			// get length in current font
-			tft.loadFont(FONTS[_text.getFontIndex()]);
 
-			int textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
-
-			if (textLength > SCR_WIDTH) {
-				textLength = 0;
-			}
+			//adjust width
+			_w += _dw;
 
 			// calculate text position
 			switch (_align) {
@@ -1026,7 +1071,7 @@ class InputField: public ScrObj {
 							//+  _text.getYpadding()/2);
 					break;
 				case LEFT:
-					_text.setXYpos(_x - textLength - _text.getXpadding(),
+					_text.setXYpos(_x - _textLength - _text.getXpadding(),
 							_y + _dy + int(_h/2) - int(_text.getH()/2));
 							//+ _text.getYpadding()/2);
 					break;
@@ -1037,7 +1082,6 @@ class InputField: public ScrObj {
 					break;
 			}
 
-			tft.unloadFont();
 
 			/*
 			_text.setColors(
@@ -1054,6 +1098,20 @@ class InputField: public ScrObj {
 		{
 			if (index > END_OF_STRINGS)
 				return;
+
+			// get length in current font
+			tft.loadFont(FONTS[_text.getFontIndex()]);
+
+			// only needed for LEFT align
+			_textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
+
+			// prevent text going out of screen
+			if (_textLength > SCR_WIDTH) {
+				_textLength = 0;
+			}
+
+			tft.unloadFont();
+
 			_text.setText(index);
 			//_index = index;
 			_invalid = true;
@@ -1107,12 +1165,27 @@ class InputField: public ScrObj {
 			_showPlus = show;
 		}
 
+		void showLeadZero(bool showLead = true)
+		{
+			_showLead = showLead;
+		}
+
+		void adjustWidth(int8_t width)
+		{
+			//_w += width;
+			_dw = width;
+		}
+
 	private:
 		Text _text;
+		int _textLength = 0;
+		bool _showLead = false;
 		bool _showPlus = false;
 		uint16_t _fg = FONT_COL_565;
 		uint16_t _bg = COL_GREY_E3_565;
 		int8_t _dy = 0;
+		int8_t _dx = 0;
+		int8_t _dw = 0;
 		//uint16_t _textw;
 		int16_t _upper = 100;
 		int16_t _lower = 0;
@@ -1120,6 +1193,8 @@ class InputField: public ScrObj {
 		uint8_t _paddingY = IN_FLD_Y_PADDING;
 		placeholder_t _width = THREE_CHR;
 };
+
+InputField gBrightness;
 
 //TODO: manually decode JPG, push array to sprite
 TFT_eSprite checkSprite = TFT_eSprite(&tft);
@@ -1211,6 +1286,7 @@ class CheckBox: public ScrObj {
 			_text.invalidate();
 			_text.prepare();
 		}
+
 
 		virtual void setText(dispStrings_t index) override
 		{
@@ -1749,6 +1825,16 @@ class Page {
 			}
 		}
 
+		void restock()
+		{
+			_selectable.clear();
+			for(auto& i:_items) {
+				if (i->isSelectable()) {
+					_selectable.push_back(i);
+				}
+			}
+		}
+
 		void draw()
 		{
 			for (auto& obj:_items)
@@ -2043,6 +2129,8 @@ enum {
 
 Page timePage;
 
+#define RTC_CHECK_INTERVAL 60000
+
 class DateTime: public ScrObj {
 	public:
 		DateTime()
@@ -2053,10 +2141,24 @@ class DateTime: public ScrObj {
 	private:
 		InputField _visible[N_DATETIME_VISIBLE];
 		bool _sync = false;
+		int8_t _utc = 0;
 		struct tm  _timeinfo;
+		unsigned long _oldMils = 0;
 		//uint16_t _y = 225;
 		//TFT_eSprite _sprite = TFT_eSprite(&tft);
 	public:
+
+		void update()
+		{
+
+			if (_sync) {
+				syncNTP();
+			}
+			else {
+				getI2Ctime();
+			}
+		}
+
 		virtual void freeRes() override
 		{
 			//_sprite.deleteSprite();
@@ -2080,12 +2182,28 @@ class DateTime: public ScrObj {
 			_sync = sync;
 		}
 
+		void getI2Ctime()
+		{
+			if (millis() - _oldMils > RTC_CHECK_INTERVAL) {
+				_oldMils = millis();
+				rtc.gettime();
+				//TODO: convert to tm
+			}
+		}
+
 		void setI2Ctime()
 		{
 		}
 
 		void syncNTP()
 		{
+		}
+
+		virtual void invalidate() override
+		{
+			for (auto& i:_visible) {
+				i.invalidate();
+			}
 		}
 
 		virtual void prepare() override
@@ -2124,11 +2242,21 @@ class DateTime: public ScrObj {
 		void build()
 		{
 			for (auto& i:_visible) {
+				i.adjustX(-4);
+				i.adjustTextX(-4);
+				i.showLeadZero();
 				i.setFont(MIDFONT);
 				i.setText(EMPTY_STR);
 				i.setWidth(TWO_CHR);
 				timePage.addItem(&i);
 			}
+
+			_visible[HOUR].setLimits(0, 23);
+			_visible[MIN].setLimits(0, 59);
+
+			_visible[DAY].setLimits(1, 31);
+			_visible[MON].setLimits(1, 12);
+			_visible[YEAR].setLimits(2022, 2060);
 
 			_visible[HOUR].setText(DT_SEMI);
 			_visible[DAY].setText(DT_DOT);
@@ -2141,18 +2269,23 @@ class DateTime: public ScrObj {
 			_visible[YEAR].setXYpos(187, _y);
 
 			_visible[YEAR].setWidth(FOUR_CHR);
+			_visible[YEAR].adjustWidth(4);
 		}
 } datetime;
 
-#define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
+//#define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
 class App {
 	private:
 		unsigned long _oldMils = 0;
 		unsigned long _dbMils = 0;
+		unsigned long _dimMils = 0;
 		bool _blink = false;
 		bool _dbFlag = false;
 		Cursor _cursor;
 		int _iterator = 0;
+		int16_t _dimmed = 10;
+		int16_t _prevBright = init_brightness;
+		bool _inactive = false;
 
 	public:
 		void draw()
@@ -2167,13 +2300,14 @@ class App {
 
 		void init()
 		{
-			//rtc.begin();
+				//rtc.begin();
 			tft.initDMA(true);
 			g_ping_success = false;
 			//SPIFFS.begin();
 			tft.init();
-			tft.setRotation(2);
+			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
+			//Serial.println("Finish INIT");
 #ifdef TASKS
 			createTasks();
 		}
@@ -2205,6 +2339,14 @@ class App {
 		{
 
 			topBar.update();
+
+			if (millis() - _dimMils > g_dimafter * 1000 && !_inactive) {
+				_inactive = true;
+				_dimMils = millis();
+				_prevBright = gBrightness.getValue();
+				gBrightness.setValue(_dimmed);
+				gBrightness.onClick();
+			}
 
 			// if we are on wifi settings page and net status changed
 			if (currPage == pages[WIFI_SETT_PG] && topBar.netChanged()) {
@@ -2240,18 +2382,25 @@ class App {
 #endif
 
 			// cursor blink
-			if (millis() - _oldMils > TIMER) {
+			if (millis() - _oldMils > CURSOR_TIMER) {
 				_cursor.draw(_blink);
 				_oldMils = millis();
 				_blink = !_blink;
 			}
 
+			uint8_t user_input = buttons.portRead(0);
+
 			// debounce
-			if (INPUT_READ) {
+			if ((uint8_t)~user_input) {
 				if (millis() - _dbMils > DEBOUNCE) {
-					if (INPUT_READ){
+					user_input = buttons.portRead(0);
+					if ((uint8_t)~user_input){
 						_dbMils = millis();
 						_dbFlag = true;
+						_inactive = false;
+						_dimMils = millis();
+						gBrightness.setValue(_prevBright);
+						gBrightness.onClick();
 					}
 				}
 			}
@@ -2260,7 +2409,9 @@ class App {
 			if (!_dbFlag)
 				return;
 
-			if (!digitalRead(BTN_PREV)) {
+			//if (!digitalRead(BTN_PREV)) {
+			if (~user_input & BTN_PREV) {
+				//Serial.println("Bang!");
 				_cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
@@ -2269,7 +2420,8 @@ class App {
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_NEXT)) {
+			//else if (!digitalRead(BTN_NEXT)) {
+			else if (~user_input & BTN_NEXT) {
 				_cursor.draw(false);
 				_iterator++;
 				if (_iterator > currPage->selSize() - 1)
@@ -2278,21 +2430,22 @@ class App {
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_MIN)) {
+			//else if (!digitalRead(BTN_MIN)) {
+			else if (~user_input & BTN_MIN) {
 				currItem->setValue(currItem->getValue() - 1);
 				if (currItem->hasInput())
 					currItem->onClick();
 				currItem->draw();
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_PLU)) {
+			else if (~user_input & BTN_PLU) {
 				currItem->setValue(currItem->getValue() + 1);
 				if (currItem->hasInput())
 					currItem->onClick();
 				currItem->draw();
 				_dbFlag = false;
 			}
-			else if (!digitalRead(BTN_OK)) {
+			else if (~user_input & BTN_OK) {
 				_cursor.draw(false);
 				currItem->onClick();
 				if (_iterator >= currPage->nItems())
@@ -2301,6 +2454,7 @@ class App {
 				_dbFlag = false;
 			}
 
+			// don't blink if buttons were pressed...
 			_oldMils = millis();
 		}
 };
