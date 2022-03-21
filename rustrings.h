@@ -77,6 +77,8 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"UTC",
 	"Текущие время и дата",
 	"Настойка вручную",
+	":",
+	".",
 
 	// utility
 	"Страница не найдена"

@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <atomic>
+#include <ctime>
 
 // hardware... stuff
 #include <SPI.h>
@@ -286,6 +287,10 @@ class ScrObj {
 			_callback = callback;
 		}
 
+		void setSelectable(bool isSelectable = true)
+		{
+			_isSelectable = isSelectable;
+		}
 
 		bool isVisible()
 		{
@@ -2027,6 +2032,117 @@ class Builder {
 		}
 };
 
+enum {
+	HOUR,
+	MIN,
+	DAY,
+	MON,
+	YEAR,
+	N_DATETIME_VISIBLE
+};
+
+Page timePage;
+
+class DateTime: public ScrObj {
+	public:
+		DateTime()
+		{
+			_y = 174;
+		}
+
+	private:
+		InputField _visible[N_DATETIME_VISIBLE];
+		bool _sync = false;
+		struct tm  _timeinfo;
+		//uint16_t _y = 225;
+		//TFT_eSprite _sprite = TFT_eSprite(&tft);
+	public:
+		virtual void freeRes() override
+		{
+			//_sprite.deleteSprite();
+		}
+
+		virtual void draw() override
+		{
+		}
+
+		/*
+		virtual void erase() override
+		{
+			for (auto& i:_visible) {
+				i.erase();
+			}
+		}
+		*/
+
+		void setSync(bool sync = true)
+		{
+			_sync = sync;
+		}
+
+		void setI2Ctime()
+		{
+		}
+
+		void syncNTP()
+		{
+		}
+
+		virtual void prepare() override
+		{
+			mktime(&_timeinfo);
+
+			for (auto& i:_visible) {
+				if (_sync) {
+					i.setColors(FONT_COL_565, TFT_WHITE);
+					i.setSelectable(false);
+				}
+				else {
+					i.setColors(FONT_COL_565, COL_GREY_E3_565);
+					i.setSelectable(true);
+				}
+
+				i.prepare();
+			}
+
+			_visible[HOUR].setValue(_timeinfo.tm_hour);
+			_visible[MIN].setValue(_timeinfo.tm_min);
+			_visible[DAY].setValue(_timeinfo.tm_mday);
+			_visible[MON].setValue(_timeinfo.tm_mon + 1);
+			_visible[YEAR].setValue(1900 + _timeinfo.tm_year);
+		}
+
+		/*
+		virtual void draw() override
+		{
+			for (auto& i:_visible) {
+				i.draw();
+			}
+		}
+		*/
+
+		void build()
+		{
+			for (auto& i:_visible) {
+				i.setFont(MIDFONT);
+				i.setText(EMPTY_STR);
+				i.setWidth(TWO_CHR);
+				timePage.addItem(&i);
+			}
+
+			_visible[HOUR].setText(DT_SEMI);
+			_visible[DAY].setText(DT_DOT);
+			_visible[MON].setText(DT_DOT);
+
+			_visible[HOUR].setXYpos(PG_LEFT_PADD, _y);
+			_visible[MIN].setXYpos(53, _y);
+			_visible[DAY].setXYpos(109, _y);
+			_visible[MON].setXYpos(147, _y);
+			_visible[YEAR].setXYpos(187, _y);
+
+			_visible[YEAR].setWidth(FOUR_CHR);
+		}
+} datetime;
 
 #define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
 class App {

@@ -77,6 +77,8 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"UTC",
 	"Current time and date",
 	"Manual setup",
+	":",
+	".",
 
 	// utility
 	"Not found"

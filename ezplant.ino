@@ -362,19 +362,6 @@ page builders TODO: move to Gui
 
 /************************ TIME PAGE ******************************/
 
-Page timePage;
-
-enum {
-	HOUR,
-	MIN,
-	DAY,
-	MON,
-	YEAR,
-	NTIMEPAGEFIELDS
-};
-
-
-InputField date[NTIMEPAGEFIELDS];
 
 void buildTimePage()
 {
@@ -413,6 +400,7 @@ void buildTimePage()
 	// Hour Y = 225
 	*/
 
+	/*
 	int Y = 225;
 	int j = 0;
 	int gap = 5;
@@ -423,6 +411,7 @@ void buildTimePage()
 		timePage.addItem(&i);
 		j++;
 	}
+	*/
 
 	timePage.setTitle(DT_TITLE);
 	timePage.setPrev(&settingsPage);
@@ -432,6 +421,9 @@ void buildTimePage()
 	timePage.addItem(&timeZone);
 	timePage.addItem(&utc);
 	timePage.addItem(&currTime);
+
+	datetime.build();
+	timePage.addItem(&datetime);
 
 	timePage.addItem(&back);
 }
