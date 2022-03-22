@@ -1,4 +1,5 @@
 .*.sw*
+*.tar.gz
 *.bin
 data/*.h
 data/old/*
