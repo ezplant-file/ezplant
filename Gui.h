@@ -285,24 +285,41 @@ class ScrObj {
 
 		virtual void onClick()
 		{
-			_callback(_page_ptr);
+			_callback(_objptr);
 		}
 
 		void* returnPtr()
 		{
-			return _page_ptr;
+			return _objptr;
 		}
 
+		/*
 		void setCallback(void(*callback)(void*), void* page_ptr)
 		{
 			_callback = callback;
-			_page_ptr = page_ptr;
+			_objptr = page_ptr;
+		}
+		*/
+
+		void setCallback(std::function<void(void*)> callback, void* objptr = nullptr)
+		{
+			_callback = callback;
+			_objptr = objptr;
 		}
 
+		/*
+		void setCallback(std::function<void(void*)> callback)
+		{
+			_callback = callback;
+		}
+		*/
+
+		/*
 		void setCallback(void(*callback)(void*))
 		{
 			_callback = callback;
 		}
+		*/
 
 		void setSelectable(bool isSelectable = true)
 		{
@@ -442,8 +459,9 @@ class ScrObj {
 		uint16_t _y = 0;
 		int16_t _w;
 		int16_t _h;
-		void (*_callback)(void*) = nop;
-		void* _page_ptr = nullptr;
+		//void (*_callback)(void*) = nop;
+		std::function<void(void*)> _callback = nop;
+		void* _objptr = nullptr;
 		bool _isVisible = true;
 		bool _isSelectable;
 		bool _isPressed = false;
@@ -579,7 +597,7 @@ class Text: public ScrObj {
 				return;
 			//freeRes();
 			//prepare();
-			_txtSp.pushSprite(_x + _dx, _y, TFT_TRANSPARENT);
+			_txtSp.pushSprite(_x + _dx, _y + _dy, TFT_TRANSPARENT);
 			_invalid = false;
 			//freeRes();
 		}
@@ -626,7 +644,7 @@ class Text: public ScrObj {
 
 		virtual void erase() override
 		{
-			tft.fillRect(_x, _y, _w, _h, _bg);
+			tft.fillRect(_x + _dx, _y + _dy, _w, _h, _bg);
 			freeRes();
 		}
 
@@ -704,6 +722,11 @@ class Text: public ScrObj {
 			_dx = x;
 		}
 
+		void adjustY(int8_t y)
+		{
+			_dy = y;
+		}
+
 	private:
 		//uint16_t _padding;
 		uint16_t _fg = FONT_COL_565;
@@ -711,6 +734,7 @@ class Text: public ScrObj {
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		int8_t _dx = 0;
+		int8_t _dy = 0;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
 };
 
@@ -844,10 +868,6 @@ class Image: public ScrObj {
 				ui.drawJpeg(_jpegFile, _x, _y);
 				_w = JpegDec.width;
 				_h = JpegDec.height;
-#ifdef APP_DEBUG
-				Serial.print("jpeg width: ");
-				Serial.println(JpegDec.width);
-#endif
 				_invalid = false;
 			}
 		}
@@ -1048,6 +1068,11 @@ class InputField: public ScrObj {
 			_text.adjustX(x);
 		}
 
+		void adjustTextY(int8_t y)
+		{
+			_text.adjustY(y);
+		}
+
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
@@ -1103,7 +1128,8 @@ class InputField: public ScrObj {
 			tft.loadFont(FONTS[_text.getFontIndex()]);
 
 			// only needed for LEFT align
-			_textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
+			//_textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
+			_textLength = tft.textWidth(scrStrings[index]);
 
 			// prevent text going out of screen
 			if (_textLength > SCR_WIDTH) {
@@ -2103,6 +2129,7 @@ class Panel {
 		Text _time;
 		bool _changed = false;
 	private:
+		//bool _connected = false;
 		unsigned long _timestamp = 0;
 		unsigned long _interval = WIFI_UPDATE_INTERVAL;
 		images_t _curWiFiImage = IMG_NO_WIFI;
@@ -2137,35 +2164,52 @@ class DateTime: public ScrObj {
 		{
 			_y = 174;
 		}
+		~DateTime()
+		{
+			freeRes();
+		}
+
+		void init()
+		{
+			getI2Ctime();
+		}
 
 	private:
 		InputField _visible[N_DATETIME_VISIBLE];
+		Text _fieldsTitle;
 		bool _sync = false;
 		int8_t _utc = 0;
 		struct tm  _timeinfo;
 		unsigned long _oldMils = 0;
+		const char* const _nptServer = "pool.ntp.org";
 		//uint16_t _y = 225;
 		//TFT_eSprite _sprite = TFT_eSprite(&tft);
 	public:
 
 		void update()
 		{
+			if (millis() - _oldMils > RTC_CHECK_INTERVAL) {
+				_oldMils = millis();
 
-			if (_sync) {
-				syncNTP();
-			}
-			else {
-				getI2Ctime();
+				if (_sync) {
+					syncNTP();
+				}
+				else {
+					getI2Ctime();
+				}
+
+				invalidate();
+				prepare();
 			}
 		}
 
 		virtual void freeRes() override
 		{
-			//_sprite.deleteSprite();
 		}
 
 		virtual void draw() override
 		{
+			// page methods deal with that
 		}
 
 		/*
@@ -2177,26 +2221,119 @@ class DateTime: public ScrObj {
 		}
 		*/
 
+		// GUI functions
+		void setHours(void* obj)
+		{
+			_timeinfo.tm_hour = _visible[HOUR].getValue();
+			rtc.settimeUnix(mktime(&_timeinfo));
+		}
+
+		void setMinutes(void* obj)
+		{
+			_timeinfo.tm_min = _visible[MIN].getValue();
+			rtc.settimeUnix(mktime(&_timeinfo));
+		}
+
+		void setDay(void* obj)
+		{
+			_timeinfo.tm_mday = _visible[DAY].getValue();
+			rtc.settimeUnix(mktime(&_timeinfo));
+		}
+
+		void setMon(void* obj)
+		{
+			_timeinfo.tm_mon = _visible[MON].getValue() - 1;
+			rtc.settimeUnix(mktime(&_timeinfo));
+		}
+
+		void setYear(void* obj)
+		{
+			_timeinfo.tm_year = _visible[YEAR].getValue() - 1900;
+			rtc.settimeUnix(mktime(&_timeinfo));
+		}
+
 		void setSync(bool sync = true)
 		{
 			_sync = sync;
+
+			if (_sync) {
+				// TODO: add wait animation
+				syncNTP();
+			}
+			else {
+				getI2Ctime();
+			}
+			prepare();
+		}
+
+		void setUTC(void* obj)
+		{
+			if (obj == nullptr)
+				return;
+
+			InputField* utc = (InputField*) obj;
+
+
+			_utc = utc->getValue();
+
+			// TODO: postpone or move sync to different task
+			if (_sync) {
+				syncNTP();
+			}
+
+			//prepare();
+			_visible[HOUR].invalidate();
+			_visible[HOUR].prepare();
+			/*
+			else {
+				_visible[HOUR].setValue(_visible[HOUR].getValue() + _utc);
+				setHours(nullptr);
+			}
+			*/
 		}
 
 		void getI2Ctime()
 		{
-			if (millis() - _oldMils > RTC_CHECK_INTERVAL) {
-				_oldMils = millis();
-				rtc.gettime();
-				//TODO: convert to tm
-			}
+			time_t time;
+			time = rtc.gettimeUnix();
+			struct tm *tmp = localtime(&time);
+			_timeinfo = *tmp;
 		}
+
+		/*
+		int getI2CgmtimeHours()
+		{
+			time_t time;
+			time = rtc.gettimeUnix();
+			struct tm *tmp = gmtime(&time);
+			//_timeinfo = *tmp;
+			return *tmp.tm_hour;
+		}
+		*/
 
 		void setI2Ctime()
 		{
+			rtc.settimeUnix(mktime(&_timeinfo));
 		}
 
 		void syncNTP()
 		{
+			if (!g_ping_success) {
+				//setI2Ctime();
+				return;
+			}
+
+			configTime(3600*_utc, 0, _nptServer);
+			if (!getLocalTime(&_timeinfo)) {
+				getI2Ctime();
+#ifdef APP_DEBUG
+				Serial.println("failed to sync ntp time");
+#endif
+				return;
+			}
+			else {
+				setI2Ctime();
+			}
 		}
 
 		virtual void invalidate() override
@@ -2223,24 +2360,34 @@ class DateTime: public ScrObj {
 				i.prepare();
 			}
 
+			if (currPage == pages[TIME_PG]) {
+				_fieldsTitle.erase();
+			}
+
+			if (_sync) {
+				_fieldsTitle.setText(DT_CURR);
+			}
+			else {
+				_fieldsTitle.setText(DT_MANUAL);
+			}
+
+			_fieldsTitle.invalidate();
+			_fieldsTitle.prepare();
+
 			_visible[HOUR].setValue(_timeinfo.tm_hour);
 			_visible[MIN].setValue(_timeinfo.tm_min);
 			_visible[DAY].setValue(_timeinfo.tm_mday);
 			_visible[MON].setValue(_timeinfo.tm_mon + 1);
-			_visible[YEAR].setValue(1900 + _timeinfo.tm_year);
+			_visible[YEAR].setValue(_timeinfo.tm_year + 1900); // +1900
 		}
-
-		/*
-		virtual void draw() override
-		{
-			for (auto& i:_visible) {
-				i.draw();
-			}
-		}
-		*/
 
 		void build()
 		{
+			_fieldsTitle.setXYpos(PG_LEFT_PADD, 150);
+
+
+			timePage.addItem(&_fieldsTitle);
+
 			for (auto& i:_visible) {
 				i.adjustX(-4);
 				i.adjustTextX(-4);
@@ -2251,12 +2398,13 @@ class DateTime: public ScrObj {
 				timePage.addItem(&i);
 			}
 
+
 			_visible[HOUR].setLimits(0, 23);
 			_visible[MIN].setLimits(0, 59);
 
 			_visible[DAY].setLimits(1, 31);
 			_visible[MON].setLimits(1, 12);
-			_visible[YEAR].setLimits(2022, 2060);
+			_visible[YEAR].setLimits(1900, 2100);
 
 			_visible[HOUR].setText(DT_SEMI);
 			_visible[DAY].setText(DT_DOT);
@@ -2267,6 +2415,15 @@ class DateTime: public ScrObj {
 			_visible[DAY].setXYpos(109, _y);
 			_visible[MON].setXYpos(147, _y);
 			_visible[YEAR].setXYpos(187, _y);
+
+			_visible[DAY].adjustTextY(2);
+			_visible[MON].adjustTextY(2);
+
+			_visible[HOUR].setCallback(std::bind(&DateTime::setHours, this, std::placeholders::_1));
+			_visible[MIN].setCallback(std::bind(&DateTime::setMinutes, this, std::placeholders::_1));
+			_visible[DAY].setCallback(std::bind(&DateTime::setDay, this, std::placeholders::_1));
+			_visible[MON].setCallback(std::bind(&DateTime::setMon, this, std::placeholders::_1));
+			_visible[YEAR].setCallback(std::bind(&DateTime::setYear, this, std::placeholders::_1));
 
 			_visible[YEAR].setWidth(FOUR_CHR);
 			_visible[YEAR].adjustWidth(4);
@@ -2339,6 +2496,7 @@ class App {
 		{
 
 			topBar.update();
+			datetime.update();
 
 			if (millis() - _dimMils > g_dimafter * 1000 && !_inactive) {
 				_inactive = true;
@@ -2372,7 +2530,7 @@ class App {
 			sleep(10);
 #endif
 #ifdef APP_DEBUG
-#define DEBUG_TIMER 1000
+#define DEBUG_TIMER 10000
 			static unsigned long debugMils = 0;
 			if (millis() - debugMils > DEBUG_TIMER) {
 				debugMils = millis();
@@ -2388,6 +2546,12 @@ class App {
 				_blink = !_blink;
 			}
 
+
+			// return if no interupts from expander
+			if (digitalRead(EXPANDER_INT))
+				return;
+
+			// read buttons
 			uint8_t user_input = buttons.portRead(0);
 
 			// debounce

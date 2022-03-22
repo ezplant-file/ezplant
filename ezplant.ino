@@ -1,7 +1,7 @@
 //TODO: consider resource manager and page builder classes
 
 #define TASKS
-#define APP_DEBUG
+//#define APP_DEBUG
 
 // buttons defines
 #define BTN_PREV 	0b00000001
@@ -10,21 +10,14 @@
 #define BTN_HOME 	0b00001000
 #define BTN_NEXT 	0b00010000
 #define BTN_PLU 	0b00100000
-/*
-#define BTN_PREV 18
-#define BTN_NEXT 23
-#define BTN_OK 5
-#define BTN_MIN 16
-#define BTN_PLU 17
-*/
+#define EXPANDER_INT	27
+#define LED_PIN 	23
 
-// GUI & strings
-//#include "data/wifi.h"
+// Wifi
 #include <WiFi.h>
-
 #include <WiFiAP.h>
 
-//#include <WebServer.h>
+// GUI & strings
 #include "GfxUi.h"
 #include "rustrings.h"
 #include "enstrings.h"
@@ -32,8 +25,6 @@
 #include "Gui.h"
 
 static App app;
-
-#define menuText topBar
 
 static Page mainPage;
 static Page settingsPage;
@@ -90,7 +81,9 @@ void saveFile()
 {
 	File file = SPIFFS.open(cred_filename, "w");
 	if (!file) {
+#ifdef APP_DEBUG
 		Serial.println("error creating file");
+#endif
 		return;
 	}
 
@@ -155,9 +148,11 @@ void softAP()
 	WiFi.softAP(ap_ssid, ap_password);
 	WiFi.softAPConfig(ap_ip, ap_gate, ap_sub);
 
+#ifdef APP_DEBUG
 	Serial.println();
 	Serial.print("IP Address: ");
 	Serial.println(WiFi.softAPIP());
+#endif
 
 	server.on("/", HTTP_GET, [](){
 			server.send(200, "text/html", index_html);
@@ -184,7 +179,9 @@ void connectWithCred()
 	}
 	*/
 
+#ifdef APP_DEBUG
 	Serial.println(WiFi.localIP());
+#endif
 }
 
 void checkWifi()
@@ -333,14 +330,13 @@ void changeLangRus(void* arg)
 
 	//callPage(currPage);
 
-	menuText.erase();
-	//menuText.invalidate();
+	topBar.erase();
 	topBar.invalidateAll();
 	topBar.setText(SCREENLANG);
 	currPage->erase();
 	currPage->invalidateAll();
 	currPage->prepare();
-	menuText.prepare();
+	topBar.prepare();
 
 	topBar.draw();
 	currPage->draw();
@@ -357,14 +353,13 @@ void changeLangEng(void* arg)
 
 	//callPage(currPage);
 
-	menuText.erase();
-	//menuText.invalidate();
+	topBar.erase();
 	topBar.invalidateAll();
 	topBar.setText(SCREENLANG);
 	currPage->erase();
 	currPage->invalidateAll();
 	currPage->prepare();
-	menuText.prepare();
+	topBar.prepare();
 
 	topBar.draw();
 	currPage->draw();
@@ -429,29 +424,16 @@ void buildTimePage()
 	utc.showPlus(true);
 	utc.setLimits(-11, 14);
 	utc.setFont(MIDFONT);
-	//utc.setAlign(LEFT);
+	utc.setAlign(LEFT);
+	utc.adjustTextY(2);
+	utc.adjustTextX(4);
 	utc.setText(DT_UTC);
+	utc.setCallback(std::bind(&DateTime::setUTC, &datetime, std::placeholders::_1), &utc);
 
-	static Text currTime;
-	currTime.setXYpos(PG_LEFT_PADD, 150);
-	currTime.setText(DT_CURR);
-
-	/*
-	// Hour Y = 225
-	*/
-
-	/*
-	int Y = 225;
-	int j = 0;
-	int gap = 5;
-	for (auto& i:date) {
-		i.setFont(MIDFONT);
-		i.setXYpos(PG_LEFT_PADD + (gap+i.getW())*j, Y);
-		i.setText(EMPTY_STR);
-		timePage.addItem(&i);
-		j++;
-	}
-	*/
+	// fields title done in datetime object
+	//static Text currTime;
+	//currTime.setXYpos(PG_LEFT_PADD, 150);
+	//currTime.setText(DT_CURR);
 
 	timePage.setTitle(DT_TITLE);
 	timePage.setPrev(&settingsPage);
@@ -460,9 +442,13 @@ void buildTimePage()
 	timePage.addItem(&syncCheck);
 	timePage.addItem(&timeZone);
 	timePage.addItem(&utc);
-	timePage.addItem(&currTime);
 
+	// fields title done in datetime object
+	//timePage.addItem(&currTime);
+
+	// build settings input fields
 	datetime.build();
+	// all time settings input fields added in datetime object
 	timePage.addItem(&datetime);
 
 	timePage.addItem(&back);
@@ -1063,10 +1049,11 @@ void gui(void* arg)
 
 	unsigned long oldMillis = millis();
 
-	Serial.print("gpio begin status: ");
-	Serial.println(buttons.begin());
-	rtc.begin();
+	buttons.begin();
 	buttons.portMode(0, pinsAll(INPUT));
+
+	rtc.begin();
+	datetime.init();
 
 	//delay(500);
 
@@ -1090,64 +1077,7 @@ void gui(void* arg)
 }
 #endif
 
-/*
-WebServer server(80);
 
-void handleClient()
-{
-	listRootToHtml();
-}
-
-bool handleFileRead(String path)
-{
-	File file = SPIFFS.open(path, "r");
-
-	if (!file) {
-
-		server.send(404, "text/plain", "FileNotFound");
-		return false;
-	}
-
-	server.streamFile(file, "text/html");
-	file.close();
-	return true;
-}
-
-void listRootToHtml()
-{
-    File root = SPIFFS.open("/");
-
-    if (!root) {
-        Serial.println("error");
-        return;
-    }
-
-    String html = "<html><meta charset=\"UTF-8\"><body>";
-
-    if (root.isDirectory()) {
-
-        File file = root.openNextFile();
-        while (file) {
-
-            String name = file.name();
-
-            html += "<p><a href=\"";
-            html += name;
-            html += (String)"\" download=\"";
-            html += name +"\">";
-            html += name;
-            html += "</a></p>";
-
-            file = root.openNextFile();
-        }
-        html += "</body></html>";
-    }
-
-    server.send(200, "text/html", html);
-}
-*/
-
-#define LED_PIN 23
 
 
 /*
@@ -1174,27 +1104,6 @@ void setup(void)
 	checkWifi();
 	// init all stuff in Gui.h
 	app.init();
-
-	// wifi stuff
-	//WiFi.begin(ssid, password);
-
-
-	/*
-	   while (WiFi.status() != WL_CONNECTED) {
-	   Serial.print(".");
-	   }
-	   Serial.println();
-	   Serial.println(WiFi.localIP());
-	 */
-
-	// buttons
-	/*
-	   pinMode(BTN_PREV, INPUT_PULLUP);
-	   pinMode(BTN_NEXT, INPUT_PULLUP);
-	   pinMode(BTN_OK, INPUT_PULLUP);
-	   pinMode(BTN_MIN, INPUT_PULLUP);
-	   pinMode(BTN_PLU, INPUT_PULLUP);
-	 */
 
 	buildTimePage();
 	buildWiFiSettPage();
@@ -1224,22 +1133,6 @@ void setup(void)
 	currPage->draw();
 	topBar.draw();
 
-	/*
-	// flag for cursor
-	//initDone = true;
-
-	// webserver stuff
-	server.on("/",  HTTP_GET, handleClient);
-	server.onNotFound([]() {
-	if (!handleFileRead(server.uri())) {
-	server.send(404, "text/plain", "FILE NOT FOUND");
-	}
-	});
-
-	server.begin();
-	 */
-
-	// cursor
 #ifdef TASKS
 	xTaskCreate(
 			gui,
