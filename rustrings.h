@@ -57,7 +57,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Имя сети",
 	"ezplant_wifi",
 	"Пароль",
-	"ezplant",
+	"password",
 	"Подключитесь к ней, после чего\nоткройте в браузере сайт",
 	"http://192.168.0.1",
 	"Следуйте\nинструкциям.",

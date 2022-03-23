@@ -13,7 +13,6 @@
 // wifi -
 // internet -
 //
-
 #ifndef __GUI_H__
 #define __GUI_H__
 
@@ -2284,6 +2283,7 @@ class DateTime: public ScrObj {
 			//prepare();
 			_visible[HOUR].invalidate();
 			_visible[HOUR].prepare();
+			_visible[HOUR].draw();
 			/*
 			else {
 				_visible[HOUR].setValue(_visible[HOUR].getValue() + _utc);
@@ -2548,8 +2548,14 @@ class App {
 
 
 			// return if no interupts from expander
-			if (digitalRead(EXPANDER_INT))
+			//pinMode(EXPANDER_INT, INPUT);
+			if (digitalRead(EXPANDER_INT) == HIGH) {
 				return;
+			}
+
+#ifdef APP_DEBUG
+			Serial.println("Interrupt...");
+#endif
 
 			// read buttons
 			uint8_t user_input = buttons.portRead(0);
@@ -2561,10 +2567,7 @@ class App {
 					if ((uint8_t)~user_input){
 						_dbMils = millis();
 						_dbFlag = true;
-						_inactive = false;
 						_dimMils = millis();
-						gBrightness.setValue(_prevBright);
-						gBrightness.onClick();
 					}
 				}
 			}
@@ -2572,6 +2575,14 @@ class App {
 			// input proc
 			if (!_dbFlag)
 				return;
+
+			if (_inactive) {
+				Serial.println("Bang!");
+				_inactive = false;
+				gBrightness.setValue(_prevBright);
+				gBrightness.onClick();
+			}
+
 
 			//if (!digitalRead(BTN_PREV)) {
 			if (~user_input & BTN_PREV) {

@@ -57,7 +57,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"WiFi name",
 	"ezplant_wifi",
 	"Password",
-	"ezplant",
+	"password",
 	"Open this site after\njoining access point",
 	"http://192.168.0.1",
 	"and follow\ninstructions",

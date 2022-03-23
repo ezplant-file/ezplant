@@ -1,7 +1,16 @@
 //TODO: consider resource manager and page builder classes
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+//#include "esp_task_wdt.h"
 
 #define TASKS
-//#define APP_DEBUG
+#define APP_DEBUG
+
+#define PUMP_F 	17
+#define PUMP_G 	18
+#define PUMP_H 	19
+#define LED	32
+#define FAN	33
 
 // buttons defines
 #define BTN_PREV 	0b00000001
@@ -12,6 +21,7 @@
 #define BTN_PLU 	0b00100000
 #define EXPANDER_INT	27
 #define LED_PIN 	23
+//#define LED_PIN 	19
 
 // Wifi
 #include <WiFi.h>
@@ -61,7 +71,7 @@ static BlueTextButton testBlueButton;
 
 /****************** WiFi stuff ***************************************/
 const char* ap_ssid = "ezplant_wifi";
-const char* ap_password = "ezplantpassword";
+const char* ap_password = scrStrings[WI_PASSWORD];
 const char* PARAM_1 = "ssid";
 const char* PARAM_2 = "password";
 String file_ssid;
@@ -1046,61 +1056,11 @@ void buildSettingsPage()
 //static iarduino_PCA9555 buttons(0x20);
 void gui(void* arg)
 {
-
-	unsigned long oldMillis = millis();
-
-	buttons.begin();
-	buttons.portMode(0, pinsAll(INPUT));
-
-	rtc.begin();
-	datetime.init();
-
-	//delay(500);
-
-	for(;;) {
-		app.update();
 #ifdef APP_DEBUG
-		if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
-
-			//Serial.print("gpio status: ");
-			//Serial.println(buttons.portRead(0), BIN);
-
-			uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
-			Serial.print("gui task unused stack: ");
-			Serial.println(unused);
-			oldMillis = millis();
-		}
-#endif
-		//yield();
-		//sleep(10);
-	}
-}
-#endif
-
-
-
-
-/*
-void setBacklight(uint8_t br)
-{
-	uint8_t mapped_br = map(br, 0, 100, 0, 255);
-	//Serial.println(mapped_br);
-	analogWrite(LED_PIN, mapped_br);
-}
-*/
-
-void gSetBacklight(void* arg)
-{
-	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
-	analogWrite(LED_PIN, mapped_br);
-}
-
-void setup(void)
-{
 	Serial.begin(115200);
+#endif
 	//Serial.println("Start INIT");
 	SPIFFS.begin();
-
 	checkWifi();
 	// init all stuff in Gui.h
 	app.init();
@@ -1115,10 +1075,21 @@ void setup(void)
 	buildMainPage();
 	topBar.build();
 
-	// backlight
-	//g_curr_brightness = gBrightness.getValue();
+	/*
 	pinMode(LED_PIN, OUTPUT);
-	//setBacklight(g_curr_brightness);
+	pinMode(PUMP_F, OUTPUT);
+	pinMode(PUMP_G, OUTPUT);
+	pinMode(PUMP_H, OUTPUT);
+	pinMode(LED, OUTPUT);
+	pinMode(FAN, OUTPUT);
+	analogWrite(PUMP_F, 127);
+	analogWrite(PUMP_G, 127);
+	analogWrite(PUMP_H, 127);
+	analogWrite(LED, 127);
+	analogWrite(FAN, 127);
+	*/
+
+	// backlight
 	gBrightness.onClick();
 
 	//mainPage.prepare();
@@ -1133,41 +1104,64 @@ void setup(void)
 	currPage->draw();
 	topBar.draw();
 
-#ifdef TASKS
+#ifdef APP_DEBUG
+	unsigned long oldMillis = millis();
+#endif
+
+	buttons.begin();
+	buttons.portMode(2, pinsAll(INPUT));
+	pinMode(EXPANDER_INT, INPUT_PULLUP);
+
+	rtc.begin();
+	datetime.init();
+
+	//delay(500);
+
+	for(;;) {
+#if CONFIG_FREERTOS_UNICORE
+		yieldIfNecessary();
+#endif
+		app.update();
+#ifdef APP_DEBUG
+		if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
+
+			//Serial.print("gpio status: ");
+			//Serial.println(buttons.portRead(0), BIN);
+
+			uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
+			Serial.print("gui task unused stack: ");
+			Serial.println(unused);
+			oldMillis = millis();
+		}
+#endif
+		if (serialEventRun) serialEventRun();
+		//yield();
+		//sleep(10);
+	}
+}
+#endif
+
+void gSetBacklight(void* arg)
+{
+	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
+	//ledcWrite(0, mapped_br);
+	//Serial.println("the brightness is: ");
+	//Serial.println(mapped_br);
+	analogWrite(LED_PIN, mapped_br);
+}
+
+void setup(void)
+{
+
 	xTaskCreate(
 			gui,
 			"gui",
-			3000,
+			getArduinoLoopTaskStackSize(),
 			NULL,
 			1,
 			NULL
 		   );
 	vTaskDelete(NULL);
-#endif
 }
 
-#define INTERVAL 500
-unsigned long oldMils = 0;
-
-void loop() {
-#ifndef TASKS
-	//server.handleClient();
-
-	/*
-		Serial.print("Free heap: ");
-		Serial.println(ESP.getFreeHeap());
-		Serial.print("WiFi strength: ");
-		Serial.println(WiFi.RSSI());
-	*/
-		/*
-		Serial.print("REG: ");
-		// NEXT - 28, PREV - 23, OK - 5, PLUS - 22, MINUS - 21
-		Serial.println(REG_READ(GPIO_IN_REG), BIN);
-		oldMils = millis();
-		*/
-	}
-
-	app.update();
-	delay(10);
-#endif
-}
+void loop() { }
