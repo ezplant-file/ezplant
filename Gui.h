@@ -16,6 +16,27 @@
 #ifndef __GUI_H__
 #define __GUI_H__
 
+//#define APP_DEBUG
+
+#define PUMP_F 	17
+#define PUMP_G 	18
+#define PUMP_H 	19
+#define LED	32
+#define FAN	33
+
+// buttons bitmask defines
+#define BTN_PREV 	0b00000001
+#define BTN_MIN 	0b00000010
+#define BTN_OK 		0b00000100
+#define BTN_HOME 	0b00001000
+#define BTN_NEXT 	0b00010000
+#define BTN_PLU 	0b00100000
+#define EXPANDER_INT	27
+#define LED_PIN 	23
+//#define LED_PIN 	19
+
+
+
 #include <vector>
 #include <atomic>
 #include <ctime>
@@ -31,11 +52,18 @@ iarduino_RTC rtc(RTC_RX8025);
 // buttons
 #include <iarduino_PCA9555.h>
 iarduino_PCA9555 buttons(0x20);
+iarduino_PCA9555 second_expander(0x21);
 
 // ping
 #include <ESP32Ping.h>
 
+#include "GfxUi.h"
+#include "appBuilder.h"
 #include "images.h"
+#include "stringenum.h"
+#include "rustrings.h"
+#include "enstrings.h"
+#include "utils.h"
 
 // web server
 
@@ -179,7 +207,6 @@ std::atomic<bool> g_wifi_set;
 //bool g_ping_success = false;
 //iarduino_RTC rtc(RTC_DS3231);
 
-#ifdef TASKS
 void ping_task_callback(void* arg)
 {
 	for(;;) {
@@ -233,8 +260,6 @@ void rapid_blink_callback(void* arg)
 	vTaskDelete(NULL);
 }
 */
-
-#endif
 
 void nop(void* arg)
 {
@@ -972,6 +997,9 @@ class SimpleBox: public ScrObj {
 		uint16_t _col = 0;
 };
 
+// screen buttons
+ImageButton back;
+BlueTextButton next;
 
 typedef enum {
 	ONE_CHR,
@@ -1219,7 +1247,9 @@ class InputField: public ScrObj {
 		placeholder_t _width = THREE_CHR;
 };
 
+// Lang select and screen settings page items
 InputField gBrightness;
+InputField gDimseconds;
 
 //TODO: manually decode JPG, push array to sprite
 TFT_eSprite checkSprite = TFT_eSprite(&tft);
@@ -1356,6 +1386,9 @@ class CheckBox: public ScrObj {
 		fs::File _jpegFile;
 		const char* _filename = CHK_BOX_FILE;
 };
+
+// wifiSettPage global items
+CheckBox gwsWifiChBox;
 
 #define TGL_BG 0xDC
 #define TGL_RAD 10
@@ -1541,6 +1574,11 @@ class ExclusiveRadio: public CircRadBtn {
 			}
 		}
 };
+
+// lang page items
+ExclusiveRadio ruSelect;
+ExclusiveRadio enSelect;
+
 
 class TestPageRadio: public ScrObj {
 	public:
@@ -2137,12 +2175,14 @@ class Panel {
 		images_t _prevNetImage = IMG_NET_NO;
 } topBar;
 
+/*
 class Builder {
 	public:
 		void buildTimePage()
 		{
 		}
 };
+*/
 
 enum {
 	HOUR,
@@ -2153,7 +2193,6 @@ enum {
 	N_DATETIME_VISIBLE
 };
 
-Page timePage;
 
 #define RTC_CHECK_INTERVAL 60000
 
@@ -2386,7 +2425,7 @@ class DateTime: public ScrObj {
 			_fieldsTitle.setXYpos(PG_LEFT_PADD, 150);
 
 
-			timePage.addItem(&_fieldsTitle);
+			pages[TIME_PG]->addItem(&_fieldsTitle);
 
 			for (auto& i:_visible) {
 				i.adjustX(-4);
@@ -2395,7 +2434,7 @@ class DateTime: public ScrObj {
 				i.setFont(MIDFONT);
 				i.setText(EMPTY_STR);
 				i.setWidth(TWO_CHR);
-				timePage.addItem(&i);
+				pages[TIME_PG]->addItem(&i);
 			}
 
 
@@ -2457,16 +2496,62 @@ class App {
 
 		void init()
 		{
-				//rtc.begin();
+			/*
+			   pinMode(LED_PIN, OUTPUT);
+			   pinMode(PUMP_F, OUTPUT);
+			   pinMode(PUMP_G, OUTPUT);
+			   pinMode(PUMP_H, OUTPUT);
+			   pinMode(LED, OUTPUT);
+			   pinMode(FAN, OUTPUT);
+			   analogWrite(PUMP_F, 127);
+			   analogWrite(PUMP_G, 127);
+			   analogWrite(PUMP_H, 127);
+			   analogWrite(LED, 127);
+			   analogWrite(FAN, 127);
+			 */
+
+
+			SPIFFS.begin();
+			checkWifi();
+
+			//rtc.begin();
 			tft.initDMA(true);
 			g_ping_success = false;
 			//SPIFFS.begin();
 			tft.init();
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
+
+			builder.build();
+
+			topBar.build();
+
+			// set backlight brightness
+			gBrightness.onClick();
+
+			// draw main page
+			currPage = pages[MENU_PG];
+			currPage->setCurrItem(0);
+			currItem = currPage->getCurrItem();
+			currPage->prepare();
+
+			currPage->draw();
+			topBar.draw();
+
+			second_expander.begin();
+			buttons.begin();
+			buttons.portMode(2, pinsAll(INPUT));
+			pinMode(EXPANDER_INT, INPUT_PULLUP);
+
+			rtc.begin();
+			datetime.init();
+
+
 			//Serial.println("Finish INIT");
-#ifdef TASKS
 			createTasks();
+
+
+
 		}
 
 		void createTasks()
@@ -2489,7 +2574,6 @@ class App {
 					NULL
 				   );
 				   */
-#endif
 		}
 
 		void update()
@@ -2525,10 +2609,8 @@ class App {
 			}
 
 			draw();
-#ifdef TASKS
 			//yield();
 			sleep(10);
-#endif
 #ifdef APP_DEBUG
 #define DEBUG_TIMER 10000
 			static unsigned long debugMils = 0;
@@ -2548,7 +2630,7 @@ class App {
 
 
 			// return if no interupts from expander
-			//pinMode(EXPANDER_INT, INPUT);
+			pinMode(EXPANDER_INT, INPUT_PULLUP);
 			if (digitalRead(EXPANDER_INT) == HIGH) {
 				return;
 			}
@@ -2577,7 +2659,7 @@ class App {
 				return;
 
 			if (_inactive) {
-				Serial.println("Bang!");
+				//Serial.println("Bang!");
 				_inactive = false;
 				gBrightness.setValue(_prevBright);
 				gBrightness.onClick();
@@ -2634,4 +2716,8 @@ class App {
 		}
 };
 
+// Test page items
+Toggle testTgl;
+CheckBox testChBox;
+TestPageRadio testRad;
 #endif
