@@ -1,18 +1,21 @@
-//TODO: page container, generic call procedure
 //TODO: page builder
-//TODO: banish global pointers
+//TODO: figure out i2c time timezone
 //
 //
 // precalculate all colors to uint16_t
 //
 // Obj:
 // progress bar -
-// input field -
-// checkbox -
-// switch -
-// wifi -
-// internet -
+// input field - done
+// checkbox - done
+// switch - done
+// wifi - done
+// internet - done
 //
+// settings list:
+// global set brightness - g_init_brightness
+// global set wifi on - g_wifi_on
+// global ntp sync - g_ntp_sync
 #ifndef __GUI_H__
 #define __GUI_H__
 
@@ -30,7 +33,8 @@ iarduino_RTC rtc(RTC_RX8025);
 
 // buttons
 #include <iarduino_PCA9555.h>
-iarduino_PCA9555 buttons(0x20);
+iarduino_PCA9555 buttons(0x20); //first expander
+iarduino_PCA9555 second_expander(0x21);
 
 // ping
 #include <ESP32Ping.h>
@@ -116,9 +120,22 @@ iarduino_PCA9555 buttons(0x20);
 #define LOWER_DIMAFTER 3
 #define HIGHER_DIMAFTER 180
 
+// settings
 uint8_t g_dimafter = 20;
-const int16_t init_brightness = 50;
-//unsigned long dimMils = 0;
+int16_t g_init_brightness = 50;
+bool g_ntp_sync = false;
+int8_t gUTC = 0;
+bool g_wifi_on = true;
+
+// lang settings after typedef
+typedef enum {
+	RU_LANG,
+	EN_LANG
+} lang_t;
+
+lang_t g_selected_lang = RU_LANG;
+
+
 
 // fonts
 typedef enum {
@@ -150,13 +167,6 @@ typedef enum {
 	TOP
 } align_t;
 
-typedef enum {
-	RU_LANG,
-	EN_LANG
-} lang_t;
-
-lang_t g_selected_lang = RU_LANG;
-
 // pointer to current language strings
 const char** scrStrings = ruStrings;
 
@@ -179,7 +189,6 @@ std::atomic<bool> g_wifi_set;
 //bool g_ping_success = false;
 //iarduino_RTC rtc(RTC_DS3231);
 
-#ifdef TASKS
 void ping_task_callback(void* arg)
 {
 	for(;;) {
@@ -233,8 +242,6 @@ void rapid_blink_callback(void* arg)
 	vTaskDelete(NULL);
 }
 */
-
-#endif
 
 void nop(void* arg)
 {
@@ -1357,6 +1364,9 @@ class CheckBox: public ScrObj {
 		const char* _filename = CHK_BOX_FILE;
 };
 
+// wifiSettPage global items
+CheckBox gwsWifiChBox;
+
 #define TGL_BG 0xDC
 #define TGL_RAD 10
 #define TGL_W 33
@@ -1970,7 +1980,7 @@ Page* pages[NPAGES];
 Page* currPage;
 
 
-#define WIFI_UPDATE_INTERVAL 500
+#define WIFI_UPDATE_INTERVAL 5000
 #define WIFI_IMG_X 213
 #define NET_IMG_X 186
 
@@ -2027,23 +2037,42 @@ class Panel {
 
 		void update()
 		{
-			if (!g_wifi_set)
+			if (!g_wifi_set) {
 				server.handleClient();
+			}
 
-			if (millis() - _timestamp < _interval)
+			if (millis() - _timestamp < _interval) {
 				return;
+			}
 
 			_timestamp = millis();
 
 			int dBm = WiFi.RSSI();
 			uint8_t strength = map(dBm, -95, -45, 0, 4);
 
+#ifdef APP_DEBUG
+			Serial.print("WiFi strength: ");
+			Serial.println(dBm);
+			Serial.print("Wifi status: ");
+			Serial.println(WiFi.status());
+#endif
+
 			strength = clamp(strength, 0, 4);
+
+			/*
+			if (WiFi.status() == WL_DISCONNECTED && gwsWifiChBox.isOn()) {
+				WiFi.reconnect();
+			}
+			*/
 
 			if (WiFi.status() != WL_CONNECTED) {
 				_curWiFiImage = IMG_NO_WIFI;
 				_curNetImage = IMG_NET_NO;
 				g_ping_success = false;
+
+				if (gwsWifiChBox.isOn()) {
+					WiFi.reconnect();
+				}
 			}
 			else {
 				if (g_ping_success) {
@@ -2053,8 +2082,6 @@ class Panel {
 				else {
 					_curNetImage = IMG_NET_NO;
 				}
-
-				//client.stop();
 
 				switch (strength) {
 					case 0: _curWiFiImage = IMG_NO_WIFI; break;
@@ -2127,6 +2154,7 @@ class Panel {
 		Text _menuText;
 		Text _time;
 		bool _changed = false;
+		bool _wifiIsON = false;
 	private:
 		//bool _connected = false;
 		unsigned long _timestamp = 0;
@@ -2136,13 +2164,6 @@ class Panel {
 		images_t _prevWiFiImage = IMG_NO_WIFI;
 		images_t _prevNetImage = IMG_NET_NO;
 } topBar;
-
-class Builder {
-	public:
-		void buildTimePage()
-		{
-		}
-};
 
 enum {
 	HOUR,
@@ -2171,6 +2192,9 @@ class DateTime: public ScrObj {
 		void init()
 		{
 			getI2Ctime();
+			if (_sync) {
+				syncNTP();
+			}
 		}
 
 	private:
@@ -2251,6 +2275,16 @@ class DateTime: public ScrObj {
 			rtc.settimeUnix(mktime(&_timeinfo));
 		}
 
+		bool getSync()
+		{
+			return _sync;
+		}
+
+		void initSync(bool sync)
+		{
+			_sync = sync;
+		}
+
 		void setSync(bool sync = true)
 		{
 			_sync = sync;
@@ -2265,6 +2299,16 @@ class DateTime: public ScrObj {
 			prepare();
 		}
 
+		int8_t getUTC()
+		{
+			return _utc;
+		}
+
+		void initUTC(int8_t utc)
+		{
+			_utc = utc;
+		}
+
 		void setUTC(void* obj)
 		{
 			if (obj == nullptr)
@@ -2272,18 +2316,20 @@ class DateTime: public ScrObj {
 
 			InputField* utc = (InputField*) obj;
 
-
 			_utc = utc->getValue();
 
 			// TODO: postpone or move sync to different task
-			if (_sync) {
+			if (this->_sync) {
 				syncNTP();
 			}
 
-			//prepare();
+			prepare();
+			invalidate();
+			/*
 			_visible[HOUR].invalidate();
 			_visible[HOUR].prepare();
 			_visible[HOUR].draw();
+			*/
 			/*
 			else {
 				_visible[HOUR].setValue(_visible[HOUR].getValue() + _utc);
@@ -2347,6 +2393,12 @@ class DateTime: public ScrObj {
 		{
 			mktime(&_timeinfo);
 
+			_visible[HOUR].setValue(_timeinfo.tm_hour);
+			_visible[MIN].setValue(_timeinfo.tm_min);
+			_visible[DAY].setValue(_timeinfo.tm_mday);
+			_visible[MON].setValue(_timeinfo.tm_mon + 1);
+			_visible[YEAR].setValue(_timeinfo.tm_year + 1900); // +1900
+
 			for (auto& i:_visible) {
 				if (_sync) {
 					i.setColors(FONT_COL_565, TFT_WHITE);
@@ -2356,7 +2408,6 @@ class DateTime: public ScrObj {
 					i.setColors(FONT_COL_565, COL_GREY_E3_565);
 					i.setSelectable(true);
 				}
-
 				i.prepare();
 			}
 
@@ -2374,11 +2425,7 @@ class DateTime: public ScrObj {
 			_fieldsTitle.invalidate();
 			_fieldsTitle.prepare();
 
-			_visible[HOUR].setValue(_timeinfo.tm_hour);
-			_visible[MIN].setValue(_timeinfo.tm_min);
-			_visible[DAY].setValue(_timeinfo.tm_mday);
-			_visible[MON].setValue(_timeinfo.tm_mon + 1);
-			_visible[YEAR].setValue(_timeinfo.tm_year + 1900); // +1900
+			pages[TIME_PG]->restock();
 		}
 
 		void build()
@@ -2430,7 +2477,6 @@ class DateTime: public ScrObj {
 		}
 } datetime;
 
-//#define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
 class App {
 	private:
 		unsigned long _oldMils = 0;
@@ -2441,7 +2487,7 @@ class App {
 		Cursor _cursor;
 		int _iterator = 0;
 		int16_t _dimmed = 10;
-		int16_t _prevBright = init_brightness;
+		int16_t _prevBright = g_init_brightness;
 		bool _inactive = false;
 
 	public:
@@ -2457,11 +2503,16 @@ class App {
 
 		void init()
 		{
+			switch (g_selected_lang) {
+				default:
+				case RU_LANG: scrStrings = ruStrings; break;
+				case EN_LANG: scrStrings = engStrings; break;
+			}
 				//rtc.begin();
-			tft.initDMA(true);
 			g_ping_success = false;
 			//SPIFFS.begin();
 			tft.init();
+			tft.initDMA(true);
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
 			//Serial.println("Finish INIT");
@@ -2577,7 +2628,7 @@ class App {
 				return;
 
 			if (_inactive) {
-				Serial.println("Bang!");
+				//Serial.println("Bang!");
 				_inactive = false;
 				gBrightness.setValue(_prevBright);
 				gBrightness.onClick();

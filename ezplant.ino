@@ -34,6 +34,10 @@
 #include "stringenum.h"
 #include "Gui.h"
 
+// json stuff
+#include "json.hpp"
+using json = nlohmann::json;
+
 static App app;
 
 static Page mainPage;
@@ -46,10 +50,6 @@ static GreyTextButton settings_items[settings_size];
 static ImageButton back;
 //static ImageButton sett_back;
 static BlueTextButton next;
-
-// wifiSettPage global items
-CheckBox gwsWifiChBox;
-
 
 // Lang select and screen settings page items
 static Page langPage;
@@ -76,11 +76,98 @@ const char* PARAM_1 = "ssid";
 const char* PARAM_2 = "password";
 String file_ssid;
 String file_password;
+
 const char* cred_filename = "/wifi_creds";
+
+const char* sett_file = "/settings";
 
 #include "index.h"
 #include "ru_resp.h"
 #include "en_resp.h"
+
+bool loadSettings()
+{
+	if (!SPIFFS.exists(sett_file)) {
+#ifdef APP_DEBUG
+		Serial.println("no file");
+#endif
+		return false;
+	}
+
+	File file = SPIFFS.open(sett_file, "r");
+
+	if (!file) {
+#ifdef APP_DEBUG
+		Serial.println("couldn't open file");
+#endif
+		return false;
+	}
+
+	try
+	{
+		String content = file.readStringUntil(EOF);
+#ifdef APP_DEBUG
+		Serial.println(content);
+#endif
+		json load = json::parse(content.c_str());
+		g_init_brightness = load["g_init_brightness"].get<int16_t>();
+		g_dimafter = load["g_dimafter"].get<uint8_t>();
+		g_ntp_sync = load["g_ntp_sync"].get<bool>();
+
+		datetime.initSync(g_ntp_sync);
+
+		gUTC = load["gUTC"].get<int8_t>();
+
+		datetime.initUTC(gUTC);
+
+		g_selected_lang = load["lang"].get<lang_t>();
+		gwsWifiChBox.on(load["g_wifi_on"].get<bool>());
+		load.clear();
+	}
+
+	catch (...)
+	{
+#ifdef APP_DEBUG
+		Serial.println("json exception occured");
+#endif
+		return false;
+	}
+
+	return true;
+}
+
+bool saveSettings()
+{
+	json save;
+	save["g_init_brightness"] = gBrightness.getValue();
+	save["g_dimafter"] = g_dimafter;
+	save["g_ntp_sync"] = datetime.getSync();
+	save["gUTC"] = datetime.getUTC();
+	save["lang"] = g_selected_lang;
+	save["g_wifi_on"] = gwsWifiChBox.isOn();
+
+	File file = SPIFFS.open(sett_file, "w");
+	if (!file) {
+#ifdef APP_DEBUG
+		Serial.println("failed to save settings file");
+#endif
+		save.clear();
+		return false;
+	}
+#ifdef APP_DEBUG
+	else {
+		Serial.println("settings file saved");
+	}
+#endif
+
+	std::string settings = save.dump();
+	save.clear();
+	file.print(settings.c_str());
+	file.flush();
+	file.close();
+
+	return true;
+}
 
 void notFound()
 {
@@ -203,7 +290,7 @@ void checkWifi()
 	}
 #ifdef APP_DEBUG
 	else {
-		Serial.println("error opening file");
+		Serial.println("error opening WiFi settings file");
 	}
 #endif
 
@@ -279,6 +366,10 @@ void callPage(void* page_ptr)
 
 	topBar.draw();
 	currPage->draw();
+
+	if (currPage == pages[SETT_PG]) {
+		saveSettings();
+	}
 }
 
 
@@ -395,7 +486,7 @@ void syncTimeCallback(void* arg)
 	datetime.invalidate();
 	datetime.prepare();
 
-	pages[TIME_PG]->restock();
+	//pages[TIME_PG]->restock();
 
 	checkbox->invalidate();
 }
@@ -420,8 +511,9 @@ void buildTimePage()
 	syncCheck.setXYpos(PG_LEFT_PADD, 45);
 	syncCheck.setText(DT_SYNC);
 	syncCheck.adjustTextY(-7);
-	syncCheck.on(false);
+	syncCheck.on(g_ntp_sync);
 	syncCheck.setCallback(syncTimeCallback, &syncCheck);
+	//syncCheck.onClick();
 
 	static Text timeZone;
 	timeZone.setXYpos(PG_LEFT_PADD, 97);
@@ -438,6 +530,7 @@ void buildTimePage()
 	utc.adjustTextY(2);
 	utc.adjustTextX(4);
 	utc.setText(DT_UTC);
+	utc.setValue(gUTC);
 	utc.setCallback(std::bind(&DateTime::setUTC, &datetime, std::placeholders::_1), &utc);
 
 	// fields title done in datetime object
@@ -581,7 +674,7 @@ void buildWiFiSettPage()
 	gwsWifiChBox.setText(WS_CHECK);
 	//gwsWifiChBox.adjustTextY(0);
 	gwsWifiChBox.prepare();
-	gwsWifiChBox.on(true);
+	gwsWifiChBox.on(g_wifi_on);
 	gwsWifiChBox.setCallback(wifiChCallback);
 
 	static Text wsPar;
@@ -816,7 +909,7 @@ void buildLangPage()
 	// Поле ввода
 	gBrightness.setFont(SMALLFONT);
 	gBrightness.setXYpos(PG_LEFT_PADD, 83);
-	gBrightness.setValue(init_brightness);
+	gBrightness.setValue(g_init_brightness);
 	gBrightness.setText(PERCENT);
 	gBrightness.setCallback(gSetBacklight);
 	gBrightness.setColors(
@@ -894,14 +987,20 @@ void buildLangPage()
 	//static CircRadBtn ruSelect;
 	ruSelect.setXYpos(20, 186);
 	ruSelect.setCurCol(greyscaleColor(TOP_BAR_BG_COL));
-	ruSelect.on(true);
+	//ruSelect.on(true);
 	ruSelect.setCallback(changeLangRus);
 
 	//static CircRadBtn enSelect;
 	enSelect.setXYpos(20, 238);
 	enSelect.setCurCol(greyscaleColor(TOP_BAR_BG_COL));
-	enSelect.on(false);
+	//enSelect.on(false);
 	enSelect.setCallback(changeLangEng);
+
+	switch (g_selected_lang) {
+		default:
+		case RU_LANG: ruSelect.on(true); enSelect.on(false); break;
+		case EN_LANG: enSelect.on(true); ruSelect.on(false); break;
+	}
 
 	static Image ruFlag;
 	ruFlag.loadRes(images[IMG_RU]);
@@ -1048,19 +1147,35 @@ void buildSettingsPage()
 }
 
 
-#ifdef TASKS
-// gui task
+void gSetBacklight(void* arg)
+{
+	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
+	analogWrite(LED_PIN, mapped_br);
+}
+
 #ifdef APP_DEBUG
 #define STACK_CHECK_INTERVAL 10000
+unsigned long oldMillis;
 #endif
-//static iarduino_PCA9555 buttons(0x20);
-void gui(void* arg)
+
+void setup(void)
 {
+
 #ifdef APP_DEBUG
 	Serial.begin(115200);
 #endif
 	//Serial.println("Start INIT");
 	SPIFFS.begin();
+
+	if (!loadSettings()) {
+#ifdef APP_DEBUG
+		Serial.println("load settings failed");
+	}
+	else {
+		Serial.println("settings loaded");
+#endif
+	}
+
 	checkWifi();
 	// init all stuff in Gui.h
 	app.init();
@@ -1074,6 +1189,8 @@ void gui(void* arg)
 	buildSettingsPage();
 	buildMainPage();
 	topBar.build();
+
+
 
 	/*
 	pinMode(LED_PIN, OUTPUT);
@@ -1105,54 +1222,25 @@ void gui(void* arg)
 	topBar.draw();
 
 #ifdef APP_DEBUG
-	unsigned long oldMillis = millis();
+	oldMillis = millis();
 #endif
 
+	// expander stuff
 	buttons.begin();
+	second_expander.begin();
 	buttons.portMode(2, pinsAll(INPUT));
+	second_expander.portMode(1, pinsAll(INPUT));
+	second_expander.portMode(0, pinsAll(OUTPUT));
+	second_expander.portWrite(0, pinsAll(LOW));
 	pinMode(EXPANDER_INT, INPUT_PULLUP);
 
 	rtc.begin();
 	datetime.init();
+	datetime.prepare();
 
 	//delay(500);
 
-	for(;;) {
-#if CONFIG_FREERTOS_UNICORE
-		yieldIfNecessary();
-#endif
-		app.update();
-#ifdef APP_DEBUG
-		if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
-
-			//Serial.print("gpio status: ");
-			//Serial.println(buttons.portRead(0), BIN);
-
-			uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
-			Serial.print("gui task unused stack: ");
-			Serial.println(unused);
-			oldMillis = millis();
-		}
-#endif
-		if (serialEventRun) serialEventRun();
-		//yield();
-		//sleep(10);
-	}
-}
-#endif
-
-void gSetBacklight(void* arg)
-{
-	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
-	//ledcWrite(0, mapped_br);
-	//Serial.println("the brightness is: ");
-	//Serial.println(mapped_br);
-	analogWrite(LED_PIN, mapped_br);
-}
-
-void setup(void)
-{
-
+	/*
 	xTaskCreate(
 			gui,
 			"gui",
@@ -1162,6 +1250,20 @@ void setup(void)
 			NULL
 		   );
 	vTaskDelete(NULL);
+	*/
 }
 
-void loop() { }
+void loop()
+{
+	app.update();
+#ifdef APP_DEBUG
+	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
+
+		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
+		Serial.print("gui task unused stack: ");
+		Serial.println(unused);
+		oldMillis = millis();
+	}
+#endif
+
+}
