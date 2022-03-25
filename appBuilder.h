@@ -1,6 +1,7 @@
 #ifndef _APP_BUILDER_
 #define _APP_BUILDER_
-#include "Gui.h"
+
+class Page;
 
 class Builder {
 	private:
