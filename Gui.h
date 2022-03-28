@@ -299,33 +299,12 @@ class ScrObj {
 			return _objptr;
 		}
 
-		/*
-		void setCallback(void(*callback)(void*), void* page_ptr)
-		{
-			_callback = callback;
-			_objptr = page_ptr;
-		}
-		*/
-
 		void setCallback(std::function<void(void*)> callback, void* objptr = nullptr)
 		{
 			_callback = callback;
 			_objptr = objptr;
 		}
 
-		/*
-		void setCallback(std::function<void(void*)> callback)
-		{
-			_callback = callback;
-		}
-		*/
-
-		/*
-		void setCallback(void(*callback)(void*))
-		{
-			_callback = callback;
-		}
-		*/
 
 		void setSelectable(bool isSelectable = true)
 		{
@@ -533,6 +512,8 @@ class GreyTextButton: public ScrObj {
 	public:
 		GreyTextButton(): ScrObj(GREY_BUTTON_WIDTH, GREY_BUTTON_HEIGHT, SELECTABLE)
 		{
+			setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
+			setFont(SMALLFONT);
 		}
 
 		virtual void freeRes() override
@@ -1672,6 +1653,8 @@ class Wait: public ScrObj {
 	public:
 		Wait(): ScrObj(WAIT_WDTH, WAIT_RECT_SIZ)
 		{
+			setFont(SMALLESTFONT);
+			setText(WAIT_TEXT);
 		}
 
 		void setInterval(unsigned long interval)
@@ -1973,6 +1956,8 @@ typedef enum {
 	WIFI_PG,
 	WIFI_SETT_PG,
 	TIME_PG,
+	CAL_SETT_PG,
+	CAL_PH1_PG,
 	NPAGES
 } pages_t;
 

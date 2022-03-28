@@ -6,6 +6,7 @@
 typedef enum {
 	NO_STRING,
 	EMPTY_STR,
+	BLUE_BTN_NEXT,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
@@ -83,6 +84,40 @@ typedef enum {
 
 	// utility
 	NOT_FOUND,
+
+	/* Calib pages */
+	CAL_TITLE,
+	CAL_TDS,
+	CAL_PH,
+	CAL_PAR1,
+
+	CAL_DONE,
+	CAL_WARN,
+
+	CAL_PH_TITLE,
+	CAL_TDS_TITLE,
+
+	/* pH calib pages */
+	// ph1
+	PH1_PAR1,
+	PH1_PAR2,
+
+	// ph2
+	PH2_PAR1,
+	CAL_SCAN_4,
+
+	// ph3
+	PH3_PAR1,
+
+	// ph4
+	PH4_PAR1,
+	PH4_PAR2,
+	CAL_SCAN_9,
+
+	// ph5
+	PH5_PAR1,
+
+	/* TDS calib pages */
 
 	END_OF_STRINGS
 } dispStrings_t;

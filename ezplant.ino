@@ -496,9 +496,78 @@ void syncTimeCallback(void* arg)
 page builders TODO: move to Gui
 *******************************************************************************/
 
+/************************ PH CALIBRATE PAGES *********************/
+
+void buildCalSettPage()
+{
+	static Page calibSettPage;
+
+	pages[CAL_SETT_PG] = &calibSettPage;
+
+	static GreyTextButton tds;
+	tds.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	tds.setText(CAL_TDS);
+	//tds.setCallback
+
+	static GreyTextButton ph;
+	ph.setXYpos(PG_LEFT_PADD, MB_Y_START+GREY_BUTTON_HEIGHT+5);
+	ph.setText(CAL_PH);
+	ph.setCallback(callPage, pages[CAL_PH1_PG]);
+
+	static Text calText;
+	calText.setXYpos(PG_LEFT_PADD, 132);
+	calText.setText(CAL_PAR1);
+	//TODO: implement this
+	//calText.rightJustify();
+
+	static Image qrCode;
+	qrCode.setXYpos(116, 192);
+	qrCode.loadRes(images[IMG_QR_CAL]);
+
+
+	calibSettPage.setTitle(CAL_TITLE);
+	calibSettPage.setPrev(&settingsPage);
+	calibSettPage.addItem(&tds);
+	calibSettPage.addItem(&ph);
+	calibSettPage.addItem(&calText);
+	calibSettPage.addItem(&qrCode);
+	calibSettPage.addItem(&back);
+}
+
+void buildPh1Page()
+{
+	static Page ph1page;
+	pages[CAL_PH1_PG] = &ph1page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH1_PAR1);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 77);
+	par2.setText(PH1_PAR2);
+
+	static BlueTextButton ph_next;
+	ph_next.setXYpos(PG_LEFT_PADD, 120);
+	ph_next.setText(BLUE_BTN_NEXT);
+	//ph_next.setCallback();
+
+	static Text warn;
+	warn.setXYpos(PG_LEFT_PADD, 160);
+	warn.setText(CAL_WARN);
+	warn.setColors(RED_COL_MACRO, TFT_WHITE);
+
+	ph1page.setTitle(CAL_PH_TITLE);
+	ph1page.setPrev(pages[CAL_SETT_PG]);
+	ph1page.addItem(&par1);
+	ph1page.addItem(&par2);
+	ph1page.addItem(&ph_next);
+	ph1page.addItem(&warn);
+	ph1page.addItem(&back);
+}
+
+
 /************************ TIME PAGE ******************************/
-
-
 void buildTimePage()
 {
 	pages[TIME_PG] = &timePage;
@@ -793,7 +862,7 @@ void buildTestPage()
 	testGreyButton.setCallback(nop);
 
 	//TODO: depricate this:
-	testGreyButton.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
+	//testGreyButton.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
 
 	testBlueButton.setXYpos(17, 185);
 	testBlueButton.setText(BLUE_BUTTON);
@@ -1103,15 +1172,26 @@ void buildMainPage()
 	mainPage.addItem(&back);
 }
 
+enum SettingsPageMenuItems{
+	MN_TIMEDATE,
+	MN_WIFI,
+	MN_SCREENLANG,
+	MN_CALIB,
+	MN_THRES,
+	MN_NITEMS
+};
+
 void buildSettingsPage()
 {
 	pages[SETT_PG] = &settingsPage;
+
+	// strings for items
 	dispStrings_t ru_menu_settings[settings_size];
-	ru_menu_settings[0] = TIMEDATE;
-	ru_menu_settings[1] = WIFI;
-	ru_menu_settings[2] = SCREENLANG;
-	ru_menu_settings[3] = CALIB;
-	ru_menu_settings[4] = THRES;
+	ru_menu_settings[MN_TIMEDATE] = TIMEDATE;
+	ru_menu_settings[MN_WIFI] = WIFI;
+	ru_menu_settings[MN_SCREENLANG] = SCREENLANG;
+	ru_menu_settings[MN_CALIB] = CALIB;
+	ru_menu_settings[MN_THRES] = THRES;
 
 	int j = 0;
 	int gap = 5;
@@ -1125,15 +1205,17 @@ void buildSettingsPage()
 		j++;
 	}
 
-	settings_items[0].setCallback(callPage, pages[TIME_PG]);
+	settings_items[MN_TIMEDATE].setCallback(callPage, pages[TIME_PG]);
 	//settings_items[2].setCallback(callLangPage);
 	if (g_wifi_set) {
-		settings_items[1].setCallback(callPage, pages[WIFI_SETT_PG]);
+		settings_items[MN_WIFI].setCallback(callPage, pages[WIFI_SETT_PG]);
 	}
 	else {
-		settings_items[1].setCallback(callPage, pages[WIFI_PG]);
+		settings_items[MN_WIFI].setCallback(callPage, pages[WIFI_PG]);
 	}
-	settings_items[2].setCallback(callPage, pages[LANG_PG]);
+	settings_items[MN_SCREENLANG].setCallback(callPage, pages[LANG_PG]);
+
+	settings_items[MN_CALIB].setCallback(callPage, pages[CAL_SETT_PG]);
 
 	for (int i = 0; i < settings_size; i++) {
 		settingsPage.addItem(&settings_items[i]);
@@ -1158,6 +1240,12 @@ void gSetBacklight(void* arg)
 unsigned long oldMillis;
 #endif
 
+void linkAllPages()
+{
+	//TODO: move all links here
+	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
+}
+
 void setup(void)
 {
 
@@ -1180,6 +1268,11 @@ void setup(void)
 	// init all stuff in Gui.h
 	app.init();
 
+
+	buildPh1Page();
+
+	buildCalSettPage();
+
 	buildTimePage();
 	buildWiFiSettPage();
 	buildWifiPage();
@@ -1191,6 +1284,7 @@ void setup(void)
 	topBar.build();
 
 
+	linkAllPages();
 
 	/*
 	pinMode(LED_PIN, OUTPUT);

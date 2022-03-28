@@ -6,6 +6,7 @@
 const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"String not set",
 	"",
+	"Next",
 	// main menu strings
 	"Menu",
 	"New planting",
@@ -82,7 +83,41 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	".",
 
 	// utility
-	"Not found"
+	"Page not found",
+
+	/* Calib pages */
+	"Sensor calibration",
+	"EC/TDS meter",
+	"pH meter",
+	"Extensive instructions\non calibration and making\nof calibration liquids",
+
+	"Successful calibration",
+	"Warning! This process is\nirreversible.",
+
+	"pH calibration",
+	"TDS calibration",
+
+	/* Ph calib pages */
+	// ph1
+	"1. Prepare calibration liquids 4.0pH and 9.18pH",
+	"2. Clean the sensor and rinse\nit in distilled water",
+
+	// ph2
+	"3. Dip the sensor in liquid\n%f%s and press the button",
+	"Scan 4.0pH",
+
+	// ph3
+	"4. Taking measurements.\nIt will take a minute",
+
+	// ph4
+	"5. Rinse the sensor\nin distilled water",
+	"6. Dip the sensor in\n 9.18pH liquid",
+	"Scan 9.18 pH",
+
+	// ph5
+	"7. Taking measurements.\nIt will take a minute"
+
+	/* TDS calib pages */
 
 	//end of strings
 };
