@@ -92,6 +92,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Extensive instructions\non calibration and making\nof calibration liquids",
 
 	"Successful calibration",
+	"Done",
 	"Warning! This process is\nirreversible.",
 
 	"pH calibration",

@@ -91,6 +91,7 @@ typedef enum {
 	CAL_PH,
 	CAL_PAR1,
 
+	CAL_SUCC,
 	CAL_DONE,
 	CAL_WARN,
 

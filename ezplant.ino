@@ -490,6 +490,54 @@ void syncTimeCallback(void* arg)
 	checkbox->invalidate();
 }
 
+#define SOL_SETT_TIM 5000
+
+void calibPH4task(void* arg)
+{
+	sleep(SOL_SETT_TIM);
+	/*
+	ph_meter.setCalibration(1, 4.00);
+	while (ph_meter.getCalibration() == 1) {
+		sleep(20000);
+	}
+	*/
+
+	g_ph_calib_4_done = true;
+
+	vTaskDelete(NULL);
+}
+
+void calibPH9task(void* arg)
+{
+	sleep(SOL_SETT_TIM);
+	/*
+	ph_meter.setCalibration(2, 9.18);
+	while (ph_meter.getCalibration() == 2) {
+		sleep(20000);
+	}
+	*/
+
+	g_ph_calib_9_done = true;
+
+	vTaskDelete(NULL);
+}
+
+void createCalibTasks(void* arg)
+{
+	if (currPage == pages[CAL_PH2_PG]) {
+		callPage(pages[CAL_PH3_PG]);
+	}
+	else {
+		callPage(pages[CAL_PH5_PG]);
+	}
+
+	if (!g_ph_calib_4_done && !g_ph_calib_9_done) {
+		xTaskCreate(calibPH4task, "ph4", 2000, NULL, 1, NULL);
+	}
+	else if (g_ph_calib_4_done && !g_ph_calib_9_done) {
+		xTaskCreate(calibPH9task, "ph9", 2000, NULL, 1, NULL);
+	}
+}
 
 /*******************************************************************************
 page builders TODO: move to Gui
@@ -523,14 +571,115 @@ void buildCalSettPage()
 	qrCode.setXYpos(116, 192);
 	qrCode.loadRes(images[IMG_QR_CAL]);
 
-
 	calibSettPage.setTitle(CAL_TITLE);
-	calibSettPage.setPrev(&settingsPage);
+	//calibSettPage.setPrev(&settingsPage);
 	calibSettPage.addItem(&tds);
 	calibSettPage.addItem(&ph);
 	calibSettPage.addItem(&calText);
 	calibSettPage.addItem(&qrCode);
 	calibSettPage.addItem(&back);
+}
+
+void buildPh5Page()
+{
+	static Page ph5page;
+
+	pages[CAL_PH5_PG] = &ph5page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH5_PAR1);
+
+	g_ph5wait.setXYpos(75, 98);
+
+	g_ph_succ.setXYpos(PG_LEFT_PADD, 98);
+	g_ph_succ.setText(CAL_SUCC);
+	g_ph_succ.setColors(GREEN_COL_MACRO, TFT_WHITE);
+	g_ph_succ.setInvisible();
+
+	g_ph_done.setXYpos(PG_LEFT_PADD, 120);
+	g_ph_done.setText(CAL_DONE);
+	g_ph_done.setInvisible();
+	g_ph_done.setCallback(callPage, pages[MENU_PG]);
+
+	ph5page.setTitle(CAL_PH_TITLE);
+
+	ph5page.addItem(&par1);
+	ph5page.addItem(&g_ph5wait);
+	ph5page.addItem(&g_ph_succ);
+	ph5page.addItem(&g_ph_done);
+}
+
+void buildPh4Page()
+{
+	static Page ph4page;
+
+	pages[CAL_PH4_PG] = &ph4page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH4_PAR1);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 77);
+	par2.setText(PH4_PAR2);
+
+	static BlueTextButton ph_scan;
+	ph_scan.setXYpos(PG_LEFT_PADD, 120);
+	ph_scan.setText(CAL_SCAN_9);
+	// TODO: set to calib 9 function
+	ph_scan.setCallback(createCalibTasks);
+
+	ph4page.setTitle(CAL_PH_TITLE);
+
+	ph4page.addItem(&par1);
+	ph4page.addItem(&par2);
+	ph4page.addItem(&ph_scan);
+}
+
+void buildPh3Page()
+{
+	static Page ph3page;
+
+	pages[CAL_PH3_PG] = &ph3page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH3_PAR1);
+
+	g_ph3wait.setXYpos(75, 105);
+
+	g_ph_next.setXYpos(PG_LEFT_PADD, 95);
+	g_ph_next.setText(BLUE_BTN_NEXT);
+	g_ph_next.setCallback(callPage, pages[CAL_PH4_PG]);
+	g_ph_next.setInvisible();
+
+	ph3page.setTitle(CAL_PH_TITLE);
+
+	ph3page.addItem(&par1);
+	ph3page.addItem(&g_ph3wait);
+	ph3page.addItem(&g_ph_next);
+}
+
+void buildPh2Page()
+{
+	static Page ph2page;
+
+	pages[CAL_PH2_PG] = &ph2page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH2_PAR1);
+
+	static BlueTextButton ph_scan;
+	ph_scan.setXYpos(PG_LEFT_PADD, 82);
+	ph_scan.setText(CAL_SCAN_4);
+	// TODO: set to calib 4 func
+	ph_scan.setCallback(createCalibTasks);
+
+	ph2page.setTitle(CAL_PH_TITLE);
+	ph2page.addItem(&par1);
+	ph2page.addItem(&ph_scan);
 }
 
 void buildPh1Page()
@@ -549,7 +698,7 @@ void buildPh1Page()
 	static BlueTextButton ph_next;
 	ph_next.setXYpos(PG_LEFT_PADD, 120);
 	ph_next.setText(BLUE_BTN_NEXT);
-	//ph_next.setCallback();
+	ph_next.setCallback(callPage, pages[CAL_PH2_PG]);
 
 	static Text warn;
 	warn.setXYpos(PG_LEFT_PADD, 160);
@@ -557,7 +706,7 @@ void buildPh1Page()
 	warn.setColors(RED_COL_MACRO, TFT_WHITE);
 
 	ph1page.setTitle(CAL_PH_TITLE);
-	ph1page.setPrev(pages[CAL_SETT_PG]);
+	//ph1page.setPrev(pages[CAL_SETT_PG]);
 	ph1page.addItem(&par1);
 	ph1page.addItem(&par2);
 	ph1page.addItem(&ph_next);
@@ -607,7 +756,7 @@ void buildTimePage()
 	//currTime.setText(DT_CURR);
 
 	timePage.setTitle(DT_TITLE);
-	timePage.setPrev(&settingsPage);
+	//timePage.setPrev(&settingsPage);
 
 	timePage.addItem(&timeCal);
 	timePage.addItem(&syncCheck);
@@ -627,12 +776,13 @@ void buildTimePage()
 
 
 /************************ WIFI PAGE ******************************/
-Page wifiPage;
 
 #define WI_PG_FONT_COL 0x44
 
 void buildWifiPage()
 {
+
+	static Page wifiPage;
 	// TEXT
 	uint16_t bg_col = greyscaleColor(BACKGROUND);
 	uint16_t font1_col = greyscaleColor(FONT_COLOR);
@@ -717,14 +867,14 @@ void buildWifiPage()
 
 	wifiPage.setIconsVis(false);
 	wifiPage.setTitle(WI_TITLE);
-	wifiPage.setPrev(&settingsPage);
+	//wifiPage.setPrev(&settingsPage);
 	wifiPage.addItem(&back);
 }
 
-Page wifiSettPage;
 
 void buildWiFiSettPage()
 {
+	static Page wifiSettPage;
 	pages[WIFI_SETT_PG] = &wifiSettPage;
 
 	// colors
@@ -814,7 +964,7 @@ void buildWiFiSettPage()
 
 	wifiSettPage.addItem(&changeWifi);
 
-	wifiSettPage.setPrev(&settingsPage);
+	//wifiSettPage.setPrev(&settingsPage);
 	wifiSettPage.setTitle(WS_TITLE);
 	wifiSettPage.addItem(&back);
 }
@@ -1118,7 +1268,7 @@ void buildLangPage()
 	langPage.addItem(&langRu);
 	langPage.addItem(&langEng);
 
-	langPage.setPrev(&settingsPage);
+	//langPage.setPrev(&settingsPage);
 	langPage.addItem(&back);
 }
 
@@ -1248,16 +1398,23 @@ unsigned long oldMillis;
 
 void linkAllPages()
 {
-	//TODO: move all links here
 	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
+
 	pages[SETT_PG]->setPrev(pages[MENU_PG]);
 	pages[FONT_PG]->setPrev(pages[MENU_PG]);
 	pages[TEST_PG]->setPrev(pages[MENU_PG]);
+
+	pages[WIFI_SETT_PG]->setPrev(pages[SETT_PG]);
+	pages[WIFI_PG]->setPrev(pages[SETT_PG]);
+	pages[TIME_PG]->setPrev(pages[SETT_PG]);
+	pages[CAL_SETT_PG]->setPrev(pages[SETT_PG]);
+	pages[LANG_PG]->setPrev(pages[SETT_PG]);
 }
 
 void setup(void)
 {
-
+	g_ph_calib_4_done = false;
+	g_ph_calib_9_done = false;
 #ifdef APP_DEBUG
 	Serial.begin(115200);
 #endif
@@ -1277,9 +1434,14 @@ void setup(void)
 	// init all stuff in Gui.h
 	app.init();
 
-
+	// ph calib pages
+	buildPh5Page();
+	buildPh4Page();
+	buildPh3Page();
+	buildPh2Page();
 	buildPh1Page();
 
+	// common calib page
 	buildCalSettPage();
 
 	buildTimePage();
@@ -1290,6 +1452,8 @@ void setup(void)
 	buildLangPage();
 	buildSettingsPage();
 	buildMainPage();
+
+
 	topBar.build();
 
 

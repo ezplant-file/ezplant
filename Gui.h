@@ -31,6 +31,10 @@
 #include <iarduino_RTC.h>
 iarduino_RTC rtc(RTC_RX8025);
 
+// ph meter
+#include <iarduino_I2C_pH.h>
+iarduino_I2C_pH ph_meter;
+
 // buttons
 #include <iarduino_PCA9555.h>
 iarduino_PCA9555 buttons(0x20); //first expander
@@ -185,6 +189,11 @@ WebServer server(80);
 std::atomic<bool> g_rapid_blink;
 std::atomic<bool> g_ping_success;
 std::atomic<bool> g_wifi_set;
+
+std::atomic<bool> g_ph_calib_4_done;
+std::atomic<bool> g_ph_calib_9_done;
+
+
 //atomic_bool g_ping_success = false;
 //bool g_ping_success = false;
 //iarduino_RTC rtc(RTC_DS3231);
@@ -264,6 +273,7 @@ class ScrObj {
 			_w(w),
 			_h(h),
 			_isSelectable(isSelectable)
+			//,_wasSelectable(isSelectable)
 		{
 		}
 
@@ -316,13 +326,21 @@ class ScrObj {
 			return _isVisible;
 		}
 
+		// TODO: deal with _isSelectable on not selectable obj
 		void setVisible()
 		{
+			/*
+			if (_wasSelectable) {
+				_isSelectable = true;
+			}
+			*/
 			_isVisible = true;
+			_invalid = true;
 		}
 
 		void setInvisible()
 		{
+			//_isSelectable = false;
 			_isVisible = false;
 		}
 
@@ -449,6 +467,7 @@ class ScrObj {
 		void* _objptr = nullptr;
 		bool _isVisible = true;
 		bool _isSelectable;
+		//bool _wasSelectable;
 		bool _isPressed = false;
 		bool _isSelected = false;
 		bool _invalid = false;
@@ -479,7 +498,7 @@ class BlueTextButton: public ScrObj {
 		virtual void draw() override
 		{
 			//_h = BLUE_BUTTON_HEIGHT;
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 			tft.setTextColor(_fg, _bg);
 			tft.loadFont(FONTS[_fontIndex]);
@@ -540,7 +559,7 @@ class GreyTextButton: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 			_btnSpr.pushSprite(_x, _y);
 			_invalid = false;
@@ -580,7 +599,7 @@ class Text: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 			//freeRes();
 			//prepare();
@@ -814,7 +833,7 @@ class BodyText: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 			_txtSp.pushSprite(_x, _y, TFT_TRANSPARENT);
 			_invalid = false;
@@ -904,7 +923,7 @@ class ImageButton: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			if (_invalid)
@@ -916,10 +935,12 @@ class ImageButton: public ScrObj {
 			}
 		}
 
+		/*
 		virtual void erase() override
 		{
 
 		}
+		*/
 
 		void reload()
 		{
@@ -950,10 +971,12 @@ class SimpleBox: public ScrObj {
 	public:
 		virtual void draw() override
 		{
-			if (_invalid) {
-				tft.fillRect(_x, _y, _w, _h, _col);
-				_invalid = false;
+			if (!_invalid || !_isVisible) {
+				return;
 			}
+
+			tft.fillRect(_x, _y, _w, _h, _col);
+			_invalid = false;
 		}
 
 		virtual void freeRes() override
@@ -993,7 +1016,7 @@ class InputField: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			_text.draw();
@@ -1236,7 +1259,7 @@ class CheckBox: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			reload();
@@ -1375,7 +1398,7 @@ class Toggle: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			tft.fillRoundRect(_x, _y, _w, _h, TGL_RAD, greyscaleColor(TGL_BG));
@@ -1469,7 +1492,7 @@ class CircRadBtn: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(_bgcol));
@@ -1551,7 +1574,7 @@ class TestPageRadio: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(_bgcol));
@@ -1679,8 +1702,13 @@ class Wait: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (_invalid)
+			if (!_isVisible) {
+				return;
+			}
+
+			if (_invalid) {
 				_waitText.draw();
+			}
 
 			//if (!_invalid)
 				//return;
@@ -1751,6 +1779,13 @@ class Wait: public ScrObj {
 		unsigned long _timestamp = 0;
 		unsigned long _interval = DRAW_INTERVAL;
 };
+
+// calib pages global items
+Wait g_ph3wait;
+BlueTextButton g_ph_next;
+Wait g_ph5wait;
+Text g_ph_succ;
+BlueTextButton g_ph_done;
 
 class Cursor {
 	public:
@@ -1896,7 +1931,10 @@ class Page {
 
 		ScrObj* getCurrItemAt(size_t i)
 		{
-			return _selectable.at(i);
+			if (_selectable.at(i)->isVisible())
+				return _selectable.at(i);
+			else
+				return nullptr;
 		}
 
 		size_t nItems()
@@ -1947,8 +1985,20 @@ class Page {
 			_iconsVisible = vis;
 		}
 
+		/*
+		bool hasBackBtn()
+		{
+			return _hasBackBtn;
+		}
+
+		void setBackBtn(bool btn = true)
+		{
+			_hasBackBtn = btn;
+		}
+		*/
 
 	private:
+		//bool _hasBackBtn = true;
 		bool _iconsVisible = true;
 		Page* _prev = nullptr;
 		dispStrings_t _title;
@@ -1958,6 +2008,7 @@ class Page {
 };
 
 typedef enum {
+	MAIN_PG,
 	MENU_PG,
 	SETT_PG,
 	LANG_PG,
@@ -1968,6 +2019,10 @@ typedef enum {
 	TIME_PG,
 	CAL_SETT_PG,
 	CAL_PH1_PG,
+	CAL_PH2_PG,
+	CAL_PH3_PG,
+	CAL_PH4_PG,
+	CAL_PH5_PG,
 	NPAGES
 } pages_t;
 
@@ -2543,6 +2598,24 @@ class App {
 
 			topBar.update();
 			datetime.update();
+			/* calib pages global items. TODO: make not global? */
+
+			if (currPage == pages[CAL_PH3_PG] && g_ph_calib_4_done && g_ph3wait.isVisible()) {
+				g_ph3wait.erase();
+				g_ph3wait.setInvisible();
+				g_ph_next.setVisible();
+				currItem = &g_ph_next;
+				_iterator = 0;
+			}
+
+			if (currPage == pages[CAL_PH5_PG] && g_ph_calib_9_done && g_ph5wait.isVisible()) {
+				g_ph5wait.erase();
+				g_ph5wait.setInvisible();
+				g_ph_done.setVisible();
+				g_ph_succ.setVisible();
+				currItem = &g_ph_done;
+				_iterator = 0;
+			}
 
 			if (millis() - _dimMils > g_dimafter * 1000 && !_inactive) {
 				_inactive = true;
@@ -2637,7 +2710,13 @@ class App {
 				_iterator--;
 				if (_iterator < 0)
 					_iterator = currPage->selSize() - 1;
-				currItem = currPage->getCurrItemAt(_iterator);
+
+				ScrObj* tmp;
+				if ((tmp = currPage->getCurrItemAt(_iterator)) != nullptr) {
+					currItem = tmp;
+				}
+
+				//currItem = currPage->getCurrItemAt(_iterator);
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
@@ -2647,7 +2726,12 @@ class App {
 				_iterator++;
 				if (_iterator > currPage->selSize() - 1)
 					_iterator = 0;
-				currItem = currPage->getCurrItemAt(_iterator);
+
+				ScrObj* tmp;
+				if ((tmp = currPage->getCurrItemAt(_iterator)) != nullptr) {
+					currItem = tmp;
+				}
+
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
