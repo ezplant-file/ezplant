@@ -40,7 +40,6 @@ using json = nlohmann::json;
 
 static App app;
 
-static Page mainPage;
 static Page settingsPage;
 // screen buttons
 #define menu1_size 6
@@ -518,7 +517,7 @@ void buildCalSettPage()
 	calText.setXYpos(PG_LEFT_PADD, 132);
 	calText.setText(CAL_PAR1);
 	//TODO: implement this
-	//calText.rightJustify();
+	calText.rightJustify();
 
 	static Image qrCode;
 	qrCode.setXYpos(116, 192);
@@ -883,7 +882,6 @@ void buildTestPage()
 	testPage.addItem(&wait);
 
 	testPage.setTitle(TEST_PAGE);
-	testPage.setPrev(&mainPage);
 	testPage.addItem(&back);
 }
 
@@ -945,7 +943,6 @@ void buildFontPage()
 		fontPage.addItem(i);
 	}
 	fontPage.setTitle(FONT_PAGE);
-	fontPage.setPrev(&mainPage);
 	fontPage.addItem(&back);
 }
 
@@ -1125,20 +1122,31 @@ void buildLangPage()
 	langPage.addItem(&back);
 }
 
+enum mainMenuItems {
+	MM_PLANT,
+	MM_MON,
+	MM_SETT,
+	MM_DIAG,
+	MM_TEST,
+	MM_FONT,
+	MM_NITEMS
+};
+
 void buildMainPage()
 {
+	static Page mainPage;
 	pages[MENU_PG] = &mainPage;
 
 	//////// TODO: calculate gap?
 	int gap = 5;
 
-	dispStrings_t ru_menu1[menu1_size];
-	ru_menu1[0] = NEW_PLANT;
-	ru_menu1[1] = ONLINE_MON;
-	ru_menu1[2] = SETTINGS;
-	ru_menu1[3] = DIAG;
-	ru_menu1[4] = TEST_PAGE;
-	ru_menu1[5] = FONT_PAGE;
+	dispStrings_t menu1[menu1_size];
+	menu1[MM_PLANT] = NEW_PLANT;
+	menu1[MM_MON] = ONLINE_MON;
+	menu1[MM_SETT] = SETTINGS;
+	menu1[MM_DIAG] = DIAG;
+	menu1[MM_TEST] = TEST_PAGE;
+	menu1[MM_FONT] = FONT_PAGE;
 
 	int j = 0;
 
@@ -1148,21 +1156,21 @@ void buildMainPage()
 		i.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
 		i.setFont(SMALLFONT);
 		i.setXYpos(PG_LEFT_PADD, MB_Y_START+(GREY_BUTTON_HEIGHT+gap)*j);
-		i.setText(ru_menu1[j]);
+		i.setText(menu1[j]);
 		j++;
 	}
 
-	//menu_items[2].setCallback(callSettingsPage);
-	menu_items[2].setCallback(callPage, pages[SETT_PG]);
-	//menu_items[4].setCallback(callTestPage);
-	menu_items[4].setCallback(callPage, pages[TEST_PG]);
-	//menu_items[5].setCallback(callFontPage);
-	menu_items[5].setCallback(callPage, pages[FONT_PG]);
+	// set callBacks
+	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
+	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
+	menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
 
+	// add all to page
 	for (int i = 0; i < menu1_size; i++) {
 		mainPage.addItem(&menu_items[i]);
 	}
 
+	// TODO: change to setPrev, move "back" init somewhere else
 	back.setCallback(nop);
 	back.loadRes(images[IMG_PREV]);
 	back.setXYpos(7, 284);
@@ -1172,7 +1180,7 @@ void buildMainPage()
 	mainPage.addItem(&back);
 }
 
-enum SettingsPageMenuItems{
+enum settingsPageMenuItems {
 	MN_TIMEDATE,
 	MN_WIFI,
 	MN_SCREENLANG,
@@ -1222,8 +1230,6 @@ void buildSettingsPage()
 	}
 
 	settingsPage.setTitle(SETTINGS);
-	//settingsPage.setPrev(pages[MENU_PG]);
-	settingsPage.setPrev(&mainPage);
 	settingsPage.addItem(&back);
 
 }
@@ -1244,6 +1250,9 @@ void linkAllPages()
 {
 	//TODO: move all links here
 	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
+	pages[SETT_PG]->setPrev(pages[MENU_PG]);
+	pages[FONT_PG]->setPrev(pages[MENU_PG]);
+	pages[TEST_PG]->setPrev(pages[MENU_PG]);
 }
 
 void setup(void)
@@ -1303,9 +1312,7 @@ void setup(void)
 	// backlight
 	gBrightness.onClick();
 
-	//mainPage.prepare();
-
-	currPage = &mainPage;
+	currPage = pages[MENU_PG];
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();
 	currPage->prepare();

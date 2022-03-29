@@ -605,6 +605,10 @@ class Text: public ScrObj {
 			//tft.setTextPadding(_padding);
 			_txtSp.loadFont(FONTS[_fontIndex]);
 
+			if (_rightjsfy) {
+				_txtSp.setTextDatum(TR_DATUM);
+			}
+
 			/*
 			// TODO: calculate based on longest substring
 			// calculate _w based on string wrap
@@ -714,7 +718,13 @@ class Text: public ScrObj {
 			_dy = y;
 		}
 
+		void rightJustify()
+		{
+			_rightjsfy = true;
+		}
+
 	private:
+		bool _rightjsfy = false;
 		//uint16_t _padding;
 		uint16_t _fg = FONT_COL_565;
 		uint16_t _bg = TFT_WHITE;
