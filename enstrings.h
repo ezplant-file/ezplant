@@ -100,25 +100,36 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 
 	/* Ph calib pages */
 	// ph1
-	"1. Prepare calibration liquids 4.0pH and 9.18pH",
+	"1. Prepare calibration solutions 4.0pH and 9.18pH",
 	"2. Clean the sensor and rinse\nit in distilled water",
 
 	// ph2
-	"3. Dip the sensor in liquid\n%f%s and press the button",
-	"Scan 4.0pH",
+	"3. Put the sensor in 4.0pH solution\nand press the button",
+	"Scan 4.0 pH",
 
 	// ph3
 	"4. Taking measurements.\nIt will take a minute",
 
 	// ph4
 	"5. Rinse the sensor\nin distilled water",
-	"6. Dip the sensor in\n 9.18pH liquid",
+	"6. Put the sensor in\n 9.18pH solution",
 	"Scan 9.18 pH",
 
 	// ph5
-	"7. Taking measurements.\nIt will take a minute"
+	"7. Taking measurements.\nIt will take a minute",
+
+	// ph/tds fail
+	"Cannot init the senosor,\ncheck wiring or replage\nthe sensor.",
 
 	/* TDS calib pages */
+	// tds1
+	"1. Prepare calibration solutions 500  and 1500 ppm.",
+	// tds2
+	"3. Put the sensor in 500 ppm solution\nand press the button.",
+	"Сканировать 500 ppm",
+	// tds4
+	"6. Put the sensor in 1500 ppm solution\nand press the button.",
+	"Сканировать 1500 ppm"
 
 	//end of strings
 };

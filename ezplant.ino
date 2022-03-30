@@ -21,6 +21,7 @@
 #define BTN_PLU 	0b00100000
 #define EXPANDER_INT	27
 #define LED_PIN 	23
+#define TDS_MTR_RLY	7
 //#define LED_PIN 	19
 
 // Wifi
@@ -490,17 +491,18 @@ void syncTimeCallback(void* arg)
 	checkbox->invalidate();
 }
 
+// ph calib tasks
 #define SOL_SETT_TIM 5000
 
 void calibPH4task(void* arg)
 {
 	sleep(SOL_SETT_TIM);
-	/*
+
 	ph_meter.setCalibration(1, 4.00);
+
 	while (ph_meter.getCalibration() == 1) {
-		sleep(20000);
+		sleep(1000);
 	}
-	*/
 
 	g_ph_calib_4_done = true;
 
@@ -510,19 +512,18 @@ void calibPH4task(void* arg)
 void calibPH9task(void* arg)
 {
 	sleep(SOL_SETT_TIM);
-	/*
+
 	ph_meter.setCalibration(2, 9.18);
 	while (ph_meter.getCalibration() == 2) {
-		sleep(20000);
+		sleep(1000);
 	}
-	*/
 
 	g_ph_calib_9_done = true;
 
 	vTaskDelete(NULL);
 }
 
-void createCalibTasks(void* arg)
+void createPhCalibTasks(void* arg)
 {
 	if (currPage == pages[CAL_PH2_PG]) {
 		callPage(pages[CAL_PH3_PG]);
@@ -539,12 +540,83 @@ void createCalibTasks(void* arg)
 	}
 }
 
+// tds calib tasks
+void calibTDS500task(void* arg)
+{
+	sleep(SOL_SETT_TIM);
+
+	tds_meter.setCalibration(1, 500);
+	while (tds_meter.getCalibration() == 1) {
+		sleep(1000);
+	}
+
+	g_tds_calib_500_done = true;
+	vTaskDelete(NULL);
+}
+
+void calibTDS1500task(void* arg)
+{
+	sleep(SOL_SETT_TIM);
+
+	tds_meter.setCalibration(1, 1500);
+	while (tds_meter.getCalibration() == 2) {
+		sleep(1000);
+	}
+
+	g_tds_calib_1500_done = true;
+	vTaskDelete(NULL);
+}
+
+void createTdsCalibTasks(void* arg)
+{
+	if (currPage == pages[CAL_TDS2_PG]) {
+		callPage(pages[CAL_TDS3_PG]);
+	}
+	else {
+		callPage(pages[CAL_TDS5_PG]);
+	}
+
+	if (!g_tds_calib_500_done && !g_tds_calib_1500_done) {
+		xTaskCreate(calibTDS500task, "tds500", 2000, NULL, 1, NULL);
+	}
+	else if (g_tds_calib_500_done && !g_tds_calib_1500_done) {
+		xTaskCreate(calibTDS1500task, "tds1500", 2000, NULL, 1, NULL);
+	}
+}
+
+// sensor checkers
+void checkPhSensor(void* arg)
+{
+	resetCalibFlags();
+	if (!ph_meter.begin()) {
+		pages[SENS_FAIL_PG]->setTitle(CAL_PH_TITLE);
+		callPage(pages[SENS_FAIL_PG]);
+	}
+	else {
+		callPage(pages[CAL_PH1_PG]);
+	}
+}
+
+void checkTdsSensor(void* arg)
+{
+	resetCalibFlags();
+	if (!tds_meter.begin()) {
+		pages[SENS_FAIL_PG]->setTitle(CAL_TDS_TITLE);
+		callPage(pages[SENS_FAIL_PG]);
+	}
+	else {
+		second_expander.digitalWrite(TDS_MTR_RLY, HIGH);
+		callPage(pages[CAL_TDS1_PG]);
+	}
+
+}
+
+
 /*******************************************************************************
 page builders TODO: move to Gui
 *******************************************************************************/
 
-/************************ PH CALIBRATE PAGES *********************/
-
+/**************************** COMMON CALIB PAGES ********************************/
 void buildCalSettPage()
 {
 	static Page calibSettPage;
@@ -554,12 +626,12 @@ void buildCalSettPage()
 	static GreyTextButton tds;
 	tds.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	tds.setText(CAL_TDS);
-	//tds.setCallback
+	tds.setCallback(checkTdsSensor);
 
 	static GreyTextButton ph;
 	ph.setXYpos(PG_LEFT_PADD, MB_Y_START+GREY_BUTTON_HEIGHT+5);
 	ph.setText(CAL_PH);
-	ph.setCallback(callPage, pages[CAL_PH1_PG]);
+	ph.setCallback(checkPhSensor);
 
 	static Text calText;
 	calText.setXYpos(PG_LEFT_PADD, 132);
@@ -580,6 +652,24 @@ void buildCalSettPage()
 	calibSettPage.addItem(&back);
 }
 
+Page* buildSensorFailPage()
+{
+	static Page fail;
+
+	static Text par1;
+
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(SENS_FAIL);
+
+	fail.setTitle(CAL_PH_TITLE);
+
+	fail.addItem(&par1);
+	fail.addItem(&back);
+
+	return &fail;
+}
+
+/************************ PH CALIBRATE PAGES *********************/
 void buildPh5Page()
 {
 	static Page ph5page;
@@ -600,7 +690,6 @@ void buildPh5Page()
 	g_ph_done.setXYpos(PG_LEFT_PADD, 120);
 	g_ph_done.setText(CAL_DONE);
 	g_ph_done.setInvisible();
-	g_ph_done.setCallback(callPage, pages[MENU_PG]);
 
 	ph5page.setTitle(CAL_PH_TITLE);
 
@@ -628,7 +717,7 @@ void buildPh4Page()
 	ph_scan.setXYpos(PG_LEFT_PADD, 120);
 	ph_scan.setText(CAL_SCAN_9);
 	// TODO: set to calib 9 function
-	ph_scan.setCallback(createCalibTasks);
+	ph_scan.setCallback(createPhCalibTasks);
 
 	ph4page.setTitle(CAL_PH_TITLE);
 
@@ -675,7 +764,7 @@ void buildPh2Page()
 	ph_scan.setXYpos(PG_LEFT_PADD, 82);
 	ph_scan.setText(CAL_SCAN_4);
 	// TODO: set to calib 4 func
-	ph_scan.setCallback(createCalibTasks);
+	ph_scan.setCallback(createPhCalibTasks);
 
 	ph2page.setTitle(CAL_PH_TITLE);
 	ph2page.addItem(&par1);
@@ -712,6 +801,141 @@ void buildPh1Page()
 	ph1page.addItem(&ph_next);
 	ph1page.addItem(&warn);
 	ph1page.addItem(&back);
+}
+
+/************************ TDS CALIBRATE PAGES *********************/
+Page* buildTds5Page()
+{
+	static Page ph5page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH5_PAR1);
+
+	g_tds5wait.setXYpos(75, 98);
+
+	g_tds_succ.setXYpos(PG_LEFT_PADD, 98);
+	g_tds_succ.setText(CAL_SUCC);
+	g_tds_succ.setColors(GREEN_COL_MACRO, TFT_WHITE);
+	g_tds_succ.setInvisible();
+
+	g_tds_done.setXYpos(PG_LEFT_PADD, 120);
+	g_tds_done.setText(CAL_DONE);
+	g_tds_done.setInvisible();
+
+	ph5page.setTitle(CAL_TDS_TITLE);
+
+	ph5page.addItem(&par1);
+	ph5page.addItem(&g_tds5wait);
+	ph5page.addItem(&g_tds_succ);
+	ph5page.addItem(&g_tds_done);
+
+	return &ph5page;
+}
+
+Page* buildTds4Page()
+{
+	static Page ph4page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH4_PAR1);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 77);
+	par2.setText(TDS4_PAR2);
+
+	static BlueTextButton ph_scan;
+	ph_scan.setXYpos(PG_LEFT_PADD, 120);
+	ph_scan.setText(TDS4_SCAN_1500);
+
+	ph_scan.setCallback(createTdsCalibTasks);
+
+	ph4page.setTitle(CAL_TDS_TITLE);
+
+	ph4page.addItem(&par1);
+	ph4page.addItem(&par2);
+	ph4page.addItem(&ph_scan);
+
+	return &ph4page;
+}
+
+Page* buildTds3Page()
+{
+	static Page ph3page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH3_PAR1);
+
+	g_tds3wait.setXYpos(75, 105);
+
+	g_tds_next.setXYpos(PG_LEFT_PADD, 95);
+	g_tds_next.setText(BLUE_BTN_NEXT);
+	g_tds_next.setCallback(callPage, pages[CAL_TDS4_PG]);
+	g_tds_next.setInvisible();
+
+	ph3page.setTitle(CAL_TDS_TITLE);
+
+	ph3page.addItem(&par1);
+	ph3page.addItem(&g_tds3wait);
+	ph3page.addItem(&g_tds_next);
+
+	return &ph3page;
+}
+
+Page* buildTds2Page()
+{
+	static Page ph2page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH2_PAR1);
+
+	static BlueTextButton ph_scan;
+	ph_scan.setXYpos(PG_LEFT_PADD, 82);
+	ph_scan.setText(TDS2_SCAN_500);
+	// TODO: set to calib 4 func
+	ph_scan.setCallback(createTdsCalibTasks);
+
+	ph2page.setTitle(CAL_TDS_TITLE);
+	ph2page.addItem(&par1);
+	ph2page.addItem(&ph_scan);
+
+	return &ph2page;
+}
+
+Page* buildTds1Page()
+{
+	static Page ph1page;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(TDS1_PAR1);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 77);
+	par2.setText(PH1_PAR2);
+
+	static BlueTextButton ph_next;
+	ph_next.setXYpos(PG_LEFT_PADD, 120);
+	ph_next.setText(BLUE_BTN_NEXT);
+	ph_next.setCallback(callPage, pages[CAL_TDS2_PG]);
+
+	static Text warn;
+	warn.setXYpos(PG_LEFT_PADD, 160);
+	warn.setText(CAL_WARN);
+	warn.setColors(RED_COL_MACRO, TFT_WHITE);
+
+	ph1page.setTitle(CAL_TDS_TITLE);
+	//ph1page.setPrev(pages[CAL_SETT_PG]);
+	ph1page.addItem(&par1);
+	ph1page.addItem(&par2);
+	ph1page.addItem(&ph_next);
+	ph1page.addItem(&warn);
+	ph1page.addItem(&back);
+
+	return &ph1page;
 }
 
 
@@ -1398,7 +1622,9 @@ unsigned long oldMillis;
 
 void linkAllPages()
 {
+	pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
 	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
+	pages[CAL_TDS1_PG]->setPrev(pages[CAL_SETT_PG]);
 
 	pages[SETT_PG]->setPrev(pages[MENU_PG]);
 	pages[FONT_PG]->setPrev(pages[MENU_PG]);
@@ -1409,12 +1635,14 @@ void linkAllPages()
 	pages[TIME_PG]->setPrev(pages[SETT_PG]);
 	pages[CAL_SETT_PG]->setPrev(pages[SETT_PG]);
 	pages[LANG_PG]->setPrev(pages[SETT_PG]);
+
+	g_ph_done.setCallback(callPage, pages[MENU_PG]);
+	g_tds_done.setCallback(callPage, pages[MENU_PG]);
+
 }
 
 void setup(void)
 {
-	g_ph_calib_4_done = false;
-	g_ph_calib_9_done = false;
 #ifdef APP_DEBUG
 	Serial.begin(115200);
 #endif
@@ -1435,11 +1663,19 @@ void setup(void)
 	app.init();
 
 	// ph calib pages
+	pages[SENS_FAIL_PG] = buildSensorFailPage();
 	buildPh5Page();
 	buildPh4Page();
 	buildPh3Page();
 	buildPh2Page();
 	buildPh1Page();
+
+	// tds calib pages
+	pages[CAL_TDS5_PG] = buildTds5Page();
+	pages[CAL_TDS4_PG] = buildTds4Page();
+	pages[CAL_TDS3_PG] = buildTds3Page();
+	pages[CAL_TDS2_PG] = buildTds2Page();
+	pages[CAL_TDS1_PG] = buildTds1Page();
 
 	// common calib page
 	buildCalSettPage();
@@ -1452,7 +1688,6 @@ void setup(void)
 	buildLangPage();
 	buildSettingsPage();
 	buildMainPage();
-
 
 	topBar.build();
 

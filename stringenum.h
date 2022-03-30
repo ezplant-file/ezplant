@@ -118,7 +118,18 @@ typedef enum {
 	// ph5
 	PH5_PAR1,
 
+	// ph fail
+	SENS_FAIL,
+
 	/* TDS calib pages */
+	// tds1
+	TDS1_PAR1,
+	// tds2
+	TDS2_PAR1,
+	TDS2_SCAN_500,
+	// tds4
+	TDS4_PAR2,
+	TDS4_SCAN_1500,
 
 	END_OF_STRINGS
 } dispStrings_t;

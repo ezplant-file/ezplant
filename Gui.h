@@ -33,7 +33,11 @@ iarduino_RTC rtc(RTC_RX8025);
 
 // ph meter
 #include <iarduino_I2C_pH.h>
-iarduino_I2C_pH ph_meter;
+iarduino_I2C_pH ph_meter(10);
+
+// tds meter
+#include <iarduino_I2C_TDS.h>
+iarduino_I2C_TDS tds_meter(11);
 
 // buttons
 #include <iarduino_PCA9555.h>
@@ -193,6 +197,8 @@ std::atomic<bool> g_wifi_set;
 std::atomic<bool> g_ph_calib_4_done;
 std::atomic<bool> g_ph_calib_9_done;
 
+std::atomic<bool> g_tds_calib_500_done;
+std::atomic<bool> g_tds_calib_1500_done;
 
 //atomic_bool g_ping_success = false;
 //bool g_ping_success = false;
@@ -1787,6 +1793,12 @@ Wait g_ph5wait;
 Text g_ph_succ;
 BlueTextButton g_ph_done;
 
+Wait g_tds3wait;
+BlueTextButton g_tds_next;
+Wait g_tds5wait;
+Text g_tds_succ;
+BlueTextButton g_tds_done;
+
 class Cursor {
 	public:
 		void draw(bool blink)
@@ -2017,12 +2029,21 @@ typedef enum {
 	WIFI_PG,
 	WIFI_SETT_PG,
 	TIME_PG,
+	// common sensor settings
 	CAL_SETT_PG,
+	SENS_FAIL_PG,
+	// ph
 	CAL_PH1_PG,
 	CAL_PH2_PG,
 	CAL_PH3_PG,
 	CAL_PH4_PG,
 	CAL_PH5_PG,
+	// tds
+	CAL_TDS1_PG,
+	CAL_TDS2_PG,
+	CAL_TDS3_PG,
+	CAL_TDS4_PG,
+	CAL_TDS5_PG,
 	NPAGES
 } pages_t;
 
@@ -2527,6 +2548,15 @@ class DateTime: public ScrObj {
 		}
 } datetime;
 
+
+void resetCalibFlags()
+{
+	g_ph_calib_4_done = false;
+	g_ph_calib_9_done = false;
+	g_tds_calib_500_done = false;
+	g_tds_calib_1500_done = false;
+}
+
 class App {
 	private:
 		unsigned long _oldMils = 0;
@@ -2553,6 +2583,7 @@ class App {
 
 		void init()
 		{
+			resetCalibFlags();
 			switch (g_selected_lang) {
 				default:
 				case RU_LANG: scrStrings = ruStrings; break;
@@ -2598,8 +2629,10 @@ class App {
 
 			topBar.update();
 			datetime.update();
+
 			/* calib pages global items. TODO: make not global? */
 
+			// wait for ph1 clalib
 			if (currPage == pages[CAL_PH3_PG] && g_ph_calib_4_done && g_ph3wait.isVisible()) {
 				g_ph3wait.erase();
 				g_ph3wait.setInvisible();
@@ -2608,6 +2641,7 @@ class App {
 				_iterator = 0;
 			}
 
+			// wait for ph2 clalib
 			if (currPage == pages[CAL_PH5_PG] && g_ph_calib_9_done && g_ph5wait.isVisible()) {
 				g_ph5wait.erase();
 				g_ph5wait.setInvisible();
@@ -2615,6 +2649,26 @@ class App {
 				g_ph_succ.setVisible();
 				currItem = &g_ph_done;
 				_iterator = 0;
+			}
+
+			// wait for tds1 calib
+			if (currPage == pages[CAL_TDS3_PG] && g_tds_calib_500_done && g_tds3wait.isVisible()) {
+				g_tds3wait.erase();
+				g_tds3wait.setInvisible();
+				g_tds_next.setVisible();
+				currItem = &g_tds_next;
+				_iterator = 0;
+			}
+
+			// wait for tds2 calib
+			if (currPage == pages[CAL_TDS5_PG] && g_tds_calib_1500_done && g_tds5wait.isVisible()) {
+				g_tds5wait.erase();
+				g_tds5wait.setInvisible();
+				g_tds_done.setVisible();
+				g_tds_succ.setVisible();
+				currItem = &g_tds_done;
+				_iterator = 0;
+				second_expander.digitalWrite(TDS_MTR_RLY, LOW);
 			}
 
 			if (millis() - _dimMils > g_dimafter * 1000 && !_inactive) {
