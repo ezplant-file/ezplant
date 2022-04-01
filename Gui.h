@@ -18,6 +18,7 @@
 // global ntp sync - g_ntp_sync
 #ifndef __GUI_H__
 #define __GUI_H__
+#define COLOR_DEPTH 16
 
 #include <vector>
 #include <atomic>
@@ -33,11 +34,11 @@ iarduino_RTC rtc(RTC_RX8025);
 
 // ph meter
 #include <iarduino_I2C_pH.h>
-iarduino_I2C_pH ph_meter(10);
+iarduino_I2C_pH ph_meter(0x0a);
 
 // tds meter
 #include <iarduino_I2C_TDS.h>
-iarduino_I2C_TDS tds_meter(11);
+iarduino_I2C_TDS tds_meter(0x0b);
 
 // buttons
 #include <iarduino_PCA9555.h>
@@ -127,6 +128,9 @@ iarduino_PCA9555 second_expander(0x21);
 // dim screen after
 #define LOWER_DIMAFTER 3
 #define HIGHER_DIMAFTER 180
+
+// NTP
+#define NTP_SERVER "pool.ntp.org"
 
 // settings
 uint8_t g_dimafter = 20;
@@ -550,17 +554,23 @@ class GreyTextButton: public ScrObj {
 		{
 			//_w = GREY_BUTTON_WIDTH;
 			//_h = GREY_BUTTON_HEIGHT;
-			if (_invalid) {
-				_btnSpr.createSprite(_w, _h);
-				_btnSpr.fillSprite(_bg);
-				_btnSpr.loadFont(FONTS[_fontIndex]);
-				_btnSpr.setTextColor(_fg, _bg);
-				_btnSpr.setCursor(_paddingX, _paddingY);
-				_btnSpr.print(scrStrings[_index]);
-				_btnSpr.setCursor(197, _paddingY);
-				_btnSpr.print(">");
-				_btnSpr.unloadFont();
+			if (!_invalid)
+				return;
+
+			_btnSpr.createSprite(_w, _h);
+#ifdef APP_DEBUG
+			if (!_btnSpr.created()) {
+				Serial.println("************ Failed to create sprite **********");
 			}
+#endif
+			_btnSpr.fillSprite(_bg);
+			_btnSpr.loadFont(FONTS[_fontIndex]);
+			_btnSpr.setTextColor(_fg, _bg);
+			_btnSpr.setCursor(_paddingX, _paddingY);
+			_btnSpr.print(scrStrings[_index]);
+			_btnSpr.setCursor(197, _paddingY);
+			_btnSpr.print(">");
+			_btnSpr.unloadFont();
 		}
 
 		virtual void draw() override
@@ -577,6 +587,7 @@ class GreyTextButton: public ScrObj {
 			_fg = fg;
 			_invalid = true;
 			_isSelectable = true;
+			_btnSpr.setColorDepth(COLOR_DEPTH);
 		}
 
 
@@ -651,6 +662,11 @@ class Text: public ScrObj {
 				_w = SCR_WIDTH;
 
 			_txtSp.createSprite(_w, _h);
+#ifdef APP_DEBUG
+			if (!_txtSp.created()) {
+				Serial.println("************ Failed to create sprite **********");
+			}
+#endif
 			_txtSp.fillSprite(TFT_TRANSPARENT);
 			_txtSp.setTextColor(_fg, _bg);
 			//_txtSp.print(_text);
@@ -669,7 +685,7 @@ class Text: public ScrObj {
 			// set colors
 			_fg = fg;
 			_bg = bg;
-			_txtSp.setColorDepth(16);
+			_txtSp.setColorDepth(COLOR_DEPTH);
 		}
 
 		virtual void setText(dispStrings_t index) override
@@ -848,16 +864,17 @@ class BodyText: public ScrObj {
 		virtual void prepare() override
 		{
 			//_h = TOP_BAR_HEIGHT - 12;
-			if (_invalid) {
-				_txtSp.loadFont(FONTS[_fontIndex]);
-				_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
-				_txtSp.createSprite(_w, _h);
-				_txtSp.fillSprite(TFT_TRANSPARENT);
-				_txtSp.setTextColor(_fg, _bg);
-				//_txtSp.print(_text);
-				_txtSp.print(scrStrings[_index]);
-				_txtSp.unloadFont();
-			}
+			if (!_invalid)
+				return;
+
+			_txtSp.loadFont(FONTS[_fontIndex]);
+			_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
+			_txtSp.createSprite(_w, _h);
+			_txtSp.fillSprite(TFT_TRANSPARENT);
+			_txtSp.setTextColor(_fg, _bg);
+			//_txtSp.print(_text);
+			_txtSp.print(scrStrings[_index]);
+			_txtSp.unloadFont();
 		}
 
 		void setColors(uint16_t fg, uint16_t bg)
@@ -865,7 +882,7 @@ class BodyText: public ScrObj {
 			// set colors
 			_fg = fg;
 			_bg = bg;
-			_txtSp.setColorDepth(16);
+			_txtSp.setColorDepth(COLOR_DEPTH);
 		}
 
 	private:
@@ -1249,7 +1266,7 @@ class InputField: public ScrObj {
 InputField gBrightness;
 
 //TODO: manually decode JPG, push array to sprite
-TFT_eSprite checkSprite = TFT_eSprite(&tft);
+//TFT_eSprite checkSprite = TFT_eSprite(&tft);
 
 class CheckBox: public ScrObj {
 	public:
@@ -1923,6 +1940,12 @@ class Page {
 				obj->invalidate();
 		}
 
+		void freeRes()
+		{
+			for (auto& obj:_items)
+				obj->freeRes();
+		}
+
 		void erase()
 		{
 			//tft.fillRect(0, 28, 240, 284 - 28, greyscaleColor(BACKGROUND));
@@ -2248,6 +2271,7 @@ enum {
 Page timePage;
 
 #define RTC_CHECK_INTERVAL 60000
+#define USER_INPUT_SETTLE 500
 
 class DateTime: public ScrObj {
 	public:
@@ -2272,16 +2296,37 @@ class DateTime: public ScrObj {
 		InputField _visible[N_DATETIME_VISIBLE];
 		Text _fieldsTitle;
 		bool _sync = false;
+		bool _userInputSettled = false;
+		bool _timeSynced = false;
 		int8_t _utc = 0;
 		struct tm  _timeinfo;
 		unsigned long _oldMils = 0;
-		const char* const _nptServer = "pool.ntp.org";
+		const char* const _nptServer = NTP_SERVER;
+		unsigned long _userInputTimestamp = 0;
 		//uint16_t _y = 225;
 		//TFT_eSprite _sprite = TFT_eSprite(&tft);
 	public:
 
 		void update()
 		{
+			if (
+					millis()
+					- _userInputTimestamp
+					> USER_INPUT_SETTLE
+					&& !_userInputSettled
+					&& !_timeSynced
+					) {
+				_userInputSettled = true;
+			}
+
+			if (_userInputSettled) {
+				syncNTP();
+				prepare();
+				invalidate();
+				_userInputSettled = false;
+				_timeSynced = true;
+			}
+
 			if (millis() - _oldMils > RTC_CHECK_INTERVAL) {
 				_oldMils = millis();
 
@@ -2385,10 +2430,15 @@ class DateTime: public ScrObj {
 			if (obj == nullptr)
 				return;
 
+			_timeSynced = false;
+			_userInputSettled = false;
+			_userInputTimestamp = millis();
+
 			InputField* utc = (InputField*) obj;
 
 			_utc = utc->getValue();
 
+			/*
 			// TODO: postpone or move sync to different task
 			if (this->_sync) {
 				syncNTP();
@@ -2396,16 +2446,6 @@ class DateTime: public ScrObj {
 
 			prepare();
 			invalidate();
-			/*
-			_visible[HOUR].invalidate();
-			_visible[HOUR].prepare();
-			_visible[HOUR].draw();
-			*/
-			/*
-			else {
-				_visible[HOUR].setValue(_visible[HOUR].getValue() + _utc);
-				setHours(nullptr);
-			}
 			*/
 		}
 
@@ -2593,7 +2633,7 @@ class App {
 			g_ping_success = false;
 			//SPIFFS.begin();
 			tft.init();
-			tft.initDMA(true);
+			//tft.initDMA(true);
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
 			//Serial.println("Finish INIT");
@@ -2630,7 +2670,7 @@ class App {
 			topBar.update();
 			datetime.update();
 
-			/* calib pages global items. TODO: make not global? */
+			/* calib pages global items. */
 
 			// wait for ph1 clalib
 			if (currPage == pages[CAL_PH3_PG] && g_ph_calib_4_done && g_ph3wait.isVisible()) {
@@ -2749,6 +2789,8 @@ class App {
 			if (!_dbFlag)
 				return;
 
+			//userinput.update();
+
 			if (_inactive) {
 				//Serial.println("Bang!");
 				_inactive = false;
@@ -2812,6 +2854,12 @@ class App {
 				currItem = currPage->getCurrItemAt(_iterator);
 				_dbFlag = false;
 			}
+			/*
+			else if (~user_input & BTN_HOME) {
+				struct HeapStats_t stats;
+				vPortGetHeapStats(&stats);
+			}
+			*/
 
 			// don't blink if buttons were pressed...
 			_oldMils = millis();

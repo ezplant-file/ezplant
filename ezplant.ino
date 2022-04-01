@@ -4,7 +4,7 @@
 //#include "esp_task_wdt.h"
 
 #define TASKS
-#define APP_DEBUG
+//#define APP_DEBUG
 
 #define PUMP_F 	17
 #define PUMP_G 	18
@@ -19,10 +19,13 @@
 #define BTN_HOME 	0b00001000
 #define BTN_NEXT 	0b00010000
 #define BTN_PLU 	0b00100000
+
+// interrupt
 #define EXPANDER_INT	27
+// backlight
 #define LED_PIN 	23
+// relay
 #define TDS_MTR_RLY	7
-//#define LED_PIN 	19
 
 // Wifi
 #include <WiFi.h>
@@ -346,6 +349,8 @@ void callPage(void* page_ptr)
 	//back.setCallback(callPage, currPage);
 	back.setCallback(callPage, page->prev());
 
+	currPage->freeRes();
+
 	page->invalidateAll();
 	page->prepare();
 
@@ -608,7 +613,6 @@ void checkTdsSensor(void* arg)
 		second_expander.digitalWrite(TDS_MTR_RLY, HIGH);
 		callPage(pages[CAL_TDS1_PG]);
 	}
-
 }
 
 
@@ -1643,9 +1647,9 @@ void linkAllPages()
 
 void setup(void)
 {
-#ifdef APP_DEBUG
+//#ifdef APP_DEBUG
 	Serial.begin(115200);
-#endif
+//#endif
 	//Serial.println("Start INIT");
 	SPIFFS.begin();
 
@@ -1756,6 +1760,7 @@ void setup(void)
 void loop()
 {
 	app.update();
+	//heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
 
