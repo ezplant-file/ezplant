@@ -4,7 +4,7 @@
 //#include "esp_task_wdt.h"
 
 #define TASKS
-//#define APP_DEBUG
+#define APP_DEBUG
 
 #define PUMP_F 	17
 #define PUMP_G 	18
@@ -46,10 +46,8 @@ static App app;
 
 static Page settingsPage;
 // screen buttons
-#define menu1_size 6
-#define settings_size 5
-static GreyTextButton menu_items[menu1_size];
-static GreyTextButton settings_items[settings_size];
+//#define menu1_size 6
+//#define settings_size 5
 static ImageButton back;
 //static ImageButton sett_back;
 static BlueTextButton next;
@@ -228,7 +226,7 @@ void getCallback()
 	saveFile();
 
 	g_wifi_set = true;
-	buildSettingsPage();
+	pages[SETT_PG] = buildSettingsPage();
 
 	if (currPage == pages[WIFI_PG]) {
 		callPage(pages[WIFI_SETT_PG]);
@@ -267,6 +265,9 @@ void softAP()
 void connectWithCred()
 {
 	//server.end();
+#ifdef APP_DEBUG
+	Serial.println((String)"entering " + __func__);
+#endif
 
 	WiFi.softAPdisconnect(true);
 
@@ -305,6 +306,9 @@ void checkWifi()
 		file_password = file.readStringUntil('\n');
 		file_ssid.trim();
 		file_password.trim();
+		Serial.println(file_ssid);
+		Serial.println(file_password);
+		Serial.println("connect with cred");
 		connectWithCred();
 		file.close();
 		g_wifi_set = true;
@@ -333,7 +337,7 @@ void gChangeWifi(void* arg)
 	g_wifi_set = false;
 
 	checkWifi();
-	buildSettingsPage();
+	pages[SETT_PG] = buildSettingsPage();
 	callPage(pages[WIFI_PG]);
 }
 
@@ -592,36 +596,55 @@ void createTdsCalibTasks(void* arg)
 // sensor checkers
 void checkPhSensor(void* arg)
 {
-	resetCalibFlags();
-	if (!ph_meter.begin()) {
-		pages[SENS_FAIL_PG]->setTitle(CAL_PH_TITLE);
-		callPage(pages[SENS_FAIL_PG]);
+	if (currPage == pages[CAL_SETT_PG]) {
+		resetCalibFlags();
+		if (!ph_meter.begin()) {
+			pages[SENS_FAIL_PG]->setTitle(CAL_PH_TITLE);
+			pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
+			callPage(pages[SENS_FAIL_PG]);
+		}
+		else {
+			callPage(pages[CAL_PH1_PG]);
+		}
 	}
-	else {
-		callPage(pages[CAL_PH1_PG]);
+	else if (currPage == pages[SENS_DIAG_PG]) {
+		if (!ph_meter.begin()) {
+			pages[SENS_FAIL_PG]->setTitle(DIAG_SENS);
+			pages[SENS_FAIL_PG]->setPrev(pages[SENS_DIAG_PG]);
+			callPage(pages[SENS_FAIL_PG]);
+		}
 	}
 }
 
 void checkTdsSensor(void* arg)
 {
-	resetCalibFlags();
-	if (!tds_meter.begin()) {
-		pages[SENS_FAIL_PG]->setTitle(CAL_TDS_TITLE);
-		callPage(pages[SENS_FAIL_PG]);
+	if (currPage == pages[CAL_SETT_PG]) {
+		resetCalibFlags();
+		if (!tds_meter.begin()) {
+			pages[SENS_FAIL_PG]->setTitle(CAL_TDS_TITLE);
+			pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
+			callPage(pages[SENS_FAIL_PG]);
+		}
+		else {
+			second_expander.digitalWrite(TDS_MTR_RLY, HIGH);
+			callPage(pages[CAL_TDS1_PG]);
+		}
 	}
-	else {
-		second_expander.digitalWrite(TDS_MTR_RLY, HIGH);
-		callPage(pages[CAL_TDS1_PG]);
+	else if (currPage == pages[SENS_DIAG_PG]) {
+		if (!tds_meter.begin()) {
+			pages[SENS_FAIL_PG]->setTitle(DIAG_SENS);
+			pages[SENS_FAIL_PG]->setPrev(pages[SENS_DIAG_PG]);
+			callPage(pages[SENS_FAIL_PG]);
+		}
 	}
 }
-
 
 /*******************************************************************************
 page builders TODO: move to Gui
 *******************************************************************************/
 
 /**************************** COMMON CALIB PAGES ********************************/
-void buildCalSettPage()
+Page* buildCalSettPage()
 {
 	static Page calibSettPage;
 
@@ -654,6 +677,8 @@ void buildCalSettPage()
 	calibSettPage.addItem(&calText);
 	calibSettPage.addItem(&qrCode);
 	calibSettPage.addItem(&back);
+
+	return &calibSettPage;
 }
 
 Page* buildSensorFailPage()
@@ -674,7 +699,7 @@ Page* buildSensorFailPage()
 }
 
 /************************ PH CALIBRATE PAGES *********************/
-void buildPh5Page()
+Page* buildPh5Page()
 {
 	static Page ph5page;
 
@@ -701,9 +726,11 @@ void buildPh5Page()
 	ph5page.addItem(&g_ph5wait);
 	ph5page.addItem(&g_ph_succ);
 	ph5page.addItem(&g_ph_done);
+
+	return &ph5page;
 }
 
-void buildPh4Page()
+Page* buildPh4Page()
 {
 	static Page ph4page;
 
@@ -728,9 +755,11 @@ void buildPh4Page()
 	ph4page.addItem(&par1);
 	ph4page.addItem(&par2);
 	ph4page.addItem(&ph_scan);
+
+	return &ph4page;
 }
 
-void buildPh3Page()
+Page* buildPh3Page()
 {
 	static Page ph3page;
 
@@ -752,9 +781,11 @@ void buildPh3Page()
 	ph3page.addItem(&par1);
 	ph3page.addItem(&g_ph3wait);
 	ph3page.addItem(&g_ph_next);
+
+	return &ph3page;
 }
 
-void buildPh2Page()
+Page* buildPh2Page()
 {
 	static Page ph2page;
 
@@ -773,9 +804,11 @@ void buildPh2Page()
 	ph2page.setTitle(CAL_PH_TITLE);
 	ph2page.addItem(&par1);
 	ph2page.addItem(&ph_scan);
+
+	return &ph2page;
 }
 
-void buildPh1Page()
+Page* buildPh1Page()
 {
 	static Page ph1page;
 	pages[CAL_PH1_PG] = &ph1page;
@@ -805,6 +838,8 @@ void buildPh1Page()
 	ph1page.addItem(&ph_next);
 	ph1page.addItem(&warn);
 	ph1page.addItem(&back);
+
+	return &ph1page;
 }
 
 /************************ TDS CALIBRATE PAGES *********************/
@@ -944,7 +979,7 @@ Page* buildTds1Page()
 
 
 /************************ TIME PAGE ******************************/
-void buildTimePage()
+Page* buildTimePage()
 {
 	pages[TIME_PG] = &timePage;
 
@@ -1000,6 +1035,8 @@ void buildTimePage()
 	timePage.addItem(&datetime);
 
 	timePage.addItem(&back);
+
+	return &timePage;
 }
 
 
@@ -1007,7 +1044,7 @@ void buildTimePage()
 
 #define WI_PG_FONT_COL 0x44
 
-void buildWifiPage()
+Page* buildWifiPage()
 {
 
 	static Page wifiPage;
@@ -1097,10 +1134,12 @@ void buildWifiPage()
 	wifiPage.setTitle(WI_TITLE);
 	//wifiPage.setPrev(&settingsPage);
 	wifiPage.addItem(&back);
+
+	return &wifiPage;
 }
 
 
-void buildWiFiSettPage()
+Page* buildWiFiSettPage()
 {
 	static Page wifiSettPage;
 	pages[WIFI_SETT_PG] = &wifiSettPage;
@@ -1195,11 +1234,13 @@ void buildWiFiSettPage()
 	//wifiSettPage.setPrev(&settingsPage);
 	wifiSettPage.setTitle(WS_TITLE);
 	wifiSettPage.addItem(&back);
+
+	return &wifiSettPage;
 }
 
 /************************ TEST PAGE ******************************/
 
-void buildTestPage()
+Page* buildTestPage()
 {
 	pages[TEST_PG] = &testPage;
 	testTgl.setFont(SMALLFONT);
@@ -1261,6 +1302,8 @@ void buildTestPage()
 
 	testPage.setTitle(TEST_PAGE);
 	testPage.addItem(&back);
+
+	return &testPage;
 }
 
 
@@ -1284,7 +1327,7 @@ Text* fonts[] = {
 
 
 
-void buildFontPage()
+Page* buildFontPage()
 {
 	pages[FONT_PG] = &fontPage;
 	smallestFont.setFont(SMALLESTFONT);
@@ -1322,12 +1365,14 @@ void buildFontPage()
 	}
 	fontPage.setTitle(FONT_PAGE);
 	fontPage.addItem(&back);
+
+	return &fontPage;
 }
 
 
 /************************************ LANG PAGE ******************************/
 // hardcoded
-void buildLangPage()
+Page* buildLangPage()
 {
 	pages[LANG_PG] = &langPage;
 	// Экран
@@ -1498,6 +1543,8 @@ void buildLangPage()
 
 	//langPage.setPrev(&settingsPage);
 	langPage.addItem(&back);
+
+	return &langPage;
 }
 
 enum mainMenuItems {
@@ -1510,15 +1557,16 @@ enum mainMenuItems {
 	MM_NITEMS
 };
 
-void buildMainPage()
+Page* buildMenuPage()
 {
 	static Page mainPage;
+	static GreyTextButton menu_items[MM_NITEMS];
 	pages[MENU_PG] = &mainPage;
 
-	//////// TODO: calculate gap?
-	int gap = 5;
+	// gap between items
+	int gap = MENU_GAP;
 
-	dispStrings_t menu1[menu1_size];
+	dispStrings_t menu1[MM_NITEMS];
 	menu1[MM_PLANT] = NEW_PLANT;
 	menu1[MM_MON] = ONLINE_MON;
 	menu1[MM_SETT] = SETTINGS;
@@ -1528,7 +1576,7 @@ void buildMainPage()
 
 	int j = 0;
 
-	// omg, change that...
+	// omg, change that...                           or not.
 	for (auto& i:menu_items) {
 		i.setCallback(nop);
 		i.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
@@ -1542,9 +1590,10 @@ void buildMainPage()
 	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
 	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
 	menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
+	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
 
 	// add all to page
-	for (int i = 0; i < menu1_size; i++) {
+	for (int i = 0; i < MM_NITEMS; i++) {
 		mainPage.addItem(&menu_items[i]);
 	}
 
@@ -1556,6 +1605,7 @@ void buildMainPage()
 
 	mainPage.setTitle(MENU);
 	mainPage.addItem(&back);
+	return &mainPage;
 }
 
 enum settingsPageMenuItems {
@@ -1567,12 +1617,14 @@ enum settingsPageMenuItems {
 	MN_NITEMS
 };
 
-void buildSettingsPage()
+Page* buildSettingsPage()
 {
 	pages[SETT_PG] = &settingsPage;
 
-	// strings for items
-	dispStrings_t ru_menu_settings[settings_size];
+	static GreyTextButton settings_items[MN_NITEMS];
+
+	// string pointers for items
+	dispStrings_t ru_menu_settings[MN_NITEMS];
 	ru_menu_settings[MN_TIMEDATE] = TIMEDATE;
 	ru_menu_settings[MN_WIFI] = WIFI;
 	ru_menu_settings[MN_SCREENLANG] = SCREENLANG;
@@ -1580,7 +1632,7 @@ void buildSettingsPage()
 	ru_menu_settings[MN_THRES] = THRES;
 
 	int j = 0;
-	int gap = 5;
+	int gap = MENU_GAP;
 
 	for (auto& i:settings_items) {
 		i.setCallback(nop);
@@ -1592,7 +1644,7 @@ void buildSettingsPage()
 	}
 
 	settings_items[MN_TIMEDATE].setCallback(callPage, pages[TIME_PG]);
-	//settings_items[2].setCallback(callLangPage);
+
 	if (g_wifi_set) {
 		settings_items[MN_WIFI].setCallback(callPage, pages[WIFI_SETT_PG]);
 	}
@@ -1603,15 +1655,77 @@ void buildSettingsPage()
 
 	settings_items[MN_CALIB].setCallback(callPage, pages[CAL_SETT_PG]);
 
-	for (int i = 0; i < settings_size; i++) {
+	for (int i = 0; i < MN_NITEMS; i++) {
 		settingsPage.addItem(&settings_items[i]);
 	}
 
 	settingsPage.setTitle(SETTINGS);
 	settingsPage.addItem(&back);
 
+	return &settingsPage;
 }
 
+enum diagPageItems {
+	DP_PWROUT,
+	DP_DIGIN,
+	DP_ADCIN,
+	DP_SENSD,
+	DP_NITEMS
+};
+
+Page* buildDiagPage()
+{
+	static Page diagPage;
+
+	// string pointers for items
+	dispStrings_t diagMenuButtons[DP_NITEMS];
+	diagMenuButtons[DP_PWROUT] = DIAG_PWR;
+	diagMenuButtons[DP_DIGIN] = DIAG_DIG;
+	diagMenuButtons[DP_ADCIN] = DIAG_ADC;
+	diagMenuButtons[DP_SENSD] = DIAG_SENS;
+
+	static GreyTextButton diag_items[DP_NITEMS];
+
+	int j = 0;
+	int gap = MENU_GAP;
+
+	for (auto& i:diag_items) {
+		i.setCallback(nop);
+		i.setXYpos(PG_LEFT_PADD, MB_Y_START+(GREY_BUTTON_HEIGHT+gap)*j);
+		i.setText(diagMenuButtons[j]);
+		diagPage.addItem(&i);
+		j++;
+	}
+
+	diag_items[DP_SENSD].setCallback(callPage, pages[SENS_DIAG_PG]);
+
+	diagPage.setTitle(DIAG);
+	diagPage.addItem(&back);
+
+	return &diagPage;
+}
+
+Page* buildSensDiag()
+{
+	static Page sensDiagPage;
+
+	static GreyTextButton tds;
+	tds.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	tds.setText(CAL_TDS);
+	tds.setCallback(checkTdsSensor);
+
+	static GreyTextButton ph;
+	ph.setXYpos(PG_LEFT_PADD, MB_Y_START+GREY_BUTTON_HEIGHT+MENU_GAP);
+	ph.setText(CAL_PH);
+	ph.setCallback(checkPhSensor);
+
+	sensDiagPage.setTitle(DIAG_SENS);
+	sensDiagPage.addItem(&tds);
+	sensDiagPage.addItem(&ph);
+	sensDiagPage.addItem(&back);
+
+	return &sensDiagPage;
+}
 
 void gSetBacklight(void* arg)
 {
@@ -1626,6 +1740,12 @@ unsigned long oldMillis;
 
 void linkAllPages()
 {
+#ifdef APP_DEBUG
+	Serial.println("pages pointers: ");
+	for (auto i:pages)
+		DEBUG_PRINT_HEX(i);
+#endif
+
 	pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
 	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
 	pages[CAL_TDS1_PG]->setPrev(pages[CAL_SETT_PG]);
@@ -1640,6 +1760,9 @@ void linkAllPages()
 	pages[CAL_SETT_PG]->setPrev(pages[SETT_PG]);
 	pages[LANG_PG]->setPrev(pages[SETT_PG]);
 
+	pages[DIAG_PG]->setPrev(pages[MENU_PG]);
+	pages[SENS_DIAG_PG]->setPrev(pages[DIAG_PG]);
+
 	g_ph_done.setCallback(callPage, pages[MENU_PG]);
 	g_tds_done.setCallback(callPage, pages[MENU_PG]);
 
@@ -1647,10 +1770,9 @@ void linkAllPages()
 
 void setup(void)
 {
-//#ifdef APP_DEBUG
+#ifdef APP_DEBUG
 	Serial.begin(115200);
-//#endif
-	//Serial.println("Start INIT");
+#endif
 	SPIFFS.begin();
 
 	if (!loadSettings()) {
@@ -1666,13 +1788,17 @@ void setup(void)
 	// init all stuff in Gui.h
 	app.init();
 
+	// diag pages
+	pages[SENS_DIAG_PG] = buildSensDiag();
+	pages[DIAG_PG] = buildDiagPage();
+
 	// ph calib pages
 	pages[SENS_FAIL_PG] = buildSensorFailPage();
-	buildPh5Page();
-	buildPh4Page();
-	buildPh3Page();
-	buildPh2Page();
-	buildPh1Page();
+	pages[CAL_PH5_PG] = buildPh5Page();
+	pages[CAL_PH4_PG] = buildPh4Page();
+	pages[CAL_PH3_PG] = buildPh3Page();
+	pages[CAL_PH2_PG] = buildPh2Page();
+	pages[CAL_PH1_PG] = buildPh1Page();
 
 	// tds calib pages
 	pages[CAL_TDS5_PG] = buildTds5Page();
@@ -1682,16 +1808,16 @@ void setup(void)
 	pages[CAL_TDS1_PG] = buildTds1Page();
 
 	// common calib page
-	buildCalSettPage();
+	pages[CAL_SETT_PG] = buildCalSettPage();
 
-	buildTimePage();
-	buildWiFiSettPage();
-	buildWifiPage();
-	buildFontPage();
-	buildTestPage();
-	buildLangPage();
-	buildSettingsPage();
-	buildMainPage();
+	pages[TIME_PG] = buildTimePage();
+	pages[WIFI_SETT_PG] = buildWiFiSettPage();
+	pages[WIFI_PG] = buildWifiPage();
+	pages[FONT_PG] = buildFontPage();
+	pages[TEST_PG] = buildTestPage();
+	pages[LANG_PG] = buildLangPage();
+	pages[SETT_PG] = buildSettingsPage();
+	pages[MENU_PG] = buildMenuPage();
 
 	topBar.build();
 

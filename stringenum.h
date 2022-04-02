@@ -131,6 +131,14 @@ typedef enum {
 	TDS4_PAR2,
 	TDS4_SCAN_1500,
 
+	/* diag menu */
+	// diag title from menu page
+	// DIAG
+	DIAG_PWR,
+	DIAG_DIG,
+	DIAG_ADC,
+	DIAG_SENS,
+
 	END_OF_STRINGS
 } dispStrings_t;
 

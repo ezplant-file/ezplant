@@ -58,6 +58,10 @@ iarduino_PCA9555 second_expander(0x21);
 /***************************** defines *************************/
 // print object address
 #define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
+#define DEBUG_PRINT_HEX(A) Serial.println((unsigned long long) (A), HEX)
+
+// gap between menu items
+#define MENU_GAP 5
 
 // green and red macros
 #define RED_COL_MACRO (tft.color565(0xff, 0,0))
@@ -2067,6 +2071,9 @@ typedef enum {
 	CAL_TDS3_PG,
 	CAL_TDS4_PG,
 	CAL_TDS5_PG,
+	// diag
+	DIAG_PG,
+	SENS_DIAG_PG,
 	NPAGES
 } pages_t;
 
@@ -2273,6 +2280,35 @@ Page timePage;
 #define RTC_CHECK_INTERVAL 60000
 #define USER_INPUT_SETTLE 500
 
+std::atomic<bool> g_sync_succ;
+SemaphoreHandle_t xNTPmutex;
+std::atomic<int8_t> g_utc;
+
+void vSyncNTPtask(void* arg)
+{
+	if (arg == nullptr)
+		vTaskDelete(NULL);
+
+	xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+
+	struct tm* task_tm = (struct tm*) arg;
+	//configTime(3600*_utc, 0, NTP_SERVER);
+	configTime(3600*g_utc, 0, NTP_SERVER);
+	if (!getLocalTime(task_tm)) {
+		g_sync_succ = false;
+#ifdef APP_DEBUG
+		Serial.println("failed to sync ntp time");
+#endif
+	}
+	else {
+		g_sync_succ = true;
+	}
+	xSemaphoreGive(xNTPmutex);
+
+	vTaskDelete(NULL);
+}
+
+
 class DateTime: public ScrObj {
 	public:
 		DateTime()
@@ -2286,6 +2322,8 @@ class DateTime: public ScrObj {
 
 		void init()
 		{
+			g_sync_succ = false;
+			xNTPmutex = xSemaphoreCreateMutex();
 			getI2Ctime();
 			if (_sync) {
 				syncNTP();
@@ -2293,15 +2331,16 @@ class DateTime: public ScrObj {
 		}
 
 	private:
+		//SemaphoreHandle_t xNTPmutex;
 		InputField _visible[N_DATETIME_VISIBLE];
 		Text _fieldsTitle;
 		bool _sync = false;
 		bool _userInputSettled = false;
 		bool _timeSynced = false;
-		int8_t _utc = 0;
+		//int8_t _utc = 0;
 		struct tm  _timeinfo;
 		unsigned long _oldMils = 0;
-		const char* const _nptServer = NTP_SERVER;
+		//const char* const _nptServer = NTP_SERVER;
 		unsigned long _userInputTimestamp = 0;
 		//uint16_t _y = 225;
 		//TFT_eSprite _sprite = TFT_eSprite(&tft);
@@ -2321,10 +2360,16 @@ class DateTime: public ScrObj {
 
 			if (_userInputSettled) {
 				syncNTP();
-				prepare();
-				invalidate();
+				//prepare();
+				//invalidate();
 				_userInputSettled = false;
 				_timeSynced = true;
+			}
+
+			if (g_sync_succ) {
+				invalidate();
+				prepare();
+				g_sync_succ = false;
 			}
 
 			if (millis() - _oldMils > RTC_CHECK_INTERVAL) {
@@ -2337,8 +2382,8 @@ class DateTime: public ScrObj {
 					getI2Ctime();
 				}
 
-				invalidate();
-				prepare();
+				//invalidate();
+				//prepare();
 			}
 		}
 
@@ -2363,32 +2408,42 @@ class DateTime: public ScrObj {
 		// GUI functions
 		void setHours(void* obj)
 		{
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_hour = _visible[HOUR].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		void setMinutes(void* obj)
 		{
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_min = _visible[MIN].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		void setDay(void* obj)
 		{
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mday = _visible[DAY].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		void setMon(void* obj)
 		{
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mon = _visible[MON].getValue() - 1;
 			rtc.settimeUnix(mktime(&_timeinfo));
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		void setYear(void* obj)
 		{
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_year = _visible[YEAR].getValue() - 1900;
 			rtc.settimeUnix(mktime(&_timeinfo));
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		bool getSync()
@@ -2417,12 +2472,12 @@ class DateTime: public ScrObj {
 
 		int8_t getUTC()
 		{
-			return _utc;
+			return g_utc;
 		}
 
 		void initUTC(int8_t utc)
 		{
-			_utc = utc;
+			g_utc = utc;
 		}
 
 		void setUTC(void* obj)
@@ -2436,7 +2491,7 @@ class DateTime: public ScrObj {
 
 			InputField* utc = (InputField*) obj;
 
-			_utc = utc->getValue();
+			g_utc = utc->getValue();
 
 			/*
 			// TODO: postpone or move sync to different task
@@ -2454,7 +2509,9 @@ class DateTime: public ScrObj {
 			time_t time;
 			time = rtc.gettimeUnix();
 			struct tm *tmp = localtime(&time);
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo = *tmp;
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		/*
@@ -2470,7 +2527,9 @@ class DateTime: public ScrObj {
 
 		void setI2Ctime()
 		{
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			rtc.settimeUnix(mktime(&_timeinfo));
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		void syncNTP()
@@ -2480,6 +2539,16 @@ class DateTime: public ScrObj {
 				return;
 			}
 
+			xTaskCreate(
+					vSyncNTPtask,
+					//std::bind(&DateTime::_vSyncNTPtask, this, std::placeholders::_1),
+					"syncNTPtask",
+					2000,
+					&_timeinfo,
+					1,
+					NULL
+					);
+			/*
 			configTime(3600*_utc, 0, _nptServer);
 			if (!getLocalTime(&_timeinfo)) {
 				getI2Ctime();
@@ -2491,6 +2560,7 @@ class DateTime: public ScrObj {
 			else {
 				setI2Ctime();
 			}
+			*/
 		}
 
 		virtual void invalidate() override
@@ -2502,6 +2572,8 @@ class DateTime: public ScrObj {
 
 		virtual void prepare() override
 		{
+
+			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			mktime(&_timeinfo);
 
 			_visible[HOUR].setValue(_timeinfo.tm_hour);
@@ -2537,6 +2609,7 @@ class DateTime: public ScrObj {
 			_fieldsTitle.prepare();
 
 			pages[TIME_PG]->restock();
+			xSemaphoreGive(xNTPmutex);
 		}
 
 		void build()

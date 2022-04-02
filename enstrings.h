@@ -129,7 +129,14 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Сканировать 500 ppm",
 	// tds4
 	"6. Put the sensor in 1500 ppm solution\nand press the button.",
-	"Сканировать 1500 ppm"
+	"Сканировать 1500 ppm",
+
+	/* diag menu */
+
+	"Power outputs",
+	"Digital inputs",
+	"Analog inputs",
+	"Sensor diagnostics"
 
 	//end of strings
 };
