@@ -53,7 +53,6 @@ static ImageButton back;
 static BlueTextButton next;
 
 // Lang select and screen settings page items
-static Page langPage;
 static InputField gDimseconds;
 
 //static CircRadBtn ruSelect;
@@ -593,13 +592,19 @@ void createTdsCalibTasks(void* arg)
 	}
 }
 
-// sensor checkers
+// sensor checkers, called before entering calibration pages
+// and diagnostic pages. TDS sensor checker has similar logic
 void checkPhSensor(void* arg)
 {
+	// if function is called from settings page
 	if (currPage == pages[CAL_SETT_PG]) {
+		// reset global flag
 		resetCalibFlags();
+		// if failed
 		if (!ph_meter.begin()) {
+			// change fail page title
 			pages[SENS_FAIL_PG]->setTitle(CAL_PH_TITLE);
+			// change fail page previous item
 			pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
 			callPage(pages[SENS_FAIL_PG]);
 		}
@@ -607,15 +612,20 @@ void checkPhSensor(void* arg)
 			callPage(pages[CAL_PH1_PG]);
 		}
 	}
+	// if called from diagnostics page
 	else if (currPage == pages[SENS_DIAG_PG]) {
+		// if failed
 		if (!ph_meter.begin()) {
+			// change fail page title
 			pages[SENS_FAIL_PG]->setTitle(DIAG_SENS);
+			// change fail page prev item
 			pages[SENS_FAIL_PG]->setPrev(pages[SENS_DIAG_PG]);
 			callPage(pages[SENS_FAIL_PG]);
 		}
 	}
 }
 
+// same as ph checker
 void checkTdsSensor(void* arg)
 {
 	if (currPage == pages[CAL_SETT_PG]) {
@@ -647,8 +657,6 @@ page builders TODO: move to Gui
 Page* buildCalSettPage()
 {
 	static Page calibSettPage;
-
-	pages[CAL_SETT_PG] = &calibSettPage;
 
 	static GreyTextButton tds;
 	tds.setXYpos(PG_LEFT_PADD, MB_Y_START);
@@ -703,8 +711,6 @@ Page* buildPh5Page()
 {
 	static Page ph5page;
 
-	pages[CAL_PH5_PG] = &ph5page;
-
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	par1.setText(PH5_PAR1);
@@ -734,8 +740,6 @@ Page* buildPh4Page()
 {
 	static Page ph4page;
 
-	pages[CAL_PH4_PG] = &ph4page;
-
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	par1.setText(PH4_PAR1);
@@ -763,8 +767,6 @@ Page* buildPh3Page()
 {
 	static Page ph3page;
 
-	pages[CAL_PH3_PG] = &ph3page;
-
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	par1.setText(PH3_PAR1);
@@ -789,8 +791,6 @@ Page* buildPh2Page()
 {
 	static Page ph2page;
 
-	pages[CAL_PH2_PG] = &ph2page;
-
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	par1.setText(PH2_PAR1);
@@ -811,7 +811,6 @@ Page* buildPh2Page()
 Page* buildPh1Page()
 {
 	static Page ph1page;
-	pages[CAL_PH1_PG] = &ph1page;
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
@@ -981,8 +980,8 @@ Page* buildTds1Page()
 /************************ TIME PAGE ******************************/
 Page* buildTimePage()
 {
-	pages[TIME_PG] = &timePage;
-
+	// time page is in global scope because why not?
+	// it has items that are modifiable from DateTime singleton
 	static Image timeCal;
 	timeCal.setXYpos(167, 82);
 	timeCal.loadRes(images[IMG_TIME_CAL]);
@@ -1142,7 +1141,6 @@ Page* buildWifiPage()
 Page* buildWiFiSettPage()
 {
 	static Page wifiSettPage;
-	pages[WIFI_SETT_PG] = &wifiSettPage;
 
 	// colors
 	uint16_t bg_col = greyscaleColor(BACKGROUND);
@@ -1242,7 +1240,6 @@ Page* buildWiFiSettPage()
 
 Page* buildTestPage()
 {
-	pages[TEST_PG] = &testPage;
 	testTgl.setFont(SMALLFONT);
 	testTgl.setXYpos(17, 41);
 	testTgl.setText(TOGGLE_TEXT);
@@ -1278,9 +1275,6 @@ Page* buildTestPage()
 	testGreyButton.setText(GREY_BUTTON);
 	testGreyButton.setFont(SMALLFONT);
 	testGreyButton.setCallback(nop);
-
-	//TODO: depricate this:
-	//testGreyButton.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
 
 	testBlueButton.setXYpos(17, 185);
 	testBlueButton.setText(BLUE_BUTTON);
@@ -1329,7 +1323,6 @@ Text* fonts[] = {
 
 Page* buildFontPage()
 {
-	pages[FONT_PG] = &fontPage;
 	smallestFont.setFont(SMALLESTFONT);
 	smallFont.setFont(SMALLFONT);
 	midFont.setFont(MIDFONT);
@@ -1374,7 +1367,7 @@ Page* buildFontPage()
 // hardcoded
 Page* buildLangPage()
 {
-	pages[LANG_PG] = &langPage;
+	static Page langPage;
 	// Экран
 	static Text boldScreen;
 	boldScreen.setFont(BOLDFONT);
@@ -1561,7 +1554,6 @@ Page* buildMenuPage()
 {
 	static Page mainPage;
 	static GreyTextButton menu_items[MM_NITEMS];
-	pages[MENU_PG] = &mainPage;
 
 	// gap between items
 	int gap = MENU_GAP;
@@ -1619,8 +1611,6 @@ enum settingsPageMenuItems {
 
 Page* buildSettingsPage()
 {
-	pages[SETT_PG] = &settingsPage;
-
 	static GreyTextButton settings_items[MN_NITEMS];
 
 	// string pointers for items
@@ -1725,6 +1715,16 @@ Page* buildSensDiag()
 	sensDiagPage.addItem(&back);
 
 	return &sensDiagPage;
+}
+
+Page* buldTDSdiag()
+{
+	//TODO
+}
+
+Page* buildPhdiag()
+{
+	//TODO
 }
 
 void gSetBacklight(void* arg)

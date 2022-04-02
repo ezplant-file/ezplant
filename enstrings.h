@@ -136,7 +136,15 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Power outputs",
 	"Digital inputs",
 	"Analog inputs",
-	"Sensor diagnostics"
+	"Sensor diagnostics",
+
+	// TDS diag
+	"TDS sensor real time \nreadings.",
+	"ppm",
+
+	// pH diag
+	"pH sensor reat time \nreadings.",
+	"pH"
 
 	//end of strings
 };

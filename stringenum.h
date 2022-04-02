@@ -139,6 +139,14 @@ typedef enum {
 	DIAG_ADC,
 	DIAG_SENS,
 
+	// TDS diag
+	TDS_DIAG_PAR,
+	TDS_DIAG_PPM,
+
+	// pH diag
+	PH_DIAG_PAR,
+	PH_DIAG_PH
+
 	END_OF_STRINGS
 } dispStrings_t;
 
