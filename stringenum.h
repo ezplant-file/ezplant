@@ -145,7 +145,7 @@ typedef enum {
 
 	// pH diag
 	PH_DIAG_PAR,
-	PH_DIAG_PH
+	PH_DIAG_PH,
 
 	END_OF_STRINGS
 } dispStrings_t;

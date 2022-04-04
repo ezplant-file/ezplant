@@ -208,6 +208,9 @@ std::atomic<bool> g_ph_calib_9_done;
 std::atomic<bool> g_tds_calib_500_done;
 std::atomic<bool> g_tds_calib_1500_done;
 
+std::atomic<bool> g_ph_diag_wait_done;
+std::atomic<bool> g_tds_diag_wait_done;
+
 //atomic_bool g_ping_success = false;
 //bool g_ping_success = false;
 //iarduino_RTC rtc(RTC_DS3231);
@@ -287,7 +290,6 @@ class ScrObj {
 			_w(w),
 			_h(h),
 			_isSelectable(isSelectable)
-			//,_wasSelectable(isSelectable)
 		{
 		}
 
@@ -448,12 +450,12 @@ class ScrObj {
 			_invalid = true;
 		}
 
-		virtual int16_t getValue()
+		virtual int getValue()
 		{
 			return 0;
 		}
 
-		virtual void setValue(int16_t value)
+		virtual void setValue(int value)
 		{
 			return;
 		}
@@ -489,7 +491,6 @@ class ScrObj {
 		bool _isCircle = false;
 		// cursor erase color
 		uint16_t _curCol = 0xffff;
-		int16_t _value = 0;
 };
 
 // current selected item
@@ -1041,6 +1042,10 @@ class InputField: public ScrObj {
 		{
 		}
 
+		InputField(int w, int h): ScrObj(w, h)
+		{
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid || !_isVisible)
@@ -1060,7 +1065,13 @@ class InputField: public ScrObj {
 				tft.setCursor(_x + _dx +_paddingX, _y+_paddingY);
 			}
 
-			String tmp = String(_value);
+			String tmp = "";
+			if (_isFloat) {
+				tmp = String(_fvalue, 1);
+			}
+			else {
+				tmp = String(_value);
+			}
 
 			// leading zeros
 			if (_showLead && _value < 10) {
@@ -1088,6 +1099,10 @@ class InputField: public ScrObj {
 		}
 
 
+		void setFloat()
+		{
+			_isFloat = true;
+		}
 
 		virtual void freeRes() override
 		{
@@ -1212,17 +1227,30 @@ class InputField: public ScrObj {
 			_invalid = true;
 		}
 
-		virtual void setValue(int16_t value) override
+		virtual void setValue(int value) override
 		{
-			if (value > _upper)
-				value = _lower;
-			if (value < _lower)
-				value = _upper;
+			if (!_ignoreLimits) {
+				if (value > _upper)
+					value = _lower;
+				if (value < _lower)
+					value = _upper;
+			}
 			_invalid = true;
 			_value = value;
 		}
 
-		virtual int16_t getValue() override
+		void ignoreLimits()
+		{
+			_ignoreLimits = true;
+		}
+
+		void setValue(float f)
+		{
+			_fvalue = f;
+			_invalid = true;
+		}
+
+		virtual int getValue() override
 		{
 			return _value;
 		}
@@ -1250,6 +1278,10 @@ class InputField: public ScrObj {
 		}
 
 	private:
+		int16_t _value = 0;
+		float _fvalue = 0.0;
+		bool _isFloat = false;
+		bool _ignoreLimits = false;
 		Text _text;
 		int _textLength = 0;
 		bool _showLead = false;
@@ -1268,6 +1300,14 @@ class InputField: public ScrObj {
 };
 
 InputField gBrightness;
+
+class OutputField: public InputField {
+	public:
+		OutputField(): InputField(0, INPUT_H)
+		{
+			ignoreLimits();
+		}
+};
 
 //TODO: manually decode JPG, push array to sprite
 //TFT_eSprite checkSprite = TFT_eSprite(&tft);
@@ -1820,6 +1860,13 @@ Wait g_tds5wait;
 Text g_tds_succ;
 BlueTextButton g_tds_done;
 
+// diag pages global items
+Wait g_phWait;
+Wait g_tdsWait;
+
+OutputField g_ph_read;
+OutputField g_tds_read;
+
 class Cursor {
 	public:
 		void draw(bool blink)
@@ -2074,6 +2121,8 @@ typedef enum {
 	// diag
 	DIAG_PG,
 	SENS_DIAG_PG,
+	TDS_DIAG_PG,
+	PH_DIAG_PG,
 	NPAGES
 } pages_t;
 
@@ -2340,7 +2389,7 @@ class DateTime: public ScrObj {
 		//int8_t _utc = 0;
 		struct tm  _timeinfo;
 		unsigned long _oldMils = 0;
-		//const char* const _nptServer = NTP_SERVER;
+		const char* const _nptServer = NTP_SERVER;
 		unsigned long _userInputTimestamp = 0;
 		//uint16_t _y = 225;
 		//TFT_eSprite _sprite = TFT_eSprite(&tft);
@@ -2358,15 +2407,16 @@ class DateTime: public ScrObj {
 				_userInputSettled = true;
 			}
 
-			if (_userInputSettled) {
+			if (_userInputSettled && _sync) {
 				syncNTP();
-				//prepare();
-				//invalidate();
+				prepare();
+				invalidate();
 				_userInputSettled = false;
 				_timeSynced = true;
 			}
 
 			if (g_sync_succ) {
+				//setI2Ctime();
 				invalidate();
 				prepare();
 				g_sync_succ = false;
@@ -2408,42 +2458,42 @@ class DateTime: public ScrObj {
 		// GUI functions
 		void setHours(void* obj)
 		{
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_hour = _visible[HOUR].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setMinutes(void* obj)
 		{
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_min = _visible[MIN].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setDay(void* obj)
 		{
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mday = _visible[DAY].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setMon(void* obj)
 		{
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mon = _visible[MON].getValue() - 1;
 			rtc.settimeUnix(mktime(&_timeinfo));
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setYear(void* obj)
 		{
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_year = _visible[YEAR].getValue() - 1900;
 			rtc.settimeUnix(mktime(&_timeinfo));
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		bool getSync()
@@ -2467,7 +2517,7 @@ class DateTime: public ScrObj {
 			else {
 				getI2Ctime();
 			}
-			prepare();
+			//prepare();
 		}
 
 		int8_t getUTC()
@@ -2509,9 +2559,9 @@ class DateTime: public ScrObj {
 			time_t time;
 			time = rtc.gettimeUnix();
 			struct tm *tmp = localtime(&time);
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, (TickType_t) 0);
 			_timeinfo = *tmp;
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		/*
@@ -2527,9 +2577,9 @@ class DateTime: public ScrObj {
 
 		void setI2Ctime()
 		{
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, (TickType_t) 0);
 			rtc.settimeUnix(mktime(&_timeinfo));
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void syncNTP()
@@ -2539,6 +2589,7 @@ class DateTime: public ScrObj {
 				return;
 			}
 
+			/*
 			xTaskCreate(
 					vSyncNTPtask,
 					//std::bind(&DateTime::_vSyncNTPtask, this, std::placeholders::_1),
@@ -2548,8 +2599,8 @@ class DateTime: public ScrObj {
 					1,
 					NULL
 					);
-			/*
-			configTime(3600*_utc, 0, _nptServer);
+					*/
+			configTime(3600*g_utc, 0, _nptServer);
 			if (!getLocalTime(&_timeinfo)) {
 				getI2Ctime();
 #ifdef APP_DEBUG
@@ -2560,7 +2611,6 @@ class DateTime: public ScrObj {
 			else {
 				setI2Ctime();
 			}
-			*/
 		}
 
 		virtual void invalidate() override
@@ -2573,7 +2623,7 @@ class DateTime: public ScrObj {
 		virtual void prepare() override
 		{
 
-			xSemaphoreTake(xNTPmutex, portMAX_DELAY);
+			//xSemaphoreTake(xNTPmutex, ( TickType_t ) 0);
 			mktime(&_timeinfo);
 
 			_visible[HOUR].setValue(_timeinfo.tm_hour);
@@ -2609,7 +2659,7 @@ class DateTime: public ScrObj {
 			_fieldsTitle.prepare();
 
 			pages[TIME_PG]->restock();
-			xSemaphoreGive(xNTPmutex);
+			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void build()
@@ -2670,11 +2720,20 @@ void resetCalibFlags()
 	g_tds_calib_1500_done = false;
 }
 
+void resetDiagFlags()
+{
+	g_tds_diag_wait_done = false;
+	g_ph_diag_wait_done = false;
+}
+
+#define SENS_READ_MILS 1000
+
 class App {
 	private:
 		unsigned long _oldMils = 0;
 		unsigned long _dbMils = 0;
 		unsigned long _dimMils = 0;
+		unsigned long _sensMils = 0;
 		bool _blink = false;
 		bool _dbFlag = false;
 		Cursor _cursor;
@@ -2782,6 +2841,62 @@ class App {
 				currItem = &g_tds_done;
 				_iterator = 0;
 				second_expander.digitalWrite(TDS_MTR_RLY, LOW);
+			}
+
+			// reset wait flags and pages items
+			if (currPage == pages[SENS_DIAG_PG] && (g_ph_diag_wait_done || g_tds_diag_wait_done)) {
+				resetDiagFlags();
+				g_phWait.setVisible();
+				g_tdsWait.setVisible();
+				g_ph_read.setInvisible();
+				g_tds_read.setInvisible();
+			}
+
+			// wait for ph diag
+			if (currPage == pages[PH_DIAG_PG] && g_ph_diag_wait_done && g_phWait.isVisible()) {
+				g_phWait.erase();
+				g_phWait.setInvisible();
+				g_ph_read.setVisible();
+				currItem = currPage->getCurrItemAt(0);
+				//currItem = &back;
+				_iterator = 0;
+			}
+
+			// show ph
+			if (currPage == pages[PH_DIAG_PG] && g_ph_diag_wait_done
+					&& millis() - _sensMils > SENS_READ_MILS) {
+
+				_sensMils = millis();
+				// update ph readings
+				float ph = ph_meter.getPH();
+				g_ph_read.setValue(ph);
+#ifdef APP_DEBUG
+				Serial.print("ph readings: ");
+				Serial.println(ph, 1);
+#endif
+			}
+
+			// wait for tds diag
+			if (currPage == pages[TDS_DIAG_PG] && g_tds_diag_wait_done && g_tdsWait.isVisible()) {
+				g_tdsWait.erase();
+				g_tdsWait.setInvisible();
+				g_tds_read.setVisible();
+				currItem = currPage->getCurrItemAt(0);
+				//currItem = &tds_diag_back;
+				_iterator = 0;
+			}
+
+			// show tds
+			if (currPage == pages[TDS_DIAG_PG] && g_tds_diag_wait_done
+					&& millis() - _sensMils > SENS_READ_MILS) {
+				_sensMils = millis();
+				// update tds readings
+				int tds = tds_meter.getTDS();
+				g_tds_read.setValue(tds);
+#ifdef APP_DEBUG
+				Serial.print("tds readings: ");
+				Serial.println(tds);
+#endif
 			}
 
 			if (millis() - _dimMils > g_dimafter * 1000 && !_inactive) {

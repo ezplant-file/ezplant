@@ -350,7 +350,8 @@ void callPage(void* page_ptr)
 	app.resetIterator();
 
 	//back.setCallback(callPage, currPage);
-	back.setCallback(callPage, page->prev());
+	if (page->prev() != nullptr)
+		back.setCallback(callPage, page->prev());
 
 	currPage->freeRes();
 
@@ -592,6 +593,23 @@ void createTdsCalibTasks(void* arg)
 	}
 }
 
+#define DIAG_WAIT_TIME 2000
+
+void diagPhTaskWait(void* arg)
+{
+	sleep(DIAG_WAIT_TIME);
+	g_ph_diag_wait_done = true;
+	vTaskDelete(NULL);
+}
+
+void diagTdsTaskWait(void* arg)
+{
+	sleep(DIAG_WAIT_TIME);
+	g_tds_diag_wait_done = true;
+	vTaskDelete(NULL);
+}
+
+
 // sensor checkers, called before entering calibration pages
 // and diagnostic pages. TDS sensor checker has similar logic
 void checkPhSensor(void* arg)
@@ -614,6 +632,7 @@ void checkPhSensor(void* arg)
 	}
 	// if called from diagnostics page
 	else if (currPage == pages[SENS_DIAG_PG]) {
+		resetDiagFlags();
 		// if failed
 		if (!ph_meter.begin()) {
 			// change fail page title
@@ -621,6 +640,11 @@ void checkPhSensor(void* arg)
 			// change fail page prev item
 			pages[SENS_FAIL_PG]->setPrev(pages[SENS_DIAG_PG]);
 			callPage(pages[SENS_FAIL_PG]);
+		}
+		else {
+			// call ph diag page and create wait task
+			callPage(pages[PH_DIAG_PG]);
+			xTaskCreate(diagPhTaskWait, "phWait", 1000, NULL, 1, NULL);
 		}
 	}
 }
@@ -641,10 +665,16 @@ void checkTdsSensor(void* arg)
 		}
 	}
 	else if (currPage == pages[SENS_DIAG_PG]) {
+		resetDiagFlags();
 		if (!tds_meter.begin()) {
 			pages[SENS_FAIL_PG]->setTitle(DIAG_SENS);
 			pages[SENS_FAIL_PG]->setPrev(pages[SENS_DIAG_PG]);
 			callPage(pages[SENS_FAIL_PG]);
+		}
+		else {
+			second_expander.digitalWrite(TDS_MTR_RLY, HIGH);
+			callPage(pages[TDS_DIAG_PG]);
+			xTaskCreate(diagTdsTaskWait, "tdsWait", 1000, NULL, 1, NULL);
 		}
 	}
 }
@@ -715,7 +745,7 @@ Page* buildPh5Page()
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	par1.setText(PH5_PAR1);
 
-	g_ph5wait.setXYpos(75, 98);
+	g_ph5wait.setXYpos(75, 105);
 
 	g_ph_succ.setXYpos(PG_LEFT_PADD, 98);
 	g_ph_succ.setText(CAL_SUCC);
@@ -850,7 +880,7 @@ Page* buildTds5Page()
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	par1.setText(PH5_PAR1);
 
-	g_tds5wait.setXYpos(75, 98);
+	g_tds5wait.setXYpos(75, 105);
 
 	g_tds_succ.setXYpos(PG_LEFT_PADD, 98);
 	g_tds_succ.setText(CAL_SUCC);
@@ -1717,14 +1747,71 @@ Page* buildSensDiag()
 	return &sensDiagPage;
 }
 
-Page* buldTDSdiag()
+void tdsDiagBack(void* arg)
 {
-	//TODO
+	// switch off relay
+	second_expander.digitalWrite(TDS_MTR_RLY, LOW);
+	// get back
+	callPage(currPage->prev());
+}
+
+ImageButton tds_diag_back;
+
+Page* buildTDSdiag()
+{
+	static Page tdsdiag;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(TDS_DIAG_PAR);
+
+	//static OutputField out1;
+	g_tds_read.setText(TDS_DIAG_PPM);
+	g_tds_read.setXYpos(74, 131);
+	g_tds_read.setInvisible();
+	g_tds_read.setWidth(FOUR_CHR);
+
+	//static Wait tdsWait;
+	g_tdsWait.setXYpos(82, 165);
+
+	tds_diag_back.setCallback(tdsDiagBack);
+	tds_diag_back.loadRes(images[IMG_PREV]);
+	tds_diag_back.setXYpos(7, 284);
+	tds_diag_back.setCircle();
+
+	tdsdiag.setTitle(CAL_TDS);
+	tdsdiag.addItem(&par1);
+	tdsdiag.addItem(&g_tdsWait);
+	tdsdiag.addItem(&g_tds_read);
+	tdsdiag.addItem(&tds_diag_back);
+
+	return &tdsdiag;
 }
 
 Page* buildPhdiag()
 {
-	//TODO
+	static Page phdiag;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PH_DIAG_PAR);
+
+	//static OutputField out1;
+	g_ph_read.setText(PH_DIAG_PH);
+	g_ph_read.setXYpos(80, 93);
+	g_ph_read.setInvisible();
+	g_ph_read.setFloat();
+
+	//static Wait phWait;
+	g_phWait.setXYpos(83, 143);
+
+	phdiag.setTitle(CAL_PH);
+	phdiag.addItem(&par1);
+	phdiag.addItem(&g_phWait);
+	phdiag.addItem(&g_ph_read);
+	phdiag.addItem(&back);
+
+	return &phdiag;
 }
 
 void gSetBacklight(void* arg)
@@ -1763,9 +1850,11 @@ void linkAllPages()
 	pages[DIAG_PG]->setPrev(pages[MENU_PG]);
 	pages[SENS_DIAG_PG]->setPrev(pages[DIAG_PG]);
 
+	pages[TDS_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
+	pages[PH_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
+
 	g_ph_done.setCallback(callPage, pages[MENU_PG]);
 	g_tds_done.setCallback(callPage, pages[MENU_PG]);
-
 }
 
 void setup(void)
@@ -1789,6 +1878,8 @@ void setup(void)
 	app.init();
 
 	// diag pages
+	pages[TDS_DIAG_PG] = buildTDSdiag();
+	pages[PH_DIAG_PG] = buildPhdiag();
 	pages[SENS_DIAG_PG] = buildSensDiag();
 	pages[DIAG_PG] = buildDiagPage();
 
