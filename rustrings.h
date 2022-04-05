@@ -144,7 +144,18 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 
 	// pH diag
 	"Отображение водородного \nпоказателя в реальном времени",
-	"pH"
+	"pH",
+
+	// analog inputs
+	"Отображение аналоговых \nсигналов датчиков \nв интервале 0-1023",
+	"ANALOG 1",
+	"ANALOG 2",
+	"ANALOG 3",
+	"ANALOG 4",
+
+	// digital inputs
+	"Отображение сигналов датчиков",
+	"KEY %u"
 
 	//end of strings
 };

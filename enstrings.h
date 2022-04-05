@@ -144,7 +144,17 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 
 	// pH diag
 	"pH sensor reat time \nreadings.",
-	"pH"
+	"pH",
+
+	// analog inputs
+	"ANALOG 1",
+	"ANALOG 2",
+	"ANALOG 3",
+	"ANALOG 4",
+
+	// digital inputs
+	"Digital input test",
+	"KEY %u"
 
 	//end of strings
 };

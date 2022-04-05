@@ -1718,6 +1718,7 @@ Page* buildDiagPage()
 	}
 
 	diag_items[DP_SENSD].setCallback(callPage, pages[SENS_DIAG_PG]);
+	diag_items[DP_ADCIN].setCallback(callPage, pages[ADC_DIAG_PG]);
 
 	diagPage.setTitle(DIAG);
 	diagPage.addItem(&back);
@@ -1747,6 +1748,8 @@ Page* buildSensDiag()
 	return &sensDiagPage;
 }
 
+// tds relay special case
+// TODO: make structure to deal with all i2c
 void tdsDiagBack(void* arg)
 {
 	// switch off relay
@@ -1814,6 +1817,43 @@ Page* buildPhdiag()
 	return &phdiag;
 }
 
+Page* buildADCdiag()
+{
+	static Page adcDiag;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(SENS_DIAG_PAR);
+
+	adcDiag.addItem(&par1);
+
+	static OutputField ADC[4];
+
+	int x = 94;
+	int y = 99;
+	int j = 0;
+	int gap = 12;
+
+	for (auto& i:ADC) {
+		i.setXYpos(x, y+(INPUT_H+gap)*j);
+		i.setAlign(LEFT);
+		i.setWidth(FOUR_CHR);
+		adcDiag.addItem(&i);
+		//i.setText(SENS_DIAG_A1+static_cast<dispStrings_t>(j));
+		j++;
+	}
+
+	ADC[0].setText(SENS_DIAG_A1);
+	ADC[1].setText(SENS_DIAG_A2);
+	ADC[2].setText(SENS_DIAG_A3);
+	ADC[3].setText(SENS_DIAG_A4);
+
+	adcDiag.setTitle(DIAG_ADC);
+	adcDiag.addItem(&back);
+
+	return &adcDiag;
+}
+
 void gSetBacklight(void* arg)
 {
 	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
@@ -1825,59 +1865,10 @@ void gSetBacklight(void* arg)
 unsigned long oldMillis;
 #endif
 
-void linkAllPages()
+void buildAllPages()
 {
-#ifdef APP_DEBUG
-	Serial.println("pages pointers: ");
-	for (auto i:pages)
-		DEBUG_PRINT_HEX(i);
-#endif
-
-	pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
-	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
-	pages[CAL_TDS1_PG]->setPrev(pages[CAL_SETT_PG]);
-
-	pages[SETT_PG]->setPrev(pages[MENU_PG]);
-	pages[FONT_PG]->setPrev(pages[MENU_PG]);
-	pages[TEST_PG]->setPrev(pages[MENU_PG]);
-
-	pages[WIFI_SETT_PG]->setPrev(pages[SETT_PG]);
-	pages[WIFI_PG]->setPrev(pages[SETT_PG]);
-	pages[TIME_PG]->setPrev(pages[SETT_PG]);
-	pages[CAL_SETT_PG]->setPrev(pages[SETT_PG]);
-	pages[LANG_PG]->setPrev(pages[SETT_PG]);
-
-	pages[DIAG_PG]->setPrev(pages[MENU_PG]);
-	pages[SENS_DIAG_PG]->setPrev(pages[DIAG_PG]);
-
-	pages[TDS_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
-	pages[PH_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
-
-	g_ph_done.setCallback(callPage, pages[MENU_PG]);
-	g_tds_done.setCallback(callPage, pages[MENU_PG]);
-}
-
-void setup(void)
-{
-#ifdef APP_DEBUG
-	Serial.begin(115200);
-#endif
-	SPIFFS.begin();
-
-	if (!loadSettings()) {
-#ifdef APP_DEBUG
-		Serial.println("load settings failed");
-	}
-	else {
-		Serial.println("settings loaded");
-#endif
-	}
-
-	checkWifi();
-	// init all stuff in Gui.h
-	app.init();
-
 	// diag pages
+	pages[ADC_DIAG_PG] = buildADCdiag();
 	pages[TDS_DIAG_PG] = buildTDSdiag();
 	pages[PH_DIAG_PG] = buildPhdiag();
 	pages[SENS_DIAG_PG] = buildSensDiag();
@@ -1910,10 +1901,70 @@ void setup(void)
 	pages[SETT_PG] = buildSettingsPage();
 	pages[MENU_PG] = buildMenuPage();
 
+}
+
+void linkPages()
+{
+#ifdef APP_DEBUG
+	Serial.println("pages pointers: ");
+	for (auto i:pages)
+		DEBUG_PRINT_HEX(i);
+#endif
+
+	pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
+	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
+	pages[CAL_TDS1_PG]->setPrev(pages[CAL_SETT_PG]);
+
+	pages[SETT_PG]->setPrev(pages[MENU_PG]);
+	pages[FONT_PG]->setPrev(pages[MENU_PG]);
+	pages[TEST_PG]->setPrev(pages[MENU_PG]);
+
+	pages[WIFI_SETT_PG]->setPrev(pages[SETT_PG]);
+	pages[WIFI_PG]->setPrev(pages[SETT_PG]);
+	pages[TIME_PG]->setPrev(pages[SETT_PG]);
+	pages[CAL_SETT_PG]->setPrev(pages[SETT_PG]);
+	pages[LANG_PG]->setPrev(pages[SETT_PG]);
+
+	pages[DIAG_PG]->setPrev(pages[MENU_PG]);
+	pages[SENS_DIAG_PG]->setPrev(pages[DIAG_PG]);
+	pages[ADC_DIAG_PG]->setPrev(pages[DIAG_PG]);
+
+	pages[TDS_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
+	pages[PH_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
+
+	// calibration pages done buttons
+	g_ph_done.setCallback(callPage, pages[MENU_PG]);
+	g_tds_done.setCallback(callPage, pages[MENU_PG]);
+}
+
+void setup(void)
+{
+#ifdef APP_DEBUG
+	Serial.begin(115200);
+#endif
+	SPIFFS.begin();
+
+	if (!loadSettings()) {
+#ifdef APP_DEBUG
+		Serial.println("load settings failed");
+	}
+	else {
+		Serial.println("settings loaded");
+#endif
+	}
+
+	// connect to wifi or create AP
+	checkWifi();
+
+	// init all stuff in Gui.h
+	app.init();
+
+	buildAllPages();
+
 	topBar.build();
-
-
-	linkAllPages();
+	
+	// setPrev on required pages
+	linkPages();
 
 	/*
 	pinMode(LED_PIN, OUTPUT);

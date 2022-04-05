@@ -235,40 +235,6 @@ void ping_task_callback(void* arg)
 	}
 }
 
-/*
-void rtc_task(void* arg)
-{
-	iarduino_RTC rtc(RTC_DS3231);
-	rtc.begin();
-	for (;;) {
-		Serial.println(rtc.gettime("H:i"));
-		sleep(10000);
-	}
-}
-*/
-
-/*
-void rapid_blink_callback(void* arg)
-{
-	g_rapid_blink = true;
-	cursorDraw(false);
-	sleep(50);
-	cursorDraw(true);
-	sleep(50);
-	cursorDraw(false);
-	sleep(50);
-	cursorDraw(true);
-	sleep(50);
-	cursorDraw(false);
-	sleep(50);
-	cursorDraw(true);
-	sleep(50);
-	cursorDraw(false);
-	g_rapid_blink = false;
-	vTaskDelete(NULL);
-}
-*/
-
 void nop(void* arg)
 {
 }
@@ -1451,12 +1417,11 @@ CheckBox gwsWifiChBox;
 #define TGL_BG 0xDC
 #define TGL_RAD 10
 #define TGL_W 33
-#define TGL_H 17
+#define TGL_H 18
 //#define TGL_ON_COL
 #define TGL_OFF_COL 0x6E
 #define TGL_SHF_RAD 6
 
-// TODO: replace with antialiased image
 class Toggle: public ScrObj {
 	public:
 		Toggle(): ScrObj(TGL_W, TGL_H, SELECTABLE)
@@ -1468,26 +1433,24 @@ class Toggle: public ScrObj {
 			if (!_invalid || !_isVisible)
 				return;
 
-			tft.fillRoundRect(_x, _y, _w, _h, TGL_RAD, greyscaleColor(TGL_BG));
+			tft.fillSmoothRoundRect(_x, _y, _w, _h-2, TGL_RAD, greyscaleColor(TGL_BG), TFT_WHITE);
 
 			_text.draw();
 
 			if (_isOn) {
-				// TODO: draw on image
 				_col = tft.color565(0x4C, 0xAF, 0x50);
 				_shaftX = _x + _w - TGL_RAD;
-				_shaftY = _y + _h/2;
-				_invalid = false;
 			}
 			else {
-				// TODO: draw off image
 				_col = greyscaleColor(TGL_OFF_COL);
 				_shaftX = _x + TGL_RAD - 1;
-				_shaftY = _y + _h/2;
-				_invalid = false;
 			}
 
-			tft.fillCircle(_shaftX, _shaftY, TGL_SHF_RAD, _col);
+			_shaftY = _y + _h/2 - 1;
+
+			tft.fillSmoothCircle(_shaftX, _shaftY, TGL_SHF_RAD, _col, greyscaleColor(TGL_BG));
+
+			_invalid = false;
 		}
 
 		virtual void freeRes() override
@@ -1572,7 +1535,7 @@ class CircRadBtn: public ScrObj {
 
 			int x = _x + _w/2 - 1;
 			int y = _y + _h/2 - 1;
-			tft.fillCircle(x, y, _r, _col);
+			tft.fillSmoothCircle(x, y, _r, _col, greyscaleColor(_bgcol));
 			_invalid = false;
 		}
 
@@ -2123,6 +2086,9 @@ typedef enum {
 	SENS_DIAG_PG,
 	TDS_DIAG_PG,
 	PH_DIAG_PG,
+	ADC_DIAG_PG,
+	DIG_DIAG_PG,
+	PWR_DIAG_PG,
 	NPAGES
 } pages_t;
 

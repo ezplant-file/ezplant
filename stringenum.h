@@ -147,6 +147,17 @@ typedef enum {
 	PH_DIAG_PAR,
 	PH_DIAG_PH,
 
+	// analog inputs
+	SENS_DIAG_PAR,
+	SENS_DIAG_A1,
+	SENS_DIAG_A2,
+	SENS_DIAG_A3,
+	SENS_DIAG_A4,
+	
+	// digital inputs
+	DIG_DIAG_PAR,
+	DIG_DIAG_STR,
+
 	END_OF_STRINGS
 } dispStrings_t;
 
