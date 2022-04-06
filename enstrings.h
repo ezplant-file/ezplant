@@ -154,7 +154,32 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 
 	// digital inputs
 	"Digital input test",
-	"KEY %u"
+	"KEY 1",
+	"KEY 2",
+	"KEY 3",
+	"KEY 4",
+	"KEY 5",
+	"KEY 6",
+	"KEY 7",
+	"KEY 8",
+	"KEY 9",
+	"KEY 10",
+
+	// power outputs
+	"Manual control",
+	"PORT A",
+	"PORT B",
+	"PORT C",
+	"PORT D",
+	"PORT E",
+	"PORT F",
+	"PORT G",
+	"PORT H",
+	"FAN",
+	"LIGHT",
+	"MOTOR:",
+	"UP",
+	"DOWN"
 
 	//end of strings
 };

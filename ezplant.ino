@@ -6,12 +6,15 @@
 #define TASKS
 #define APP_DEBUG
 
+/*
 #define PUMP_F 	17
 #define PUMP_G 	18
 #define PUMP_H 	19
 #define LED	32
 #define FAN	33
+*/
 
+/*
 // buttons defines
 #define BTN_PREV 	0b00000001
 #define BTN_MIN 	0b00000010
@@ -19,6 +22,7 @@
 #define BTN_HOME 	0b00001000
 #define BTN_NEXT 	0b00010000
 #define BTN_PLU 	0b00100000
+*/
 
 // interrupt
 #define EXPANDER_INT	27
@@ -37,6 +41,7 @@
 #include "enstrings.h"
 #include "stringenum.h"
 #include "Gui.h"
+#include "App.h"
 
 // json stuff
 #include "json.hpp"
@@ -64,7 +69,7 @@ static ExclusiveRadio enSelect;
 Page testPage;
 static Toggle testTgl;
 static CheckBox testChBox;
-static TestPageRadio testRad;
+static RadioButton testRad;
 static InputField testInput;
 static GreyTextButton testGreyButton;
 static BlueTextButton testBlueButton;
@@ -1719,6 +1724,8 @@ Page* buildDiagPage()
 
 	diag_items[DP_SENSD].setCallback(callPage, pages[SENS_DIAG_PG]);
 	diag_items[DP_ADCIN].setCallback(callPage, pages[ADC_DIAG_PG]);
+	diag_items[DP_DIGIN].setCallback(callPage, pages[DIG_DIAG_PG]);
+	diag_items[DP_PWROUT].setCallback(callPage, pages[PWR_DIAG_PG]);
 
 	diagPage.setTitle(DIAG);
 	diagPage.addItem(&back);
@@ -1854,6 +1861,148 @@ Page* buildADCdiag()
 	return &adcDiag;
 }
 
+enum {
+	DIG_KEY1,
+	DIG_KEY2,
+	DIG_KEY3,
+	DIG_KEY4,
+	DIG_KEY5,
+	DIG_KEY6,
+	DIG_KEY7,
+	DIG_KEY8,
+	DIG_KEY9,
+	DIG_KEY10,
+	DIG_NKEYS
+};
+
+Page* buildDigDiag()
+{
+	static Page digDiag;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(DIG_DIAG_PAR);
+
+	digDiag.addItem(&par1);
+
+	static CircIndicator indicators[DIG_NKEYS];
+
+	int x = PG_LEFT_PADD;
+	int y = 62;
+	int j = 0;
+	int gap = 12;
+
+	indicators[DIG_KEY1].setText(DIG_DIAG_1);
+	indicators[DIG_KEY2].setText(DIG_DIAG_2);
+	indicators[DIG_KEY3].setText(DIG_DIAG_3);
+	indicators[DIG_KEY4].setText(DIG_DIAG_4);
+	indicators[DIG_KEY5].setText(DIG_DIAG_5);
+	indicators[DIG_KEY6].setText(DIG_DIAG_6);
+	indicators[DIG_KEY7].setText(DIG_DIAG_7);
+	indicators[DIG_KEY8].setText(DIG_DIAG_8);
+	indicators[DIG_KEY9].setText(DIG_DIAG_9);
+	indicators[DIG_KEY10].setText(DIG_DIAG_10);
+
+	for (auto& i:indicators) {
+		if (j > 4) {
+			x = 129;
+			j = 0;
+		}
+		i.setXYpos(x, y+(RAD_BTN_SIZE+gap)*j);
+		digDiag.addItem(&i);
+		j++;
+	}
+
+	digDiag.setTitle(DIAG_DIG);
+
+	digDiag.addItem(&back);
+
+	return &digDiag;
+}
+
+enum {
+	PWR_PG_PORT_A,
+	PWR_PG_PORT_B,
+	PWR_PG_PORT_C,
+	PWR_PG_PORT_D,
+	PWR_PG_PORT_E,
+	PWR_PG_PORT_F,
+	PWR_PG_PORT_G,
+	PWR_PG_PORT_H,
+	PWR_PG_FAN,
+	PWR_PG_LIGHT,
+	PWR_PG_UP,
+	PWR_PG_DOWN,
+	PWR_PG_NITEMS
+};
+
+Page* buildPwrDiag()
+{
+	static Page pwrDiag;
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	par1.setText(PWR_PAR);
+
+	static Text motor;
+	motor.setXYpos(PG_LEFT_PADD, 244);
+	motor.setText(PWR_MOTOR_STR);
+
+	pwrDiag.addItem(&par1);
+	pwrDiag.addItem(&motor);
+
+	static Toggle diagItems[PWR_PG_NITEMS];
+
+	int x = 73;
+	int y = 62;
+	int j = 0;
+	int gap = 12;
+	int textx = PG_LEFT_PADD;
+
+	for (int i = 0; i < PWR_PG_NITEMS; i++) {
+		if (i == 5) {
+			textx = 131;
+			x = 187;
+			j = 0;
+		}
+		diagItems[i].setTextX(textx);
+		diagItems[i].setAlign(LEFT);
+		diagItems[i].setXYpos(x, y+(RAD_BTN_SIZE+gap)*j);
+		diagItems[i].setCallback(nop);
+		pwrDiag.addItem(&diagItems[i]);
+		j++;
+	}
+
+	diagItems[PWR_PG_UP].setTextX(162);
+
+	diagItems[PWR_PG_PORT_A].setText(PWR_PORT_A);
+	diagItems[PWR_PG_PORT_B].setText(PWR_PORT_B);
+	diagItems[PWR_PG_PORT_C].setText(PWR_PORT_C);
+	diagItems[PWR_PG_PORT_D].setText(PWR_PORT_D);
+	diagItems[PWR_PG_PORT_E].setText(PWR_PORT_E);
+	diagItems[PWR_PG_PORT_F].setText(PWR_PORT_F);
+	diagItems[PWR_PG_PORT_G].setText(PWR_PORT_G);
+	diagItems[PWR_PG_PORT_H].setText(PWR_PORT_H);
+	diagItems[PWR_PG_FAN].setText(PWR_FAN);
+	diagItems[PWR_PG_LIGHT].setText(PWR_LIGHT);
+	diagItems[PWR_PG_UP].setText(PWR_MOTOR_UP);
+	diagItems[PWR_PG_DOWN].setText(PWR_MOTOR_DOWN);
+
+	diagItems[PWR_PG_UP].setXYpos(x, 244);
+	diagItems[PWR_PG_DOWN].setXYpos(x, 244+RAD_BTN_SIZE+10);
+
+	static Line line(210);
+	line.setXYpos(PG_LEFT_PADD, 235);
+	pwrDiag.addItem(&line);
+	//diagItems[PWR_PG_PORT_A].setCallback();
+
+	pwrDiag.setTitle(DIAG_PWR);
+
+	pwrDiag.addItem(&back);
+
+	return &pwrDiag;
+}
+
 void gSetBacklight(void* arg)
 {
 	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
@@ -1868,6 +2017,8 @@ unsigned long oldMillis;
 void buildAllPages()
 {
 	// diag pages
+	pages[PWR_DIAG_PG] = buildPwrDiag();
+	pages[DIG_DIAG_PG] = buildDigDiag();
 	pages[ADC_DIAG_PG] = buildADCdiag();
 	pages[TDS_DIAG_PG] = buildTDSdiag();
 	pages[PH_DIAG_PG] = buildPhdiag();
@@ -1900,7 +2051,6 @@ void buildAllPages()
 	pages[LANG_PG] = buildLangPage();
 	pages[SETT_PG] = buildSettingsPage();
 	pages[MENU_PG] = buildMenuPage();
-
 }
 
 void linkPages()
@@ -1911,23 +2061,29 @@ void linkPages()
 		DEBUG_PRINT_HEX(i);
 #endif
 
+	// util pages
 	pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
 	pages[CAL_PH1_PG]->setPrev(pages[CAL_SETT_PG]);
 	pages[CAL_TDS1_PG]->setPrev(pages[CAL_SETT_PG]);
 
+	// menu pages
 	pages[SETT_PG]->setPrev(pages[MENU_PG]);
 	pages[FONT_PG]->setPrev(pages[MENU_PG]);
 	pages[TEST_PG]->setPrev(pages[MENU_PG]);
 
+	// settings pages
 	pages[WIFI_SETT_PG]->setPrev(pages[SETT_PG]);
 	pages[WIFI_PG]->setPrev(pages[SETT_PG]);
 	pages[TIME_PG]->setPrev(pages[SETT_PG]);
 	pages[CAL_SETT_PG]->setPrev(pages[SETT_PG]);
 	pages[LANG_PG]->setPrev(pages[SETT_PG]);
 
+	// diag pages
 	pages[DIAG_PG]->setPrev(pages[MENU_PG]);
 	pages[SENS_DIAG_PG]->setPrev(pages[DIAG_PG]);
 	pages[ADC_DIAG_PG]->setPrev(pages[DIAG_PG]);
+	pages[PWR_DIAG_PG]->setPrev(pages[DIAG_PG]);
+	pages[DIG_DIAG_PG]->setPrev(pages[DIAG_PG]);
 
 	pages[TDS_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
 	pages[PH_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
@@ -1962,7 +2118,7 @@ void setup(void)
 	buildAllPages();
 
 	topBar.build();
-	
+
 	// setPrev on required pages
 	linkPages();
 
