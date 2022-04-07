@@ -1,6 +1,7 @@
 .*.sw*
 *.tar.gz
 *.bin
+*.vim
 json.hpp
 data/*.h
 data/old/*

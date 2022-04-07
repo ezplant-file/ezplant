@@ -6,9 +6,10 @@
 #define TASKS
 #define APP_DEBUG
 
-#define PUMP_F 	17
-#define PUMP_G 	18
-#define PUMP_H 	19
+/*
+#define PORT_F 	17
+#define PORT_G 	18
+#define PORT_H 	19
 #define LED	32
 #define FAN	33
 
@@ -19,6 +20,7 @@
 #define BTN_HOME 	0b00001000
 #define BTN_NEXT 	0b00010000
 #define BTN_PLU 	0b00100000
+*/
 
 // interrupt
 #define EXPANDER_INT	27
@@ -38,6 +40,9 @@
 #include "stringenum.h"
 #include "Gui.h"
 #include "App.h"
+#include "IO.h"
+
+#define second_expander gpio[1]
 
 // json stuff
 #include "json.hpp"
@@ -326,11 +331,30 @@ void checkWifi()
 callback functions
 *******************************************************************************/
 
+void diagToggleCallback(void* arg, int i)
+{
+	if (arg == nullptr)
+		return;
+
+	Toggle* tgl = (Toggle*) arg;
+
+	tgl->on(!tgl->isOn());
+	tgl->invalidate();
+	tgl->draw();
+
+	if (i < 0 || i > PWR_PG_NITEMS)
+		return;
+
+	io.driveOut(i, tgl->isOn());
+}
+
+// dim screen setting input field
 void gDimAfter(void* arg)
 {
 	g_dimafter = gDimseconds.getValue();
 }
 
+// change wifi button
 void gChangeWifi(void* arg)
 {
 	SPIFFS.remove(cred_filename);
@@ -383,6 +407,7 @@ void callPage(void* page_ptr)
 }
 
 
+// wifi on/off checkbox
 void wifiChCallback(void* arg)
 {
 	// gwsConnection in topBar.update()
@@ -399,7 +424,8 @@ void wifiChCallback(void* arg)
 	gwsWifiChBox.draw();
 }
 
-void tglCallback(void* arg)
+// test page callbacks
+void tglCallback(void* arg, int i)
 {
 	if (testTgl.isOn())
 		testTgl.on(false);
@@ -429,7 +455,7 @@ void radCallback(void* arg)
 	testRad.draw();
 }
 
-
+// lang page callbacks
 void changeLangRus(void* arg)
 {
 	g_selected_lang = RU_LANG;
@@ -476,6 +502,7 @@ void changeLangEng(void* arg)
 	currPage->draw();
 }
 
+// time page callback
 void syncTimeCallback(void* arg)
 {
 	if (arg == nullptr)
@@ -1830,7 +1857,7 @@ Page* buildADCdiag()
 
 	adcDiag.addItem(&par1);
 
-	static OutputField ADC[4];
+	static OutputField ADC[N_ADC];
 
 	int x = 94;
 	int y = 99;
@@ -1838,6 +1865,7 @@ Page* buildADCdiag()
 	int gap = 12;
 
 	for (auto& i:ADC) {
+		gADC[j] = &i;
 		i.setXYpos(x, y+(INPUT_H+gap)*j);
 		i.setAlign(LEFT);
 		i.setWidth(FOUR_CHR);
@@ -1857,20 +1885,6 @@ Page* buildADCdiag()
 	return &adcDiag;
 }
 
-enum {
-	DIG_KEY1,
-	DIG_KEY2,
-	DIG_KEY3,
-	DIG_KEY4,
-	DIG_KEY5,
-	DIG_KEY6,
-	DIG_KEY7,
-	DIG_KEY8,
-	DIG_KEY9,
-	DIG_KEY10,
-	DIG_NKEYS
-};
-
 Page* buildDigDiag()
 {
 	static Page digDiag;
@@ -1886,6 +1900,7 @@ Page* buildDigDiag()
 	int x = PG_LEFT_PADD;
 	int y = 62;
 	int j = 0;
+	int k = 0;
 	int gap = 12;
 
 	indicators[DIG_KEY1].setText(DIG_DIAG_1);
@@ -1906,7 +1921,9 @@ Page* buildDigDiag()
 		}
 		i.setXYpos(x, y+(RAD_BTN_SIZE+gap)*j);
 		digDiag.addItem(&i);
+		gKEYS[k] = &i;
 		j++;
+		k++;
 	}
 
 	digDiag.setTitle(DIAG_DIG);
@@ -1916,22 +1933,7 @@ Page* buildDigDiag()
 	return &digDiag;
 }
 
-enum {
-	PWR_PG_PORT_A,
-	PWR_PG_PORT_B,
-	PWR_PG_PORT_C,
-	PWR_PG_PORT_D,
-	PWR_PG_PORT_E,
-	PWR_PG_PORT_F,
-	PWR_PG_PORT_G,
-	PWR_PG_PORT_H,
-	PWR_PG_FAN,
-	PWR_PG_LIGHT,
-	PWR_PG_UP,
-	PWR_PG_DOWN,
-	PWR_PG_NITEMS
-};
-
+// power outputs diag page (items enum in IO.h, don't ask...)
 Page* buildPwrDiag()
 {
 	static Page pwrDiag;
@@ -1964,7 +1966,7 @@ Page* buildPwrDiag()
 		diagItems[i].setTextX(textx);
 		diagItems[i].setAlign(LEFT);
 		diagItems[i].setXYpos(x, y+(RAD_BTN_SIZE+gap)*j);
-		diagItems[i].setCallback(nop);
+		diagItems[i].setCallback(diagToggleCallback, &diagItems[i], i);
 		pwrDiag.addItem(&diagItems[i]);
 		j++;
 	}
@@ -1988,7 +1990,7 @@ Page* buildPwrDiag()
 	diagItems[PWR_PG_DOWN].setXYpos(x, 244+RAD_BTN_SIZE+10);
 
 	static Line line(210);
-	line.setXYpos(PG_LEFT_PADD, 235);
+	line.setXYpos(PG_LEFT_PADD, 230);
 	pwrDiag.addItem(&line);
 	//diagItems[PWR_PG_PORT_A].setCallback();
 
@@ -2120,14 +2122,14 @@ void setup(void)
 
 	/*
 	pinMode(LED_PIN, OUTPUT);
-	pinMode(PUMP_F, OUTPUT);
-	pinMode(PUMP_G, OUTPUT);
-	pinMode(PUMP_H, OUTPUT);
+	pinMode(PORT_F, OUTPUT);
+	pinMode(PORT_G, OUTPUT);
+	pinMode(PORT_H, OUTPUT);
 	pinMode(LED, OUTPUT);
 	pinMode(FAN, OUTPUT);
-	analogWrite(PUMP_F, 127);
-	analogWrite(PUMP_G, 127);
-	analogWrite(PUMP_H, 127);
+	analogWrite(PORT_F, 127);
+	analogWrite(PORT_G, 127);
+	analogWrite(PORT_H, 127);
 	analogWrite(LED, 127);
 	analogWrite(FAN, 127);
 	*/
@@ -2149,14 +2151,8 @@ void setup(void)
 	oldMillis = millis();
 #endif
 
-	// expander stuff
-	buttons.begin();
-	second_expander.begin();
-	buttons.portMode(2, pinsAll(INPUT));
-	second_expander.portMode(1, pinsAll(INPUT));
-	second_expander.portMode(0, pinsAll(OUTPUT));
-	second_expander.portWrite(0, pinsAll(LOW));
-	pinMode(EXPANDER_INT, INPUT_PULLUP);
+	// init all expanders (TODO: init all i2c there)
+	io.init();
 
 	rtc.begin();
 	datetime.init();

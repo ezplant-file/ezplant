@@ -1409,6 +1409,18 @@ class Toggle: public ScrObj {
 			freeRes();
 		}
 
+		virtual void onClick() override
+		{
+			_callback(_objptr, _id);
+		}
+
+		void setCallback(std::function<void(void*, int)> callback, void* objptr = nullptr, int i = 0)
+		{
+			_callback = callback;
+			_objptr = objptr;
+			_id = i;
+		}
+
 		/*
 		virtual void prepare() override
 		{
@@ -1498,12 +1510,14 @@ skip:
 		}
 
 	private:
+		std::function<void(void*, int)> _callback;
 		//dispStrings_t _index;
 		Text _text;
 		//fonts_t _fontIndex;
 		uint16_t _bg, _fg, _col, _shaftX, _shaftY, _textX;
 		int _textLength = 0;
 		int _dy = 0;
+		int _id = -1;
 		//bool _textAligned = false;
 		bool _isOn = false;
 		bool _textHardX = false;
@@ -1704,6 +1718,7 @@ class RadioButton: public ScrObj {
 		void on(bool isOn)
 		{
 			_isOn = isOn;
+			_invalid = true;
 		}
 
 	private:

@@ -4,7 +4,7 @@
 #include <ctime>
 #include <atomic>
 #include "Gui.h"
-//#include "IO.h"
+#include "IO.h"
 
 // hardware... stuff
 #include <SPI.h>
@@ -13,6 +13,7 @@
 
 WebServer server(80);
 
+/*
 // time
 #include <iarduino_RTC.h>
 iarduino_RTC rtc(RTC_RX8025);
@@ -24,11 +25,14 @@ iarduino_I2C_pH ph_meter(0x0a);
 // tds meter
 #include <iarduino_I2C_TDS.h>
 iarduino_I2C_TDS tds_meter(0x0b);
+*/
 
+/*
 // buttons
 #include <iarduino_PCA9555.h>
 iarduino_PCA9555 buttons(0x20); //first expander
 iarduino_PCA9555 second_expander(0x21);
+*/
 
 // ping
 #include <ESP32Ping.h>
@@ -739,9 +743,18 @@ void resetDiagFlags()
 
 #define SENS_READ_MILS 1000
 
+// pointers to ADC diag output fields
+OutputField* gADC[N_ADC];
+#define ADC_READ_INTERVAL 200
+#define DIG_READ_INTERVAL 200
+
+// pointers to DIG diag indicators
+CircIndicator* gKEYS[DIG_NKEYS];
 
 class App {
 	private:
+		unsigned long _digMils = 0;
+		unsigned long _adcMils = 0;
 		unsigned long _oldMils = 0;
 		unsigned long _dbMils = 0;
 		unsigned long _dimMils = 0;
@@ -814,6 +827,40 @@ class App {
 			topBar.update();
 			datetime.update();
 
+			/* diag page analog inputs */
+
+			if (currPage == pages[ADC_DIAG_PG] && millis() - _adcMils > ADC_READ_INTERVAL) {
+				io.readADC();
+
+				uint16_t* values = io.getAnalogValues();
+
+				for (int i = 0; i < N_ADC; i++) {
+					/*
+					if (gADC[i] == nullptr)
+						continue;
+						*/
+					gADC[i]->setValue(values[i]);
+				}
+
+				_adcMils = millis();
+			}
+
+			if (currPage == pages[DIG_DIAG_PG] && millis() - _digMils > DIG_READ_INTERVAL) {
+				io.readDigital();
+
+				bool* keys = io.getDigitalValues();
+
+				for (int i = 0; i < DIG_NKEYS; i++) {
+					/*
+					if (gKEYS[i] == nullptr)
+						continue;
+						*/
+					gKEYS[i]->on(keys[i]);
+				}
+
+				_dimMils = millis();
+			}
+
 			/* calib pages global items. */
 
 			// wait for ph1 clalib
@@ -852,7 +899,7 @@ class App {
 				g_tds_succ.setVisible();
 				currItem = &g_tds_done;
 				_iterator = 0;
-				second_expander.digitalWrite(TDS_MTR_RLY, LOW);
+				gpio[1].digitalWrite(TDS_MTR_RLY, LOW);
 			}
 
 			// reset wait flags and pages items
@@ -971,12 +1018,12 @@ class App {
 #endif
 
 			// read buttons
-			uint8_t user_input = buttons.portRead(0);
+			uint8_t user_input = gpio[0].portRead(0);
 
 			// debounce
 			if ((uint8_t)~user_input) {
 				if (millis() - _dbMils > DEBOUNCE) {
-					user_input = buttons.portRead(0);
+					user_input = gpio[0].portRead(0);
 					if ((uint8_t)~user_input){
 						_dbMils = millis();
 						_dbFlag = true;
