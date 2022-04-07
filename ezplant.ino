@@ -375,8 +375,12 @@ void callPage(void* page_ptr)
 	app.resetIterator();
 
 	//back.setCallback(callPage, currPage);
-	if (page->prev() != nullptr)
+	if (page->prev() == nullptr) {
+		back.setCallback(nop);
+	}
+	else {
 		back.setCallback(callPage, page->prev());
+	}
 
 	currPage->freeRes();
 
@@ -986,7 +990,7 @@ Page* buildTds2Page()
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, MB_Y_START);
-	par1.setText(PH2_PAR1);
+	par1.setText(TDS2_PAR1);
 
 	static BlueTextButton ph_scan;
 	ph_scan.setXYpos(PG_LEFT_PADD, 82);
@@ -1653,7 +1657,7 @@ Page* buildMenuPage()
 	back.setXYpos(7, 284);
 	back.setCircle();
 
-	mainPage.setPrev(&mainPage);
+	//mainPage.setPrev(&mainPage);
 
 	mainPage.setTitle(MENU);
 	mainPage.addItem(&back);

@@ -6,7 +6,6 @@
   ****************************************************************************/
 
 //TODO: page builder
-//TODO: figure out i2c time timezone
 //
 //
 // precalculate all colors to uint16_t
