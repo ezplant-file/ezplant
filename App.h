@@ -4,7 +4,7 @@
 #include <ctime>
 #include <atomic>
 #include "Gui.h"
-#include "IO.h"
+//#include "IO.h"
 
 // hardware... stuff
 #include <SPI.h>
@@ -13,7 +13,6 @@
 
 WebServer server(80);
 
-/*
 // time
 #include <iarduino_RTC.h>
 iarduino_RTC rtc(RTC_RX8025);
@@ -25,7 +24,6 @@ iarduino_I2C_pH ph_meter(0x0a);
 // tds meter
 #include <iarduino_I2C_TDS.h>
 iarduino_I2C_TDS tds_meter(0x0b);
-*/
 
 // buttons
 #include <iarduino_PCA9555.h>
