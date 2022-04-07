@@ -5,7 +5,9 @@
 #include <iarduino_I2C_pH.h>
 #include <iarduino_I2C_TDS.h>
 #include <iarduino_PCA9555.h>
-//#include "Gui.h"
+
+// only for sleep define... pls, reconsider. TODO: check if ESP delay is the same
+#include "Gui.h"
 
 #define PH_METER_ADDRESS 0x0a
 #define TDS_METER_ADDRESS 0x0b
@@ -164,10 +166,12 @@ class InputOutput {
 					break;
 				case PWR_PG_UP:
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_M_DIR, LOW);
+					sleep(25);
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, state);
 					break;
 				case PWR_PG_DOWN:
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_M_DIR, state);
+					sleep(25);
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, state);
 					break;
 			}
@@ -197,12 +201,11 @@ class InputOutput {
 		{
 			uint16_t keys = gpio[FIRST_EXPANDER].portRead(BOTH_PORTS);
 
-			Serial.println(keys, BIN);
 
 			keys >>= KEYS_START_BIT;
 
 			for (int i = 0; i < DIG_NKEYS; i++) {
-				if (keys & i) {
+				if (keys & (0x01 << i)) {
 					_dig_keys[i] = false;
 				}
 				else {

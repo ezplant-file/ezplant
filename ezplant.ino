@@ -1653,6 +1653,8 @@ Page* buildMenuPage()
 	back.setXYpos(7, 284);
 	back.setCircle();
 
+	mainPage.setPrev(&mainPage);
+
 	mainPage.setTitle(MENU);
 	mainPage.addItem(&back);
 	return &mainPage;
@@ -1799,17 +1801,17 @@ Page* buildTDSdiag()
 	par1.setText(TDS_DIAG_PAR);
 
 	//static OutputField out1;
-	g_tds_read.setText(TDS_DIAG_PPM);
 	g_tds_read.setXYpos(74, 131);
+	g_tds_read.setText(TDS_DIAG_PPM);
 	g_tds_read.setInvisible();
 	g_tds_read.setWidth(FOUR_CHR);
 
 	//static Wait tdsWait;
 	g_tdsWait.setXYpos(82, 165);
 
+	tds_diag_back.setXYpos(7, 284);
 	tds_diag_back.setCallback(tdsDiagBack);
 	tds_diag_back.loadRes(images[IMG_PREV]);
-	tds_diag_back.setXYpos(7, 284);
 	tds_diag_back.setCircle();
 
 	tdsdiag.setTitle(CAL_TDS);
@@ -1830,8 +1832,8 @@ Page* buildPhdiag()
 	par1.setText(PH_DIAG_PAR);
 
 	//static OutputField out1;
-	g_ph_read.setText(PH_DIAG_PH);
 	g_ph_read.setXYpos(80, 93);
+	g_ph_read.setText(PH_DIAG_PH);
 	g_ph_read.setInvisible();
 	g_ph_read.setFloat();
 

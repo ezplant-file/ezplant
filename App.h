@@ -1,8 +1,11 @@
 #ifndef __APP_H__
 #define __APP_H__
 
+//TODO: figure out i2c time timezone (clue: localtime() might be the cause)
+
 #include <ctime>
 #include <atomic>
+std::atomic<bool> gInterrupt;
 #include "Gui.h"
 #include "IO.h"
 
@@ -76,6 +79,7 @@ std::atomic<int8_t> g_utc;
 
 void ping_task_callback(void* arg)
 {
+	sleep(5000);
 	for(;;) {
 		if (g_wifi_set) {
 			if (Ping.ping(REMOTE_HOST, 3)) {
@@ -379,6 +383,7 @@ class DateTime: public ScrObj {
 		{
 			_y = 174;
 		}
+
 		~DateTime()
 		{
 			freeRes();
@@ -408,17 +413,15 @@ class DateTime: public ScrObj {
 		unsigned long _userInputTimestamp = 0;
 		//uint16_t _y = 225;
 		//TFT_eSprite _sprite = TFT_eSprite(&tft);
+		//std::thread timesynchelper;
 	public:
 
+		// TODO: redo.
 		void update()
 		{
-			if (
-					millis()
-					- _userInputTimestamp
-					> USER_INPUT_SETTLE
+			if (millis() - _userInputTimestamp > USER_INPUT_SETTLE
 					&& !_userInputSettled
-					&& !_timeSynced
-					) {
+					&& !_timeSynced) {
 				_userInputSettled = true;
 			}
 
@@ -447,8 +450,8 @@ class DateTime: public ScrObj {
 					getI2Ctime();
 				}
 
-				//invalidate();
-				//prepare();
+				prepare();
+				invalidate();
 			}
 		}
 
@@ -745,7 +748,7 @@ void resetDiagFlags()
 
 // pointers to ADC diag output fields
 OutputField* gADC[N_ADC];
-#define ADC_READ_INTERVAL 200
+#define ADC_READ_INTERVAL 500
 #define DIG_READ_INTERVAL 200
 
 // pointers to DIG diag indicators
@@ -845,7 +848,9 @@ class App {
 				_adcMils = millis();
 			}
 
-			if (currPage == pages[DIG_DIAG_PG] && millis() - _digMils > DIG_READ_INTERVAL) {
+			if (currPage == pages[DIG_DIAG_PG]
+					&& millis() - _digMils > DIG_READ_INTERVAL
+					&& gInterrupt) {
 				io.readDigital();
 
 				bool* keys = io.getDigitalValues();
@@ -1010,7 +1015,11 @@ class App {
 			// return if no interupts from expander
 			//pinMode(EXPANDER_INT, INPUT);
 			if (digitalRead(EXPANDER_INT) == HIGH) {
+				gInterrupt = false;
 				return;
+			}
+			else {
+				gInterrupt = true;
 			}
 
 #ifdef APP_DEBUG

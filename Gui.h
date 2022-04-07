@@ -1,3 +1,10 @@
+/******************************************************************************
+
+  GUI elements classes.
+  setXYpos method should always be called first while building ScrOjbs.
+
+  ****************************************************************************/
+
 //TODO: page builder
 //TODO: figure out i2c time timezone
 //
