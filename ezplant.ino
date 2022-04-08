@@ -119,6 +119,7 @@ bool loadSettings()
 		g_init_brightness = load["g_init_brightness"].get<int16_t>();
 		g_dimafter = load["g_dimafter"].get<uint8_t>();
 		g_ntp_sync = load["g_ntp_sync"].get<bool>();
+		g_first_launch = load["g_first_launch"].get<bool>();
 
 		datetime.initSync(g_ntp_sync);
 
@@ -151,6 +152,7 @@ bool saveSettings()
 	save["gUTC"] = datetime.getUTC();
 	save["lang"] = g_selected_lang;
 	save["g_wifi_on"] = gwsWifiChBox.isOn();
+	save["g_first_launch"] = g_first_launch;
 
 	File file = SPIFFS.open(sett_file, "w");
 	if (!file) {
@@ -331,7 +333,7 @@ void checkWifi()
 callback functions
 *******************************************************************************/
 
-void diagToggleCallback(void* arg, int i)
+void diagToggleCallback(void* arg, int id)
 {
 	if (arg == nullptr)
 		return;
@@ -342,10 +344,20 @@ void diagToggleCallback(void* arg, int i)
 	tgl->invalidate();
 	tgl->draw();
 
-	if (i < 0 || i > PWR_PG_NITEMS)
+	if (id < 0 || id > PWR_PG_NITEMS)
 		return;
 
-	io.driveOut(i, tgl->isOn());
+	io.driveOut(id, tgl->isOn());
+
+	if (id == PWR_PG_DOWN && exlMotorTgl[MOTOR_UP]->isOn()) {
+		exlMotorTgl[MOTOR_UP]->on(false);
+		exlMotorTgl[MOTOR_UP]->invalidate();
+	}
+
+	if (id == PWR_PG_UP && exlMotorTgl[MOTOR_DOWN]->isOn()) {
+		exlMotorTgl[MOTOR_DOWN]->on(false);
+		exlMotorTgl[MOTOR_DOWN]->invalidate();
+	}
 }
 
 // dim screen setting input field
@@ -1956,6 +1968,8 @@ Page* buildPwrDiag()
 	pwrDiag.addItem(&motor);
 
 	static Toggle diagItems[PWR_PG_NITEMS];
+	exlMotorTgl[MOTOR_UP] = &diagItems[PWR_PG_UP];
+	exlMotorTgl[MOTOR_DOWN] = &diagItems[PWR_PG_DOWN];
 
 	int x = 73;
 	int y = 62;
@@ -2006,6 +2020,24 @@ Page* buildPwrDiag()
 
 	return &pwrDiag;
 }
+
+/*
+Page* buildFirstPage()
+{
+	static Page firstPlanging;
+	static Text heading1;
+	static Text par1;
+	static BlueTextButton start;
+	return &firstPlanging;
+}
+
+Page* buildStage1()
+{
+	static Page stage1;
+	static RadioButton[];
+	return &stage1;
+}
+*/
 
 void gSetBacklight(void* arg)
 {
@@ -2112,6 +2144,7 @@ void setup(void)
 		Serial.println("settings loaded");
 #endif
 	}
+
 
 	// connect to wifi or create AP
 	checkWifi();

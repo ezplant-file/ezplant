@@ -1,3 +1,6 @@
+/*******************************************************************************
+  All io of the device should be here. TODO: move all i2c stuff here
+*******************************************************************************/
 #ifndef __IO_H__
 #define __IO_H__
 
@@ -6,12 +9,11 @@
 #include <iarduino_I2C_TDS.h>
 #include <iarduino_PCA9555.h>
 
-// only for sleep define... pls, reconsider. TODO: check if ESP delay is the same
-#include "Gui.h"
-
 #define PH_METER_ADDRESS 0x0a
 #define TDS_METER_ADDRESS 0x0b
 #define RTC_CLOCK_MODEL RTC_RX8025
+
+#define MOTOR_SW_DELAY 25
 
 iarduino_PCA9555 gpio[2]{0x20, 0x21};
 iarduino_RTC rtc(RTC_CLOCK_MODEL);
@@ -38,11 +40,11 @@ iarduino_I2C_TDS tds_meter(TDS_METER_ADDRESS);
 #define FAN	33
 #define LED	32
 
-// esp analog in
-#define ANALOG_A 36
-#define ANALOG_B 39
-#define ANALOG_C 34
-#define ANALOG_D 35
+// esp analog in pins
+#define PIN_ANALOG_A 36
+#define PIN_ANALOG_B 39
+#define PIN_ANALOG_C 34
+#define PIN_ANALOG_D 35
 
 // uint16_t pinsIN = buttons.portRead(2);
 // bitmasks (TODO: rename)
@@ -77,6 +79,13 @@ enum {
 	FIRST_PORT,
 	SECOND_PORT,
 	BOTH_PORTS
+};
+
+enum {
+	ADC_1,
+	ADC_2,
+	ADC_3,
+	ADC_4
 };
 
 // digital inputs
@@ -135,19 +144,19 @@ class InputOutput {
 			pinMode(FAN, OUTPUT);
 		}
 
-		void driveOut(int num, bool state)
+		void driveOut(int id, bool state)
 		{
-			if (num < 0)
+			if (id < 0)
 				return;
 
-			switch (num) {
+			switch (id) {
 				default: break;
 				case PWR_PG_PORT_A:
 				case PWR_PG_PORT_B:
 				case PWR_PG_PORT_C:
 				case PWR_PG_PORT_D:
 				case PWR_PG_PORT_E:
-					gpio[SECOND_EXPANDER].digitalWrite(num, state);
+					gpio[SECOND_EXPANDER].digitalWrite(id, state);
 					break;
 				case PWR_PG_PORT_F:
 					digitalWrite(PORT_F, state);
@@ -166,12 +175,16 @@ class InputOutput {
 					break;
 				case PWR_PG_UP:
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_M_DIR, LOW);
-					sleep(25);
+					delay(MOTOR_SW_DELAY);
+					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, LOW);
+					delay(MOTOR_SW_DELAY);
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, state);
 					break;
 				case PWR_PG_DOWN:
+					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, LOW);
+					delay(MOTOR_SW_DELAY);
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_M_DIR, state);
-					sleep(25);
+					delay(MOTOR_SW_DELAY);
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, state);
 					break;
 			}
@@ -185,10 +198,10 @@ class InputOutput {
 		// TODO: make private
 		void readADC()
 		{
-			_adc[0] = analogRead(ANALOG_A);
-			_adc[1] = analogRead(ANALOG_B);
-			_adc[2] = analogRead(ANALOG_C);
-			_adc[3] = analogRead(ANALOG_D);
+			_adc[ADC_1] = analogRead(PIN_ANALOG_A);
+			_adc[ADC_2] = analogRead(PIN_ANALOG_B);
+			_adc[ADC_3] = analogRead(PIN_ANALOG_C);
+			_adc[ADC_4] = analogRead(PIN_ANALOG_D);
 		}
 
 		bool* getDigitalValues()
@@ -205,7 +218,7 @@ class InputOutput {
 			keys >>= KEYS_START_BIT;
 
 			for (int i = 0; i < DIG_NKEYS; i++) {
-				if (keys & (0x01 << i)) {
+				if (keys & (0x0001 << i)) {
 					_dig_keys[i] = false;
 				}
 				else {

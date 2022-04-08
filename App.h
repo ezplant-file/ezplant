@@ -2,6 +2,7 @@
 #define __APP_H__
 
 //TODO: figure out i2c time timezone (clue: localtime() might be the cause)
+//TODO: page builder
 
 #include <ctime>
 #include <atomic>
@@ -16,30 +17,37 @@ std::atomic<bool> gInterrupt;
 
 WebServer server(80);
 
-/*
-// time
-#include <iarduino_RTC.h>
-iarduino_RTC rtc(RTC_RX8025);
-
-// ph meter
-#include <iarduino_I2C_pH.h>
-iarduino_I2C_pH ph_meter(0x0a);
-
-// tds meter
-#include <iarduino_I2C_TDS.h>
-iarduino_I2C_TDS tds_meter(0x0b);
-*/
-
-/*
-// buttons
-#include <iarduino_PCA9555.h>
-iarduino_PCA9555 buttons(0x20); //first expander
-iarduino_PCA9555 second_expander(0x21);
-*/
-
 // ping
 #include <ESP32Ping.h>
 
+/*--------------------------------------------------------------------------------------------*/
+
+// print object address
+#define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
+#define DEBUG_PRINT_HEX(A) Serial.println((unsigned long long) (A), HEX)
+
+// debounce stuff
+#define CURSOR_TIMER 500
+#define DEBOUNCE 200
+
+#define sleep(A) (vTaskDelay((A) / portTICK_PERIOD_MS))
+
+// dim screen after
+#define LOWER_DIMAFTER 3
+#define HIGHER_DIMAFTER 180
+
+// NTP
+#define NTP_SERVER "pool.ntp.org"
+
+// settings
+uint8_t g_dimafter = 20;
+int16_t g_init_brightness = 50;
+bool g_ntp_sync = false;
+int8_t gUTC = 0;
+bool g_wifi_on = true;
+bool g_first_launch = true;
+
+/*--------------------------------------------------------------------------------------------*/
 
 // utils
 const char* REMOTE_HOST = "www.iocontrol.ru";
@@ -58,6 +66,7 @@ std::atomic<bool> g_tds_calib_1500_done;
 
 std::atomic<bool> g_ph_diag_wait_done;
 std::atomic<bool> g_tds_diag_wait_done;
+
 
 enum {
 	HOUR,
@@ -546,6 +555,7 @@ class DateTime: public ScrObj {
 		void initUTC(int8_t utc)
 		{
 			g_utc = utc;
+			configTime(g_utc*3600, 0, "");
 		}
 
 		void setUTC(void* obj)
@@ -753,6 +763,14 @@ OutputField* gADC[N_ADC];
 
 // pointers to DIG diag indicators
 CircIndicator* gKEYS[DIG_NKEYS];
+
+enum {
+	MOTOR_UP,
+	MOTOR_DOWN,
+	MOTOR_NITEMS
+};
+
+Toggle* exlMotorTgl[MOTOR_NITEMS];
 
 class App {
 	private:

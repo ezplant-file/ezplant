@@ -5,8 +5,6 @@
 
   ****************************************************************************/
 
-//TODO: page builder
-//
 //
 // precalculate all colors to uint16_t
 //
@@ -31,10 +29,6 @@
 #include "images.h"
 
 /***************************** defines *************************/
-// print object address
-#define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
-#define DEBUG_PRINT_HEX(A) Serial.println((unsigned long long) (A), HEX)
-
 // gap between menu items
 #define MENU_GAP 5
 
@@ -59,7 +53,6 @@
 #define TOP_BAR_HEIGHT 27
 #define TOP_BAR_BG_COL 0xE3
 #define FONT_COLOR 0x70
-#define sleep(A) (vTaskDelay((A) / portTICK_PERIOD_MS))
 #define LEFTMOST 17
 #define TOPMOST 11
 
@@ -88,10 +81,6 @@
 #define COL_GREY_70_565 0x738E
 #define COL_GREY_E3_565 0xE71C
 
-// debounce stuff
-#define CURSOR_TIMER 500
-#define DEBOUNCE 200
-
 // checkbox
 #define CHK_BOX_COL 0xDC
 #define CHK_BOX_SIZE 21
@@ -103,20 +92,6 @@
 // radio button
 #define RAD_BTN_SIZE 22
 
-// dim screen after
-#define LOWER_DIMAFTER 3
-#define HIGHER_DIMAFTER 180
-
-// NTP
-#define NTP_SERVER "pool.ntp.org"
-
-// settings
-uint8_t g_dimafter = 20;
-int16_t g_init_brightness = 50;
-bool g_ntp_sync = false;
-int8_t gUTC = 0;
-bool g_wifi_on = true;
-
 // lang settings after typedef
 typedef enum {
 	RU_LANG,
@@ -124,6 +99,9 @@ typedef enum {
 } lang_t;
 
 lang_t g_selected_lang = RU_LANG;
+
+// pointer to current language strings
+const char** scrStrings = ruStrings;
 
 
 
@@ -157,17 +135,10 @@ typedef enum {
 	TOP
 } align_t;
 
-// pointer to current language strings
-const char** scrStrings = ruStrings;
-
 // objs
 TFT_eSPI tft = TFT_eSPI();
 
 GfxUi ui = GfxUi(&tft);
-
-//atomic_bool g_ping_success = false;
-//bool g_ping_success = false;
-//iarduino_RTC rtc(RTC_DS3231);
 
 void nop(void* arg)
 {
@@ -1420,11 +1391,11 @@ class Toggle: public ScrObj {
 			_callback(_objptr, _id);
 		}
 
-		void setCallback(std::function<void(void*, int)> callback, void* objptr = nullptr, int i = 0)
+		void setCallback(std::function<void(void*, int)> callback, void* objptr = nullptr, int id = 0)
 		{
 			_callback = callback;
 			_objptr = objptr;
-			_id = i;
+			_id = id;
 		}
 
 		/*
