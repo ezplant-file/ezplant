@@ -179,7 +179,57 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"LIGHT",
 	"MOTOR:",
 	"UP",
-	"DOWN"
+	"DOWN",
+
+	// first page items
+	"Status",
+	"First planting",
+	"Set all the parameters and \nsettings to start the device \nin the operational mode",
+	"Start",
+
+	// stage 1
+	"Planting. Stage 1",
+	"Choose type",
+	"Underwater cultures",
+	"Nutrient layer",
+	"Periodic flooding",
+	"Aeroponics",
+	"Drip hydroponics",
+	"Open ground",
+	"Greenhouse",
+	"Mixing a solution",
+
+	// stage 2
+	"Planting. Stage 2",
+	"Lighting",
+	"Time interval \nin which lights will \nbe on",
+	"From which day",
+	"Day after planting \nthe lights should \nbe on",
+	"From",
+	"day",
+
+	// stage 3
+	"Planting. Stage 3",
+	"Ventilation",
+	"Forced ventilation",
+	"Conditions",
+	"Time interval",
+	"Temperature is higher than",
+	"Humidity is higher than",
+
+	// stage 4
+	"Planting. Stage 4",
+	"Passive ventilation",
+	"by opening a door or \na window",
+	"Conditions",
+	"Time interval",
+	"Temperature is higher than",
+	"Humidity is higher than",
+
+	// stage 5
+	"Planting. Stage 5",
+	"Growth cycle",
+	"Growth stage dependent \nnutrient solution settings"
 
 	//end of strings
 };

@@ -475,6 +475,10 @@ class GreyTextButton: public ScrObj {
 			if (!_invalid || !_isVisible)
 				return;
 			_btnSpr.pushSprite(_x, _y);
+
+			// checking
+			freeRes();
+
 			_invalid = false;
 		}
 
@@ -514,11 +518,11 @@ class Text: public ScrObj {
 		{
 			if (!_invalid || !_isVisible)
 				return;
-			//freeRes();
-			//prepare();
 			_txtSp.pushSprite(_x + _dx, _y + _dy, TFT_TRANSPARENT);
 			_invalid = false;
-			//freeRes();
+
+			// checking
+			freeRes();
 		}
 
 		/*
@@ -582,6 +586,7 @@ class Text: public ScrObj {
 			_fg = fg;
 			_bg = bg;
 			_txtSp.setColorDepth(COLOR_DEPTH);
+			//_txtSp.setColorDepth(8);
 		}
 
 		virtual void setText(dispStrings_t index) override
@@ -752,6 +757,9 @@ class BodyText: public ScrObj {
 				return;
 			_txtSp.pushSprite(_x, _y, TFT_TRANSPARENT);
 			_invalid = false;
+
+			// checking
+			freeRes();
 		}
 
 		virtual void prepare() override
@@ -809,7 +817,7 @@ class Image: public ScrObj {
 			_jpegFile = SPIFFS.open(_filename, "r");
 		}
 
-		void loadRes(const String& filename)
+		void loadRes(const char* filename)
 		{
 			//_jpegFile = SPIFFS.open(filename, "r");
 			_invalid = true;
@@ -825,7 +833,7 @@ class Image: public ScrObj {
 
 	private:
 		fs::File _jpegFile;
-		String _filename;
+		const char* _filename;
 };
 
 #define IMG_BTN_SIZE 30
@@ -994,6 +1002,7 @@ class InputField: public ScrObj {
 
 		virtual void freeRes() override
 		{
+			_text.freeRes();
 		}
 
 		void setWidth(placeholder_t width)
@@ -1377,6 +1386,7 @@ class Toggle: public ScrObj {
 
 		virtual void freeRes() override
 		{
+			_text.freeRes();
 		}
 
 		virtual void erase() override
@@ -1624,6 +1634,7 @@ class RadioButton: public ScrObj {
 
 		virtual void freeRes() override
 		{
+			_text.freeRes();
 		}
 
 		/*
@@ -1737,7 +1748,7 @@ class Wait: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			//_waitText.freeRes();
+			_waitText.freeRes();
 		}
 
 		virtual void draw() override
@@ -2009,9 +2020,19 @@ class Page {
 			return _prev;
 		}
 
+		Page* next()
+		{
+			return _next;
+		}
+
 		void setPrev(Page* page)
 		{
 			_prev = page;
+		}
+
+		void setNext(Page* page)
+		{
+			_next = page;
 		}
 
 		bool visibleIcons()
@@ -2027,6 +2048,7 @@ class Page {
 	private:
 		bool _iconsVisible = true;
 		Page* _prev = nullptr;
+		Page* _next = nullptr;
 		dispStrings_t _title;
 		obj_list _items;
 		obj_list _selectable;

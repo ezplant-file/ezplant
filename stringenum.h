@@ -183,6 +183,62 @@ typedef enum {
 	PWR_MOTOR_UP,
 	PWR_MOTOR_DOWN,
 
+	// fist page items
+	FP_TITLE,
+	FP_SUBTTL,
+	FP_PAR,
+	FP_BTN,
+
+	// stage 1
+	S1_TITLE,
+	S1_SUBTTL,
+	S1_UNDERWTR,
+	S1_LAYER,
+	S1_PERIODIC,
+	S1_AERO,
+	S1_DRIP,
+	S1_OPENG,
+	S1_GREENHS,
+	S1_MIXING,
+
+	// stage 2
+	S2_TITLE,
+	S2_SUBTTL1,
+	S2_PAR1,
+	S2_SUBTTL2,
+	S2_PAR2,
+	S2_FROM,
+	S2_DAY,
+
+	// stage 3
+	S3_TITLE,
+	S3_VENT,
+	S3_PAR1,
+	S3_SUBTTL,
+	S3_TIME,
+	S3_TEMP,
+	S3_HUM,
+
+	// stage 4
+	S4_TITLE,
+	S4_PASSVENT,
+	S4_PAR1
+	S4_SUBTTL,
+	S4_TIME,
+	S4_TEMP,
+	S4_HUM,
+
+	// stage 5
+	S5_TITLE,
+	S5_SUBTTL,
+	S5_PAR1,
+	S5_DAY,
+
+	// stage 6
+	S6_TITLE,
+	S6_SUBTTL,
+	S6_PAR1,
+
 	END_OF_STRINGS
 } dispStrings_t;
 

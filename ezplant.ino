@@ -55,6 +55,7 @@ static Page settingsPage;
 //#define menu1_size 6
 //#define settings_size 5
 static ImageButton back;
+static ImageButton forward;
 //static ImageButton sett_back;
 static BlueTextButton next;
 
@@ -392,6 +393,13 @@ void callPage(void* page_ptr)
 	}
 	else {
 		back.setCallback(callPage, page->prev());
+	}
+
+	if (page->next() == nullptr) {
+		forward.setCallback(nop);
+	}
+	else {
+		forward.setCallback(callPage, page->next());
 	}
 
 	currPage->freeRes();
@@ -1663,11 +1671,6 @@ Page* buildMenuPage()
 		mainPage.addItem(&menu_items[i]);
 	}
 
-	// TODO: change to setPrev, move "back" init somewhere else
-	back.setCallback(nop);
-	back.loadRes(images[IMG_PREV]);
-	back.setXYpos(7, 284);
-	back.setCircle();
 
 	//mainPage.setPrev(&mainPage);
 
@@ -2021,23 +2024,189 @@ Page* buildPwrDiag()
 	return &pwrDiag;
 }
 
-/*
 Page* buildFirstPage()
 {
-	static Page firstPlanging;
+	static Page firstPlanting;
 	static Text heading1;
+	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	heading1.setFont(BOLDFONT);
+	heading1.setText(FP_SUBTTL);
+
 	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 63);
+	par1.setText(FP_PAR);
+
 	static BlueTextButton start;
-	return &firstPlanging;
+	start.setXYpos(PG_LEFT_PADD, 153);
+	start.setText(FP_BTN);
+	start.setCallback(callPage, pages[STAGE1_PG]);
+
+	static Image seeds;
+	seeds.setXYpos(174, 142);
+	seeds.loadRes(images[IMG_SEEDS]);
+
+	firstPlanting.addItem(&heading1);
+	firstPlanting.addItem(&par1);
+	firstPlanting.addItem(&start);
+	firstPlanting.addItem(&seeds);
+	firstPlanting.addItem(&back);
+
+	firstPlanting.setTitle(FP_TITLE);
+
+	return &firstPlanting;
 }
+
+enum {
+	RB_UNDERW,
+	RB_LAYER,
+	RB_PERIODIC,
+	RB_AERO,
+	RB_DRIP,
+	RB_OPENG,
+	RB_GREENHS,
+	RB_MIXING,
+	RB_NITEMS
+};
 
 Page* buildStage1()
 {
 	static Page stage1;
-	static RadioButton[];
+	static Text heading1;
+	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	heading1.setFont(BOLDFONT);
+	heading1.setText(S1_SUBTTL);
+
+	stage1.addItem(&heading1);
+
+	static RadioButton rbuttons[RB_NITEMS];
+
+	int gap = 4;
+	int j = 0;
+
+	for (auto& i:rbuttons) {
+		i.setXYpos(PG_LEFT_PADD, MB_Y_START+20+(RAD_BTN_SIZE+gap)*j);
+		stage1.addItem(&i);
+		j++;
+	}
+
+	rbuttons[RB_UNDERW].setText(S1_UNDERWTR);
+	rbuttons[RB_LAYER].setText(S1_LAYER);
+	rbuttons[RB_PERIODIC].setText(S1_PERIODIC);
+	rbuttons[RB_AERO].setText(S1_AERO);
+	rbuttons[RB_DRIP].setText(S1_DRIP);
+	rbuttons[RB_OPENG].setText(S1_OPENG);
+	rbuttons[RB_GREENHS].setText(S1_GREENHS);
+	rbuttons[RB_MIXING].setText(S1_MIXING);
+
+	stage1.setNext(pages[STAGE2_PG]);
+	stage1.setTitle(S1_TITLE);
+	stage1.addItem(&forward);
+
 	return &stage1;
 }
-*/
+
+Page* buildStage2()
+{
+	static Page stage2;
+	stage2.setTitle(S2_TITLE);
+	stage2.setNext(pages[STAGE3_PG]);
+
+	static Image bulb;
+	bulb.setXYpos(164, 40);
+	bulb.loadRes(images[IMG_BULB]);
+
+	static Text heading1;
+	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	heading1.setFont(BOLDFONT);
+	heading1.setText(S2_SUBTTL1);
+
+	static CheckBox lightOn;
+	lightOn.setXYpos(111, 40);
+	lightOn.setText(EMPTY_STR);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S2_PAR1);
+
+	// TODO: make time limits ScrObj
+	static InputField from;
+	from.setXYpos(PG_LEFT_PADD, 143);
+	from.setWidth(FOUR_CHR);
+	from.setText(EMPTY_STR);
+
+	static Line dash(10);
+	dash.setXYpos(67, 154);
+
+	static InputField to;
+	to.setXYpos(87, 143);
+	to.setWidth(FOUR_CHR);
+	to.setText(EMPTY_STR);
+
+	static Text heading2;
+	heading2.setXYpos(PG_LEFT_PADD, 175);
+	heading2.setFont(BOLDFONT);
+	heading2.setText(S2_SUBTTL2);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 199);
+	par2.setText(S2_PAR2);
+
+	static Text s;
+	s.setXYpos(PG_LEFT_PADD, 263);
+	s.setText(S2_FROM);
+
+	static InputField days;
+	days.setXYpos(34, 263);
+	days.setWidth(FOUR_CHR);
+	days.setText(S2_DAY);
+
+	stage2.addItem(&bulb);
+	stage2.addItem(&heading1);
+	stage2.addItem(&lightOn);
+	stage2.addItem(&par1);
+	stage2.addItem(&from);
+	stage2.addItem(&dash);
+	stage2.addItem(&to);
+	stage2.addItem(&heading2);
+	stage2.addItem(&par2);
+	stage2.addItem(&s);
+	stage2.addItem(&days);
+	stage2.addItem(&forward);
+
+	return &stage2;
+}
+
+Page* buildStage3()
+{
+	static Page stage3;
+	stage3.setTitle(S3_TITLE);
+	stage3.setNext(pages[STAGE4_PG]);
+
+	static Text vent;
+	vent.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	vent.setFont(BOLDFONT);
+	vent.setText(S3_VENT);
+
+	static Image fan;
+	fan.setXYpos();
+	fan.loadRes(images[]);
+
+	static CheckBox ventOn;
+	ventOn.setXYpos();
+	ventOn.setText(EMPTY_STR);
+
+	static Text par1;
+	par1.setXYpos();
+	par1.setText(S3_PAR1);
+}
+
+Page* buildStage4()
+{
+}
+
+Page* buildStage5()
+{
+}
 
 void gSetBacklight(void* arg)
 {
@@ -2052,6 +2221,15 @@ unsigned long oldMillis;
 
 void buildAllPages()
 {
+	// stage 2
+	pages[STAGE2_PG] = buildStage2();
+
+	// stage 1
+	pages[STAGE1_PG] = buildStage1();
+
+	// first page
+	pages[FIRST_PG] = buildFirstPage();
+
 	// diag pages
 	pages[PWR_DIAG_PG] = buildPwrDiag();
 	pages[DIG_DIAG_PG] = buildDigDiag();
@@ -2096,6 +2274,9 @@ void linkPages()
 	for (auto i:pages)
 		DEBUG_PRINT_HEX(i);
 #endif
+
+	// first page
+	pages[FIRST_PG]->setPrev(pages[MENU_PG]);
 
 	// util pages
 	pages[SENS_FAIL_PG]->setPrev(pages[CAL_SETT_PG]);
@@ -2149,8 +2330,20 @@ void setup(void)
 	// connect to wifi or create AP
 	checkWifi();
 
-	// init all stuff in Gui.h
+	// init all stuff in App.h
 	app.init();
+
+	// back button
+	back.setCallback(nop);
+	back.loadRes(images[IMG_PREV]);
+	back.setXYpos(7, 284);
+	back.setCircle();
+
+	// forward button
+	forward.setCallback(nop);
+	forward.loadRes(images[IMG_NEXT]);
+	forward.setXYpos(204, 284);
+	forward.setCircle();
 
 	buildAllPages();
 
@@ -2177,6 +2370,8 @@ void setup(void)
 	gBrightness.onClick();
 
 	currPage = pages[MENU_PG];
+	//currPage = pages[FIRST_PG];
+	callPage(pages[FIRST_PG]);
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();
 	currPage->prepare();
@@ -2215,13 +2410,16 @@ void setup(void)
 void loop()
 {
 	app.update();
-	//heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
 
+		Serial.print("lagest block: ");
+		Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+		Serial.println();
 		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 		Serial.print("gui task unused stack: ");
 		Serial.println(unused);
+		Serial.println();
 		oldMillis = millis();
 	}
 #endif
