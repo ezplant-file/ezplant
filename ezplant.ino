@@ -383,6 +383,8 @@ void callPage(void* page_ptr)
 	if (page_ptr == nullptr)
 		return;
 
+	g_spr_pool.reset();
+
 	Page* page = (Page*) page_ptr;
 
 	app.resetIterator();
@@ -1574,8 +1576,10 @@ Page* buildLangPage()
 	usFlag.loadRes(images[IMG_US]);
 	usFlag.setXYpos(113, 232);
 
-	static BodyText langRu;
+	//static BodyText langRu;
+	static Text langRu;
 	langRu.setFont(SMALLFONT);
+	langRu.setBodyText();
 	langRu.setText(RUS);
 	langRu.setXYpos(49, 189);
 	langRu.setColors(
@@ -1583,8 +1587,10 @@ Page* buildLangPage()
 			greyscaleColor(GR_BTN_BG_COLOR)
 			);
 
-	static BodyText langEng;
+	//static BodyText langEng;
+	static Text langEng;
 	langEng.setFont(SMALLFONT);
+	langEng.setBodyText();
 	langEng.setText(ENG);
 	langEng.setXYpos(49, 241);
 	langEng.setColors(
@@ -2176,6 +2182,7 @@ Page* buildStage2()
 	return &stage2;
 }
 
+/*
 Page* buildStage3()
 {
 	static Page stage3;
@@ -2207,6 +2214,7 @@ Page* buildStage4()
 Page* buildStage5()
 {
 }
+*/
 
 void gSetBacklight(void* arg)
 {
@@ -2369,9 +2377,9 @@ void setup(void)
 	// backlight
 	gBrightness.onClick();
 
-	currPage = pages[MENU_PG];
-	//currPage = pages[FIRST_PG];
-	callPage(pages[FIRST_PG]);
+	//currPage = pages[MENU_PG];
+	currPage = pages[FIRST_PG];
+	//callPage(pages[FIRST_PG]);
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();
 	currPage->prepare();

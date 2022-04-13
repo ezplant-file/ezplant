@@ -24,6 +24,7 @@
 #define __GUI_H__
 #define COLOR_DEPTH 16
 
+//#include <iostream>
 #include <vector>
 
 #include "images.h"
@@ -153,6 +154,36 @@ uint16_t greyscaleColor(uint8_t g)
 {
 	return tft.color565(g,g,g);
 }
+
+// manages sprite objects
+class SpritePool {
+	public:
+		static constexpr int RESERVED_SPRITE_NUM = 20;
+
+		explicit SpritePool(TFT_eSPI& tft) : _tft(tft)
+		{
+			_sprites.reserve(RESERVED_SPRITE_NUM);
+		}
+
+		void reset()
+		{
+			_counter = 0;
+			//_sprites.clear();
+		}
+
+		TFT_eSprite* getSprite()
+		{
+			if (_counter == _sprites.size())
+				_sprites.emplace_back(&_tft);
+
+			return &_sprites.at(_counter++);
+		}
+
+	private:
+		TFT_eSPI& _tft;
+		int _counter = 0;
+		std::vector<TFT_eSprite> _sprites;
+} g_spr_pool(tft);
 
 
 class ScrObj {
@@ -444,7 +475,10 @@ class GreyTextButton: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			_btnSpr.deleteSprite();
+			if (!_btnSpr)
+				return;
+			_btnSpr->deleteSprite();
+			_btnSpr = nullptr;
 		}
 
 		virtual void prepare() override
@@ -454,27 +488,32 @@ class GreyTextButton: public ScrObj {
 			if (!_invalid)
 				return;
 
-			_btnSpr.createSprite(_w, _h);
+			_btnSpr = g_spr_pool.getSprite();
+			_btnSpr->setColorDepth(COLOR_DEPTH);
+			_btnSpr->createSprite(_w, _h);
+
 #ifdef APP_DEBUG
-			if (!_btnSpr.created()) {
+			if (!_btnSpr->created()) {
 				Serial.println("************ Failed to create sprite **********");
 			}
 #endif
-			_btnSpr.fillSprite(_bg);
-			_btnSpr.loadFont(FONTS[_fontIndex]);
-			_btnSpr.setTextColor(_fg, _bg);
-			_btnSpr.setCursor(_paddingX, _paddingY);
-			_btnSpr.print(scrStrings[_index]);
-			_btnSpr.setCursor(197, _paddingY);
-			_btnSpr.print(">");
-			_btnSpr.unloadFont();
+			_btnSpr->fillSprite(_bg);
+			_btnSpr->loadFont(FONTS[_fontIndex]);
+			_btnSpr->setTextColor(_fg, _bg);
+			_btnSpr->setCursor(_paddingX, _paddingY);
+			_btnSpr->print(scrStrings[_index]);
+			_btnSpr->setCursor(197, _paddingY);
+			_btnSpr->print(">");
+			_btnSpr->unloadFont();
 		}
 
 		virtual void draw() override
 		{
+			if (!_btnSpr)
+				return;
 			if (!_invalid || !_isVisible)
 				return;
-			_btnSpr.pushSprite(_x, _y);
+			_btnSpr->pushSprite(_x, _y);
 
 			// checking
 			freeRes();
@@ -488,7 +527,7 @@ class GreyTextButton: public ScrObj {
 			_fg = fg;
 			_invalid = true;
 			_isSelectable = true;
-			_btnSpr.setColorDepth(COLOR_DEPTH);
+			//_btnSpr->setColorDepth(COLOR_DEPTH);
 		}
 
 
@@ -497,7 +536,8 @@ class GreyTextButton: public ScrObj {
 		uint16_t _bg;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
-		TFT_eSprite _btnSpr = TFT_eSprite(&tft);
+		TFT_eSprite* _btnSpr = nullptr;
+		//TFT_eSprite _btnSpr = TFT_eSprite(&tft);
 };
 
 
@@ -511,14 +551,21 @@ class Text: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			_txtSp.deleteSprite();
+			if (!_txtSp)
+				return;
+			_txtSp->deleteSprite();
+			_txtSp = nullptr;
 		}
 
 		virtual void draw() override
 		{
 			if (!_invalid || !_isVisible)
 				return;
-			_txtSp.pushSprite(_x + _dx, _y + _dy, TFT_TRANSPARENT);
+
+			if (!_txtSp)
+				return;
+
+			_txtSp->pushSprite(_x + _dx, _y + _dy, _bg);
 			_invalid = false;
 
 			// checking
@@ -537,12 +584,18 @@ class Text: public ScrObj {
 			if (!_invalid)
 				return;
 
+			_txtSp = g_spr_pool.getSprite();
+
+			if (!_txtSp)
+				return;
+
+			_txtSp->setColorDepth(COLOR_DEPTH);
 			//_h = TOP_BAR_HEIGHT - 12;
 			//tft.setTextPadding(_padding);
-			_txtSp.loadFont(FONTS[_fontIndex]);
+			_txtSp->loadFont(FONTS[_fontIndex]);
 
 			if (_rightjsfy) {
-				_txtSp.setTextDatum(TR_DATUM);
+				_txtSp->setTextDatum(TR_DATUM);
 			}
 
 			/*
@@ -556,27 +609,36 @@ class Text: public ScrObj {
 			*/
 
 
-			_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
+			_w = _txtSp->textWidth(scrStrings[_index]) + _paddingX*2;
 
 			if (_w > SCR_WIDTH)
 				_w = SCR_WIDTH;
 
-			_txtSp.createSprite(_w, _h);
+			_txtSp->createSprite(_w, _h);
 #ifdef APP_DEBUG
-			if (!_txtSp.created()) {
+			if (!_txtSp->created()) {
 				Serial.println("************ Failed to create sprite **********");
 			}
 #endif
-			_txtSp.fillSprite(TFT_TRANSPARENT);
-			_txtSp.setTextColor(_fg, _bg);
+			_txtSp->fillSprite(_bg);
+			_txtSp->setTextColor(_fg, _bg);
 			//_txtSp.print(_text);
-			_txtSp.print(scrStrings[_index]);
-			_txtSp.unloadFont();
+			_txtSp->print(scrStrings[_index]);
+			_txtSp->unloadFont();
+		}
+
+		void setBodyText()
+		{
+			_eraseWhite = true;
 		}
 
 		virtual void erase() override
 		{
-			tft.fillRect(_x + _dx, _y + _dy, _w, _h, _bg);
+			if (_eraseWhite)
+				tft.fillRect(_x + _dx, _y + _dy, _w, _h, TFT_WHITE);
+			else
+				tft.fillRect(_x + _dx, _y + _dy, _w, _h, _bg);
+
 			freeRes();
 		}
 
@@ -585,7 +647,6 @@ class Text: public ScrObj {
 			// set colors
 			_fg = fg;
 			_bg = bg;
-			_txtSp.setColorDepth(COLOR_DEPTH);
 			//_txtSp.setColorDepth(8);
 		}
 
@@ -632,7 +693,7 @@ class Text: public ScrObj {
 
 		TFT_eSprite* getSpritePtr()
 		{
-			return &_txtSp;
+			return _txtSp;
 		}
 
 		uint8_t getPaddingX()
@@ -667,6 +728,7 @@ class Text: public ScrObj {
 
 	private:
 		bool _rightjsfy = false;
+		bool _eraseWhite = false;
 		//uint16_t _padding;
 		uint16_t _fg = FONT_COL_565;
 		uint16_t _bg = TFT_WHITE;
@@ -674,7 +736,8 @@ class Text: public ScrObj {
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		int8_t _dx = 0;
 		int8_t _dy = 0;
-		TFT_eSprite _txtSp = TFT_eSprite(&tft);
+		TFT_eSprite* _txtSp = nullptr;
+		//TFT_eSprite _txtSp = TFT_eSprite(&tft);
 };
 
 // text that doesn't have strings in static memory
@@ -696,6 +759,10 @@ class StringText: public Text {
 				return;
 
 			auto txtSp = this->getSpritePtr();
+
+			if (!txtSp)
+				return;
+
 			auto paddingX = this->getPaddingX();
 			auto bg = this->getBg();
 			auto fg = this->getFg();
@@ -739,6 +806,7 @@ class StringText: public Text {
 
 };
 
+/*
 class BodyText: public ScrObj {
 
 	public:
@@ -792,6 +860,7 @@ class BodyText: public ScrObj {
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		TFT_eSprite _txtSp = TFT_eSprite(&tft);
 };
+*/
 
 
 class Image: public ScrObj {

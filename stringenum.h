@@ -222,7 +222,7 @@ typedef enum {
 	// stage 4
 	S4_TITLE,
 	S4_PASSVENT,
-	S4_PAR1
+	S4_PAR1,
 	S4_SUBTTL,
 	S4_TIME,
 	S4_TEMP,

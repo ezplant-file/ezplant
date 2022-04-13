@@ -834,7 +834,7 @@ class App {
 			xTaskCreate(
 					ping_task_callback,
 					"ping task",
-					2000,
+					5000,
 					NULL,
 					3,
 					NULL
