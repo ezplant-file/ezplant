@@ -551,10 +551,10 @@ class Text: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			if (!_txtSp)
-				return;
-			_txtSp->deleteSprite();
-			_txtSp = nullptr;
+			//if (!_txtSp)
+				//return;
+			_txtSp.deleteSprite();
+			//_txtSp = nullptr;
 		}
 
 		virtual void draw() override
@@ -562,10 +562,12 @@ class Text: public ScrObj {
 			if (!_invalid || !_isVisible)
 				return;
 
+			/*
 			if (!_txtSp)
 				return;
+				*/
 
-			_txtSp->pushSprite(_x + _dx, _y + _dy, _bg);
+			_txtSp.pushSprite(_x + _dx, _y + _dy, _bg);
 			_invalid = false;
 
 			// checking
@@ -584,18 +586,19 @@ class Text: public ScrObj {
 			if (!_invalid)
 				return;
 
-			_txtSp = g_spr_pool.getSprite();
+			/*_txtSp = g_spr_pool.getSprite();
 
 			if (!_txtSp)
 				return;
+				*/
 
-			_txtSp->setColorDepth(COLOR_DEPTH);
+			_txtSp.setColorDepth(COLOR_DEPTH);
 			//_h = TOP_BAR_HEIGHT - 12;
 			//tft.setTextPadding(_padding);
-			_txtSp->loadFont(FONTS[_fontIndex]);
+			_txtSp.loadFont(FONTS[_fontIndex]);
 
 			if (_rightjsfy) {
-				_txtSp->setTextDatum(TR_DATUM);
+				_txtSp.setTextDatum(TR_DATUM);
 			}
 
 			/*
@@ -609,22 +612,22 @@ class Text: public ScrObj {
 			*/
 
 
-			_w = _txtSp->textWidth(scrStrings[_index]) + _paddingX*2;
+			_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
 
 			if (_w > SCR_WIDTH)
 				_w = SCR_WIDTH;
 
-			_txtSp->createSprite(_w, _h);
+			_txtSp.createSprite(_w, _h);
 #ifdef APP_DEBUG
-			if (!_txtSp->created()) {
+			if (!_txtSp.created()) {
 				Serial.println("************ Failed to create sprite **********");
 			}
 #endif
-			_txtSp->fillSprite(_bg);
-			_txtSp->setTextColor(_fg, _bg);
+			_txtSp.fillSprite(_bg);
+			_txtSp.setTextColor(_fg, _bg);
 			//_txtSp.print(_text);
-			_txtSp->print(scrStrings[_index]);
-			_txtSp->unloadFont();
+			_txtSp.print(scrStrings[_index]);
+			_txtSp.unloadFont();
 		}
 
 		void setBodyText()
@@ -693,7 +696,7 @@ class Text: public ScrObj {
 
 		TFT_eSprite* getSpritePtr()
 		{
-			return _txtSp;
+			return &_txtSp;
 		}
 
 		uint8_t getPaddingX()
@@ -736,8 +739,8 @@ class Text: public ScrObj {
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		int8_t _dx = 0;
 		int8_t _dy = 0;
-		TFT_eSprite* _txtSp = nullptr;
-		//TFT_eSprite _txtSp = TFT_eSprite(&tft);
+		//TFT_eSprite* _txtSp = nullptr;
+		TFT_eSprite _txtSp = TFT_eSprite(&tft);
 };
 
 // text that doesn't have strings in static memory
