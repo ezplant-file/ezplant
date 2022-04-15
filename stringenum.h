@@ -6,6 +6,7 @@
 typedef enum {
 	NO_STRING,
 	EMPTY_STR,
+	MORE_THAN,
 	BLUE_BTN_NEXT,
 	// main menu strings
 	MENU,
@@ -132,8 +133,7 @@ typedef enum {
 	TDS4_SCAN_1500,
 
 	/* diag menu */
-	// diag title from menu page
-	// DIAG
+	// diag title from menu page // DIAG
 	DIAG_PWR,
 	DIAG_DIG,
 	DIAG_ADC,
@@ -222,7 +222,7 @@ typedef enum {
 	// stage 4
 	S4_TITLE,
 	S4_PASSVENT,
-	S4_PAR1
+	S4_PAR1,
 	S4_SUBTTL,
 	S4_TIME,
 	S4_TEMP,

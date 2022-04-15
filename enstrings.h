@@ -7,6 +7,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"String not set",
 	"",
 	"Next",
+	">",
 	// main menu strings
 	"Menu",
 	"New planting",
@@ -147,6 +148,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"pH",
 
 	// analog inputs
+	"Real time analog inputs data",
 	"ANALOG 1",
 	"ANALOG 2",
 	"ANALOG 3",
@@ -229,7 +231,12 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// stage 5
 	"Planting. Stage 5",
 	"Growth cycle",
-	"Growth stage dependent \nnutrient solution settings"
+	"Growth stage dependent \nnutrient solution settings",
+
+	// stage 6
+	"",
+	"",
+	""
 
 	//end of strings
 };

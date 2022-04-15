@@ -7,6 +7,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Строка не установлена",
 	"",
 	"Далее",
+	">",
 	// main menu strings
 	"Меню",
 	"Новая посадка",
@@ -231,7 +232,12 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Посадка. Этап 5",
 	"Цикл роста",
 	"Параметры пит. раствора \n в зависимости от стадии роста.",
-	"день"
+	"день",
+
+	// stage 6
+	"",
+	"",
+	""
 
 	//end of strings
 };

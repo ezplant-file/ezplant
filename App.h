@@ -396,6 +396,7 @@ void vSyncNTPtask(void* arg)
 
 
 
+// TODO: always get time from i2c, sync i2c once per hour...
 class DateTime: public ScrObj {
 	public:
 		DateTime()
@@ -451,6 +452,15 @@ class DateTime: public ScrObj {
 				_userInputSettled = false;
 				_timeSynced = true;
 			}
+			/* TODO: add configTime utc when on i2c
+			else if (_userInputSettled) {
+				initUTC(g_utc);
+				prepare();
+				invalidate();
+				_userInputSettled = false;
+				//_timeSynced = true;
+			}
+			*/
 
 			if (g_sync_succ) {
 				//setI2Ctime();
@@ -469,8 +479,10 @@ class DateTime: public ScrObj {
 					getI2Ctime();
 				}
 
-				prepare();
-				invalidate();
+				if (currPage == pages[TIME_PG]) {
+					prepare();
+					invalidate();
+				}
 			}
 		}
 
@@ -1050,9 +1062,11 @@ class App {
 				gInterrupt = true;
 			}
 
+			/*
 #ifdef APP_DEBUG
 			Serial.println("Interrupt...");
 #endif
+*/
 
 			// read buttons
 			uint8_t user_input = gpio[0].portRead(0);

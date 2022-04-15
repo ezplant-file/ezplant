@@ -1325,21 +1325,21 @@ Page* buildTestPage()
 	testTgl.setFont(SMALLFONT);
 	testTgl.setXYpos(17, 41);
 	testTgl.setText(TOGGLE_TEXT);
-	testTgl.prepare();
+	//testTgl.prepare();
 	testTgl.on(false);
 	testTgl.setCallback(tglCallback);
 
 	testChBox.setFont(SMALLFONT);
 	testChBox.setXYpos(17, 65);
 	testChBox.setText(CHECHBOX_TEXT);
-	testChBox.prepare();
+	//testChBox.prepare();
 	testChBox.on(false);
 	testChBox.setCallback(chkCallback);
 
 	testRad.setFont(SMALLFONT);
 	testRad.setXYpos(17, 90);
 	testRad.setText(RADIO_TEXT);
-	testRad.prepare();
+	//testRad.prepare();
 	testRad.on(false);
 	testRad.setBgColor(0xDC);
 	testRad.setCallback(radCallback);
@@ -2182,31 +2182,164 @@ Page* buildStage3()
 	stage3.setTitle(S3_TITLE);
 	stage3.setNext(pages[STAGE4_PG]);
 
-	static Text vent;
-	vent.setXYpos(PG_LEFT_PADD, MB_Y_START);
-	vent.setFont(BOLDFONT);
-	vent.setText(S3_VENT);
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setText(S3_VENT);
+	ventOn.setFont(BOLDFONT);
 
 	static Image fan;
-	fan.setXYpos();
-	fan.loadRes(images[]);
-
-	static CheckBox ventOn;
-	ventOn.setXYpos();
-	ventOn.setText(EMPTY_STR);
+	fan.setXYpos(168, MB_Y_START);
+	fan.loadRes(images[IMG_COOLER]);
 
 	static Text par1;
-	par1.setXYpos();
+	par1.setXYpos(PG_LEFT_PADD, 62);
 	par1.setText(S3_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S3_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S3_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	//static HourLimits timeLimit(45, 163);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(MORE_THAN);
+
+	static InputField hum;
+	hum.setXYpos(45, 261);
+
+	stage3.addItem(&ventOn);
+	stage3.addItem(&fan);
+	stage3.addItem(&par1);
+	stage3.addItem(&subTitle);
+	stage3.addItem(&timeint);
+	stage3.addItem(&timeCheck);
+/*
+	stage3.addItem(timeLimit.getLower());
+	stage3.addItem(timeLimit.getDash());
+	stage3.addItem(timeLimit.getHigher());
+	*/
+	stage3.addItem(&tempCheck);
+	stage3.addItem(&temp);
+	stage3.addItem(&humCheck);
+	stage3.addItem(&hum);
+	stage3.addItem(&forward);
+
+	return &stage3;
 }
 
+/*
 Page* buildStage4()
 {
-}
+	static Page stage4;
+	stage4.setTitle(S4_TITLE);
+	stage4.setNext(pages[STAGE5_PG]);
 
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S4_PASSVENT);
+	ventOn.setFont(BOLDFONT);
+
+	static Image door;
+	door.setXYpos(186, MB_Y_START);
+	door.loadRes(images[IMG_DOOR]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S4_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S4_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S4_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	//static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S4_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S4_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	//std::unique_ptr<InputField> hum(new InputField());
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	//stage4.addItemPtr(std::move(hum));
+
+	stage4.addItem(&ventOn);
+	stage4.addItem(&door);
+	stage4.addItem(&par1);
+	stage4.addItem(&subTitle);
+	stage4.addItem(&timeint);
+	stage4.addItem(&timeCheck);
+
+	//stage4.addItem(timeLimit.getLower());
+	//stage4.addItem(timeLimit.getDash());
+	//stage4.addItem(timeLimit.getHigher());
+
+	stage4.addItem(&temptxt);
+	stage4.addItem(&tempCheck);
+	stage4.addItem(&temp);
+
+	stage4.addItem(&humtxt);
+	stage4.addItem(&humCheck);
+	stage4.addItem(&hum);
+
+	stage4.addItem(&forward);
+
+	return &stage4;
+}
+*/
+
+/*
 Page* buildStage5()
 {
 }
+*/
 
 void gSetBacklight(void* arg)
 {
@@ -2221,6 +2354,12 @@ unsigned long oldMillis;
 
 void buildAllPages()
 {
+	// stage 4
+	//pages[STAGE4_PG] = buildStage4();
+
+	// stage 3
+	pages[STAGE3_PG] = buildStage3();
+
 	// stage 2
 	pages[STAGE2_PG] = buildStage2();
 
@@ -2371,7 +2510,7 @@ void setup(void)
 
 	currPage = pages[MENU_PG];
 	//currPage = pages[FIRST_PG];
-	callPage(pages[FIRST_PG]);
+	//callPage(pages[FIRST_PG]);
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();
 	currPage->prepare();
@@ -2390,7 +2529,7 @@ void setup(void)
 
 	rtc.begin();
 	datetime.init();
-	datetime.prepare();
+	//datetime.prepare();
 
 	//delay(500);
 
