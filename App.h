@@ -431,6 +431,7 @@ class DateTime: public ScrObj {
 		unsigned long _oldMils = 0;
 		const char* const _nptServer = NTP_SERVER;
 		unsigned long _userInputTimestamp = 0;
+		int _count = 0;
 		//uint16_t _y = 225;
 		//TFT_eSprite _sprite = TFT_eSprite(&tft);
 		//std::thread timesynchelper;
@@ -472,12 +473,18 @@ class DateTime: public ScrObj {
 			if (millis() - _oldMils > RTC_CHECK_INTERVAL) {
 				_oldMils = millis();
 
-				if (_sync) {
+				if (_sync && _count == 0) {
 					syncNTP();
+					setI2Ctime();
 				}
-				else {
-					getI2Ctime();
+
+				_count++;
+				if (_count == 60) {
+					_count = 0;
 				}
+
+
+				getI2Ctime();
 
 				if (currPage == pages[TIME_PG]) {
 					prepare();
