@@ -3,9 +3,10 @@
 #include "stringenum.h"
 
 
-const char* engStrings[END_OF_STRINGS] PROGMEM = {
+const char* engStrings[END_OF_STRINGS] = {
 	"String not set",
 	"",
+	">",
 	"Next",
 	// main menu strings
 	"Menu",

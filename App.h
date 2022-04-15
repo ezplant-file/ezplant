@@ -468,9 +468,10 @@ class DateTime: public ScrObj {
 				else {
 					getI2Ctime();
 				}
-
-				prepare();
-				invalidate();
+				if (currPage == pages[TIME_PG]) {
+					prepare();
+					invalidate();
+				}
 			}
 		}
 

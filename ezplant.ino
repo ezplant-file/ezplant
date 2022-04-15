@@ -81,8 +81,8 @@ const char* ap_ssid = "ezplant_wifi";
 const char* ap_password = scrStrings[WI_PASSWORD];
 const char* PARAM_1 = "ssid";
 const char* PARAM_2 = "password";
-String file_ssid;
-String file_password;
+std::string file_ssid;
+std::string file_password;
 
 const char* cred_filename = "/wifi_creds";
 
@@ -193,8 +193,8 @@ void saveFile()
 		return;
 	}
 
-	file.println(file_ssid);
-	file.println(file_password);
+	file.println(file_ssid.c_str());
+	file.println(file_password.c_str());
 	file.flush();
 	file.close();
 }
@@ -205,13 +205,13 @@ void getCallback()
 	String arg2 = server.arg(PARAM_2);
 
 	if (arg1 != "") {
-		file_ssid = arg1;
+		file_ssid = arg1.c_str();
 	}
 	else {
 		file_ssid = "none";
 	}
 
-	file_password = arg2;
+	file_password = arg2.c_str();
 
 	const char* resp;
 
@@ -310,13 +310,20 @@ void checkWifi()
 #ifdef APP_DEBUG
 		Serial.println("connecting without softAP");
 #endif
-		file_ssid = file.readStringUntil('\n');
-		file_password = file.readStringUntil('\n');
-		file_ssid.trim();
-		file_password.trim();
-		Serial.println(file_ssid);
-		Serial.println(file_password);
+		String tmp = "";
+		tmp = file.readStringUntil('\n');
+		tmp.trim();
+		file_ssid = tmp.c_str();
+		tmp = file.readStringUntil('\n');
+		tmp.trim();
+		file_password = tmp.c_str();
+		//file_ssid.trim();
+		//file_password.trim();
+#ifdef APP_DEBUG
+		Serial.println(file_ssid.c_str());
+		Serial.println(file_password.c_str());
 		Serial.println("connect with cred");
+#endif
 		connectWithCred();
 		file.close();
 		g_wifi_set = true;
@@ -1266,12 +1273,14 @@ Page* buildWiFiSettPage()
 	ssid.setXYpos(PG_LEFT_PADD, 142);
 	ssid.setColors(fg_col, bg_col);
 
+	/*
 	static StringText wifiName;
 	wifiName.setFont(BOLDSMALL);
 	// ssid from file
 	wifiName.setText(file_ssid);
 	wifiName.setXYpos(PG_LEFT_PADD, 160);
 	wifiName.setColors(fg_col, bg_col);
+	*/
 
 	static Text pwd_txt;
 	pwd_txt.setFont(SMALLFONT);
@@ -1280,12 +1289,14 @@ Page* buildWiFiSettPage()
 	pwd_txt.setXYpos(PG_LEFT_PADD, 185);
 	pwd_txt.setColors(fg_col, bg_col);
 
+	/*
 	static StringText pwd;
 	pwd.setFont(BOLDSMALL);
 	// password from file
 	pwd.setText(file_password);
 	pwd.setXYpos(PG_LEFT_PADD, 204);
 	pwd.setColors(fg_col, bg_col);
+	*/
 
 	// Text gwsConnection
 	gwsConnection.setFont(SMALLFONT);
@@ -1305,9 +1316,9 @@ Page* buildWiFiSettPage()
 	wifiSettPage.addItem(&wsPar);
 	wifiSettPage.addItem(&subTitle);
 	wifiSettPage.addItem(&ssid);
-	wifiSettPage.addItem(&wifiName);
+	//wifiSettPage.addItem(&wifiName);
 	wifiSettPage.addItem(&pwd_txt);
-	wifiSettPage.addItem(&pwd);
+	//wifiSettPage.addItem(&pwd);
 
 	wifiSettPage.addItem(&gwsConnection);
 
@@ -2121,32 +2132,18 @@ Page* buildStage2()
 	bulb.setXYpos(164, 40);
 	bulb.loadRes(images[IMG_BULB]);
 
-	static Text heading1;
-	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
-	heading1.setFont(BOLDFONT);
-	heading1.setText(S2_SUBTTL1);
-
 	static CheckBox lightOn;
 	lightOn.setXYpos(111, 40);
-	lightOn.setText(EMPTY_STR);
+	//lightOn.setText(EMPTY_STR);
+	lightOn.setText(S2_SUBTTL1);
+	lightOn.setFont(BOLDFONT);
+	lightOn.setAlign(LEFT);
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 62);
 	par1.setText(S2_PAR1);
 
-	// TODO: make time limits ScrObj
-	static InputField from;
-	from.setXYpos(PG_LEFT_PADD, 143);
-	from.setWidth(FOUR_CHR);
-	from.setText(EMPTY_STR);
-
-	static Line dash(10);
-	dash.setXYpos(67, 154);
-
-	static InputField to;
-	to.setXYpos(87, 143);
-	to.setWidth(FOUR_CHR);
-	to.setText(EMPTY_STR);
+	static HourLimits hours = HourLimits(PG_LEFT_PADD, 143);
 
 	static Text heading2;
 	heading2.setXYpos(PG_LEFT_PADD, 175);
@@ -2158,21 +2155,23 @@ Page* buildStage2()
 	par2.setText(S2_PAR2);
 
 	static Text s;
-	s.setXYpos(PG_LEFT_PADD, 263);
+	s.setXYpos(PG_LEFT_PADD, 263+5);
 	s.setText(S2_FROM);
 
 	static InputField days;
 	days.setXYpos(34, 263);
 	days.setWidth(FOUR_CHR);
 	days.setText(S2_DAY);
+	days.setLimits(3, 365);
 
 	stage2.addItem(&bulb);
-	stage2.addItem(&heading1);
 	stage2.addItem(&lightOn);
 	stage2.addItem(&par1);
-	stage2.addItem(&from);
-	stage2.addItem(&dash);
-	stage2.addItem(&to);
+
+	stage2.addItem(hours.getLower());
+	stage2.addItem(hours.getDash());
+	stage2.addItem(hours.getHigher());
+
 	stage2.addItem(&heading2);
 	stage2.addItem(&par2);
 	stage2.addItem(&s);
@@ -2182,37 +2181,194 @@ Page* buildStage2()
 	return &stage2;
 }
 
-/*
+
 Page* buildStage3()
 {
 	static Page stage3;
 	stage3.setTitle(S3_TITLE);
 	stage3.setNext(pages[STAGE4_PG]);
 
-	static Text vent;
-	vent.setXYpos(PG_LEFT_PADD, MB_Y_START);
-	vent.setFont(BOLDFONT);
-	vent.setText(S3_VENT);
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S3_VENT);
+	ventOn.setFont(BOLDFONT);
 
 	static Image fan;
-	fan.setXYpos();
-	fan.loadRes(images[]);
-
-	static CheckBox ventOn;
-	ventOn.setXYpos();
-	ventOn.setText(EMPTY_STR);
+	fan.setXYpos(168, MB_Y_START);
+	fan.loadRes(images[IMG_COOLER]);
 
 	static Text par1;
-	par1.setXYpos();
+	par1.setXYpos(PG_LEFT_PADD, 62);
 	par1.setText(S3_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S3_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S3_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S3_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S3_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	stage3.addItem(&ventOn);
+	stage3.addItem(&fan);
+	stage3.addItem(&par1);
+	stage3.addItem(&subTitle);
+	stage3.addItem(&timeint);
+	stage3.addItem(&timeCheck);
+
+	stage3.addItem(timeLimit.getLower());
+	stage3.addItem(timeLimit.getDash());
+	stage3.addItem(timeLimit.getHigher());
+
+	stage3.addItem(&temptxt);
+	stage3.addItem(&tempCheck);
+	stage3.addItem(&temp);
+
+	stage3.addItem(&humtxt);
+	stage3.addItem(&humCheck);
+	stage3.addItem(&hum);
+
+	stage3.addItem(&forward);
+
+	return &stage3;
 }
 
+
+/*
 Page* buildStage4()
 {
-}
+	static Page stage4;
+	stage4.setTitle(S4_TITLE);
+	stage4.setNext(pages[STAGE5_PG]);
 
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S4_PASSVENT);
+	ventOn.setFont(BOLDFONT);
+
+	static Image door;
+	door.setXYpos(186, MB_Y_START);
+	door.loadRes(images[IMG_DOOR]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S4_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S4_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S4_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S4_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S4_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	std::unique_ptr<InputField> hum(new InputField());
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	stage4.addItemPtr(std::move(hum));
+
+	stage4.addItem(&ventOn);
+	stage4.addItem(&door);
+	stage4.addItem(&par1);
+	stage4.addItem(&subTitle);
+	stage4.addItem(&timeint);
+	stage4.addItem(&timeCheck);
+
+	stage4.addItem(timeLimit.getLower());
+	stage4.addItem(timeLimit.getDash());
+	stage4.addItem(timeLimit.getHigher());
+
+	stage4.addItem(&temptxt);
+	stage4.addItem(&tempCheck);
+	stage4.addItem(&temp);
+
+	stage4.addItem(&humtxt);
+	stage4.addItem(&humCheck);
+	stage4.addItem(&hum);
+
+	stage4.addItem(&forward);
+
+	return &stage4;
+}
+*/
+
+/*
+std::unique_ptr<Page> currPage;
+currPage = buildPage();
+//currPage.reset();
+currPage = buildPage2();
+*/
+
+/*
 Page* buildStage5()
 {
+	static Page stage5;
 }
 */
 
@@ -2229,6 +2385,12 @@ unsigned long oldMillis;
 
 void buildAllPages()
 {
+	// stage 4
+	//pages[STAGE4_PG] = buildStage4();
+
+	// stage 3
+	pages[STAGE3_PG] = buildStage3();
+
 	// stage 2
 	pages[STAGE2_PG] = buildStage2();
 
@@ -2379,6 +2541,7 @@ void setup(void)
 
 	//currPage = pages[MENU_PG];
 	currPage = pages[FIRST_PG];
+	back.setCallback(callPage, pages[MAIN_PG]);
 	//callPage(pages[FIRST_PG]);
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();

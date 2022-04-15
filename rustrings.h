@@ -3,9 +3,10 @@
 #include "stringenum.h"
 
 
-const char* ruStrings[END_OF_STRINGS] PROGMEM = {
+const char* ruStrings[END_OF_STRINGS] = {
 	"Строка не установлена",
 	"",
+	">",
 	"Далее",
 	// main menu strings
 	"Меню",

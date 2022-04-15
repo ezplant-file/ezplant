@@ -168,7 +168,7 @@ class SpritePool {
 		void reset()
 		{
 			_counter = 0;
-			//_sprites.clear();
+			_sprites.clear();
 		}
 
 		TFT_eSprite* getSprite()
@@ -551,10 +551,10 @@ class Text: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			//if (!_txtSp)
-				//return;
-			_txtSp.deleteSprite();
-			//_txtSp = nullptr;
+			if (!_txtSp)
+				return;
+			_txtSp->deleteSprite();
+			_txtSp = nullptr;
 		}
 
 		virtual void draw() override
@@ -562,12 +562,10 @@ class Text: public ScrObj {
 			if (!_invalid || !_isVisible)
 				return;
 
-			/*
 			if (!_txtSp)
 				return;
-				*/
 
-			_txtSp.pushSprite(_x + _dx, _y + _dy, _bg);
+			_txtSp->pushSprite(_x + _dx, _y + _dy, _bg);
 			_invalid = false;
 
 			// checking
@@ -586,50 +584,49 @@ class Text: public ScrObj {
 			if (!_invalid)
 				return;
 
-			/*_txtSp = g_spr_pool.getSprite();
+			_txtSp = g_spr_pool.getSprite();
 
 			if (!_txtSp)
 				return;
-				*/
 
-			_txtSp.setColorDepth(COLOR_DEPTH);
-			//_h = TOP_BAR_HEIGHT - 12;
-			//tft.setTextPadding(_padding);
-			_txtSp.loadFont(FONTS[_fontIndex]);
+			_txtSp->setColorDepth(COLOR_DEPTH);
+			
+			_txtSp->loadFont(FONTS[_fontIndex]);
 
-			if (_rightjsfy) {
-				_txtSp.setTextDatum(TR_DATUM);
-			}
+			// if (_rightjsfy) {
+			// 	_txtSp->setTextDatum(TR_DATUM);
+			// }
 
 			/*
 			// TODO: calculate based on longest substring
 			// calculate _w based on string wrap
 			char* tmp = strtok(const_cast<char*>(scrStrings[_index]), "\n");
 
-			_w = _txtSp.textWidth(tmp) + _paddingX*2;
+			_w = _txtSp->textWidth(tmp) + _paddingX*2;
 
 			// old way:
 			*/
 
 
-			_w = _txtSp.textWidth(scrStrings[_index]) + _paddingX*2;
+			_w = _txtSp->textWidth(scrStrings[_index]) + _paddingX*2;
 
 			if (_w > SCR_WIDTH)
 				_w = SCR_WIDTH;
 
-			_txtSp.createSprite(_w, _h);
+			_txtSp->createSprite(_w, _h);
 #ifdef APP_DEBUG
-			if (!_txtSp.created()) {
+			if (!_txtSp->created()) {
 				Serial.println("************ Failed to create sprite **********");
 			}
 #endif
-			_txtSp.fillSprite(_bg);
-			_txtSp.setTextColor(_fg, _bg);
-			//_txtSp.print(_text);
-			_txtSp.print(scrStrings[_index]);
-			_txtSp.unloadFont();
+			_txtSp->fillSprite(_bg);
+			_txtSp->setTextColor(_fg, _bg);
+			//_txtSp->print(_text);
+			_txtSp->print(scrStrings[_index]);
+			_txtSp->unloadFont();
 		}
 
+		// TODO: depracate this
 		void setBodyText()
 		{
 			_eraseWhite = true;
@@ -650,7 +647,7 @@ class Text: public ScrObj {
 			// set colors
 			_fg = fg;
 			_bg = bg;
-			//_txtSp.setColorDepth(8);
+			//_txtSp->setColorDepth(8);
 		}
 
 		virtual void setText(dispStrings_t index) override
@@ -694,10 +691,12 @@ class Text: public ScrObj {
 			return _paddingX;
 		}
 
+		/*
 		TFT_eSprite* getSpritePtr()
 		{
 			return &_txtSp;
 		}
+		*/
 
 		uint8_t getPaddingX()
 		{
@@ -739,11 +738,12 @@ class Text: public ScrObj {
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
 		int8_t _dx = 0;
 		int8_t _dy = 0;
-		//TFT_eSprite* _txtSp = nullptr;
-		TFT_eSprite _txtSp = TFT_eSprite(&tft);
+		TFT_eSprite* _txtSp = nullptr;
+		//TFT_eSprite _txtSp = TFT_eSprite(&tft);
 };
 
-// text that doesn't have strings in static memory
+/*
+// text that doesn't have strings in PROGMEM
 class StringText: public Text {
 		using Text::Text;
 	public:
@@ -758,7 +758,7 @@ class StringText: public Text {
 
 		virtual void prepare() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_txt)
 				return;
 
 			auto txtSp = this->getSpritePtr();
@@ -766,6 +766,7 @@ class StringText: public Text {
 			if (!txtSp)
 				return;
 
+			txtSp->setColorDepth(COLOR_DEPTH);
 			auto paddingX = this->getPaddingX();
 			auto bg = this->getBg();
 			auto fg = this->getFg();
@@ -775,39 +776,38 @@ class StringText: public Text {
 			//tft.setTextPadding(_padding);
 			txtSp->loadFont(FONTS[_fontIndex]);
 
-			/*
 			// TODO: calculate based on longest substring
 			// calculate _w based on string wrap
-			char* tmp = strtok(const_cast<char*>(scrStrings[_index]), "\n");
+			//char* tmp = strtok(const_cast<char*>(scrStrings[_index]), "\n");
 
-			_w = _txtSp.textWidth(tmp) + _paddingX*2;
+			//_w = _txtSp.textWidth(tmp) + _paddingX*2;
 
 			// old way:
-			*/
 
 
-			_w = txtSp->textWidth(*_txt) + paddingX*2;
+			_w = txtSp->textWidth(_txt->c_str()) + paddingX*2;
 
 			if (_w > SCR_WIDTH)
 				_w = SCR_WIDTH;
 
 			txtSp->createSprite(_w, _h);
-			txtSp->fillSprite(TFT_TRANSPARENT);
+			txtSp->fillSprite(bg);
 			txtSp->setTextColor(fg, bg);
 			//_txtSp.print(_text);
-			txtSp->print(*_txt);
+			txtSp->print(_txt->c_str());
 			txtSp->unloadFont();
 
 		}
 
-		void setText(String& txt)
+		void setText(std::string& txt)
 		{
 			_txt = &txt;
 		}
 	private:
-		String* _txt;
+		std::string* _txt = nullptr;
 
 };
+*/
 
 /*
 class BodyText: public ScrObj {
@@ -1051,6 +1051,10 @@ class InputField: public ScrObj {
 				tmp = "+" + tmp;
 			}
 
+			if (_isHours) {
+				tmp+=":00";
+			}
+
 
 			tft.print(tmp);
 			//tft.print(_value);
@@ -1070,6 +1074,12 @@ class InputField: public ScrObj {
 		void setFloat()
 		{
 			_isFloat = true;
+		}
+
+		void displayHours()
+		{
+			showLeadZero();
+			_isHours = true;
 		}
 
 		virtual void freeRes() override
@@ -1252,6 +1262,7 @@ class InputField: public ScrObj {
 		int16_t _value = 0;
 		float _fvalue = 0.0;
 		bool _isFloat = false;
+		bool _isHours = false;
 		bool _ignoreLimits = false;
 		Text _text;
 		int _textLength = 0;
@@ -1277,6 +1288,80 @@ class OutputField: public InputField {
 			ignoreLimits();
 		}
 };
+
+#define HOUR_LIM_GAP 8
+class HourLimits: public ScrObj {
+	public:
+		HourLimits(int x, int y)
+		{
+			setXYpos(x, y);
+
+			_lower.displayHours();
+			_higher.displayHours();
+
+			_lower.setWidth(FOUR_CHR);
+			_higher.setWidth(FOUR_CHR);
+
+			_lower.setText(EMPTY_STR);
+			_higher.setText(EMPTY_STR);
+
+			int gap = HOUR_LIM_GAP;
+
+			_lower.setXYpos(_x, _y);
+			_dash.setXYpos(_x + _lower.getW() + gap, _y + _lower.getH()/2);
+			_higher.setXYpos(_x + _lower.getW() + _dash.getW() + gap*2, _y);
+
+			_higher.adjustTextX(-2);
+			_lower.adjustTextX(-2);
+
+			_higher.setLimits(0, 23);
+			_lower.setLimits(0, 23);
+
+			_lower.setValue(8);
+			_higher.setValue(23);
+		}
+
+		ScrObj* getHigher()
+		{
+			return &_higher;
+		}
+
+		ScrObj* getLower()
+		{
+			return &_lower;
+		}
+
+		ScrObj* getDash()
+		{
+			return &_dash;
+		}
+
+		virtual void invalidate() override
+		{
+		}
+
+		virtual void prepare() override
+		{
+		}
+
+		virtual void draw() override
+		{
+		}
+
+		virtual void freeRes() override
+		{
+		}
+
+		virtual void erase() override
+		{
+		}
+
+	private:
+		InputField _lower = InputField();
+		InputField _higher = InputField();
+		Line _dash = Line(10);
+};
+
 
 //TODO: manually decode JPG, push array to sprite
 //TFT_eSprite checkSprite = TFT_eSprite(&tft);
@@ -2117,12 +2202,20 @@ class Page {
 			_iconsVisible = vis;
 		}
 
+		/*
+		void addItemPtr(std::unique_ptr<ScrObj>>&& item)
+		{
+			ptr_items.emplace_back(item);
+		}
+		*/
+
 	private:
 		bool _iconsVisible = true;
 		Page* _prev = nullptr;
 		Page* _next = nullptr;
 		dispStrings_t _title;
 		obj_list _items;
+		//std::vector<std::unique_ptr<ScrObj>> ptr_items;
 		obj_list _selectable;
 		ScrObj* _currItem;
 };

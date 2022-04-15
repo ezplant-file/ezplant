@@ -6,6 +6,7 @@
 typedef enum {
 	NO_STRING,
 	EMPTY_STR,
+	MORE_THAN,
 	BLUE_BTN_NEXT,
 	// main menu strings
 	MENU,
