@@ -155,6 +155,7 @@ uint16_t greyscaleColor(uint8_t g)
 	return tft.color565(g,g,g);
 }
 
+/*
 // manages sprite objects
 class SpritePool {
 	public:
@@ -184,6 +185,7 @@ class SpritePool {
 		int _counter = 0;
 		std::vector<TFT_eSprite> _sprites;
 } g_spr_pool(tft);
+*/
 
 
 class ScrObj {
@@ -203,7 +205,6 @@ class ScrObj {
 		virtual void freeRes() = 0;
 		virtual void prepare()
 		{
-			nop(nullptr);
 		}
 
 		virtual void erase()
@@ -475,49 +476,18 @@ class GreyTextButton: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			if (!_btnSpr)
-				return;
-			_btnSpr->deleteSprite();
-			_btnSpr = nullptr;
-		}
-
-		virtual void prepare() override
-		{
-			//_w = GREY_BUTTON_WIDTH;
-			//_h = GREY_BUTTON_HEIGHT;
-			if (!_invalid)
-				return;
-
-			_btnSpr = g_spr_pool.getSprite();
-			_btnSpr->setColorDepth(COLOR_DEPTH);
-			_btnSpr->createSprite(_w, _h);
-
-#ifdef APP_DEBUG
-			if (!_btnSpr->created()) {
-				Serial.println("************ Failed to create sprite **********");
-			}
-#endif
-			_btnSpr->fillSprite(_bg);
-			_btnSpr->loadFont(FONTS[_fontIndex]);
-			_btnSpr->setTextColor(_fg, _bg);
-			_btnSpr->setCursor(_paddingX, _paddingY);
-			_btnSpr->print(scrStrings[_index]);
-			_btnSpr->setCursor(197, _paddingY);
-			_btnSpr->print(">");
-			_btnSpr->unloadFont();
 		}
 
 		virtual void draw() override
 		{
-			if (!_btnSpr)
-				return;
 			if (!_invalid || !_isVisible)
 				return;
-			_btnSpr->pushSprite(_x, _y);
-
-			// checking
-			freeRes();
-
+			tft.setTextColor(_fg, _bg);
+			tft.loadFont(FONTS[_fontIndex]);
+			tft.fillRect(_x, _y, _w, _h, _bg);
+			tft.setCursor(_x+_paddingX, _y+_paddingY);
+			tft.print(scrStrings[_index]);
+			tft.unloadFont();
 			_invalid = false;
 		}
 
@@ -526,7 +496,7 @@ class GreyTextButton: public ScrObj {
 			_bg = bg;
 			_fg = fg;
 			_invalid = true;
-			_isSelectable = true;
+			//_isSelectable = true;
 			//_btnSpr->setColorDepth(COLOR_DEPTH);
 		}
 
@@ -536,7 +506,7 @@ class GreyTextButton: public ScrObj {
 		uint16_t _bg;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
 		uint8_t _paddingY = GR_BTN_Y_PADDING;
-		TFT_eSprite* _btnSpr = nullptr;
+		//TFT_eSprite* _btnSpr = nullptr;
 		//TFT_eSprite _btnSpr = TFT_eSprite(&tft);
 };
 
@@ -551,79 +521,21 @@ class Text: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			if (!_txtSp)
-				return;
-			_txtSp->deleteSprite();
-			_txtSp = nullptr;
 		}
 
 		virtual void draw() override
 		{
 			if (!_invalid || !_isVisible)
 				return;
-
-			if (!_txtSp)
-				return;
-
-			_txtSp->pushSprite(_x + _dx, _y + _dy, _bg);
+			tft.setTextColor(_fg, _bg);
+			tft.loadFont(FONTS[_fontIndex]);
+			_w = tft.textWidth(scrStrings[_index]) + _paddingX*2;
+			tft.fillRect(_x, _y, _w, _h, _bg);
+			tft.setCursor(_x+_paddingX, _y+_paddingY);
+			tft.print(scrStrings[_index]);
+			tft.unloadFont();
 			_invalid = false;
 
-			// checking
-			freeRes();
-		}
-
-		/*
-		void setTextPadding(uint16_t padding)
-		{
-			_padding = padding;
-		}
-		*/
-
-		virtual void prepare() override
-		{
-			if (!_invalid)
-				return;
-
-			_txtSp = g_spr_pool.getSprite();
-
-			if (!_txtSp)
-				return;
-
-			_txtSp->setColorDepth(COLOR_DEPTH);
-			
-			_txtSp->loadFont(FONTS[_fontIndex]);
-
-			// if (_rightjsfy) {
-			// 	_txtSp->setTextDatum(TR_DATUM);
-			// }
-
-			/*
-			// TODO: calculate based on longest substring
-			// calculate _w based on string wrap
-			char* tmp = strtok(const_cast<char*>(scrStrings[_index]), "\n");
-
-			_w = _txtSp->textWidth(tmp) + _paddingX*2;
-
-			// old way:
-			*/
-
-
-			_w = _txtSp->textWidth(scrStrings[_index]) + _paddingX*2;
-
-			if (_w > SCR_WIDTH)
-				_w = SCR_WIDTH;
-
-			_txtSp->createSprite(_w, _h);
-#ifdef APP_DEBUG
-			if (!_txtSp->created()) {
-				Serial.println("************ Failed to create sprite **********");
-			}
-#endif
-			_txtSp->fillSprite(_bg);
-			_txtSp->setTextColor(_fg, _bg);
-			//_txtSp->print(_text);
-			_txtSp->print(scrStrings[_index]);
-			_txtSp->unloadFont();
 		}
 
 		// TODO: depracate this
@@ -1142,11 +1054,12 @@ class InputField: public ScrObj {
 				return;
 
 			// get length in current font
-			tft.loadFont(FONTS[_text.getFontIndex()]);
+			//tft.loadFont(FONTS[_text.getFontIndex()]);
 
 			// only needed for LEFT align
 			//_textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
-			_textLength = tft.textWidth(scrStrings[index]);
+			//_textLength = tft.textWidth(scrStrings[index]);
+			_textLength = 0;
 
 
 			_w = tft.textWidth(placeholder[_width]) + _paddingX*2;
@@ -1179,7 +1092,7 @@ class InputField: public ScrObj {
 				_textLength = 0;
 			}
 
-			tft.unloadFont();
+			//tft.unloadFont();
 
 			_text.setText(index);
 			//_index = index;
@@ -1616,18 +1529,19 @@ skip:
 				return;
 
 			// get length in current font
-			tft.loadFont(FONTS[_text.getFontIndex()]);
+			//tft.loadFont(FONTS[_text.getFontIndex()]);
 
 			// only needed for LEFT align
 			//_textLength = tft.textWidth(scrStrings[_text.getStrIndex()]);
-			_textLength = tft.textWidth(scrStrings[index]);
+			//_textLength = tft.textWidth(scrStrings[index]);
+			_textLength = 0;
 
 			// prevent text going out of screen
 			if (_textLength > SCR_WIDTH) {
 				_textLength = 0;
 			}
 
-			tft.unloadFont();
+			//tft.unloadFont();
 
 			_text.setText(index);
 			//_index = index;

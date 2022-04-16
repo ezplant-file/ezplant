@@ -390,7 +390,7 @@ void callPage(void* page_ptr)
 	if (page_ptr == nullptr)
 		return;
 
-	g_spr_pool.reset();
+	//g_spr_pool.reset();
 
 	Page* page = (Page*) page_ptr;
 
@@ -2268,7 +2268,6 @@ Page* buildStage3()
 }
 
 
-/*
 Page* buildStage4()
 {
 	static Page stage4;
@@ -2325,13 +2324,13 @@ Page* buildStage4()
 	humCheck.setXYpos(PG_LEFT_PADD, 261);
 	humCheck.setText(EMPTY_STR);
 
-	std::unique_ptr<InputField> hum(new InputField());
+	//std::unique_ptr<InputField> hum(new InputField());
 	static InputField hum;
 	hum.setXYpos(45, 261);
 	hum.setWidth(FOUR_CHR);
 	hum.setText(MORE_THAN);
 
-	stage4.addItemPtr(std::move(hum));
+	//stage4.addItemPtr(std::move(hum));
 
 	stage4.addItem(&ventOn);
 	stage4.addItem(&door);
@@ -2356,7 +2355,447 @@ Page* buildStage4()
 
 	return &stage4;
 }
-*/
+
+Page* buildStage5()
+{
+	static Page stage4;
+	stage4.setTitle(S4_TITLE);
+	stage4.setNext(pages[STAGE5_PG]);
+
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S4_PASSVENT);
+	ventOn.setFont(BOLDFONT);
+
+	static Image door;
+	door.setXYpos(186, MB_Y_START);
+	door.loadRes(images[IMG_DOOR]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S4_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S4_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S4_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S4_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S4_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	//std::unique_ptr<InputField> hum(new InputField());
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	//stage4.addItemPtr(std::move(hum));
+
+	stage4.addItem(&ventOn);
+	stage4.addItem(&door);
+	stage4.addItem(&par1);
+	stage4.addItem(&subTitle);
+	stage4.addItem(&timeint);
+	stage4.addItem(&timeCheck);
+
+	stage4.addItem(timeLimit.getLower());
+	stage4.addItem(timeLimit.getDash());
+	stage4.addItem(timeLimit.getHigher());
+
+	stage4.addItem(&temptxt);
+	stage4.addItem(&tempCheck);
+	stage4.addItem(&temp);
+
+	stage4.addItem(&humtxt);
+	stage4.addItem(&humCheck);
+	stage4.addItem(&hum);
+
+	stage4.addItem(&forward);
+
+	return &stage4;
+}
+
+Page* buildStage6()
+{
+	static Page stage4;
+	stage4.setTitle(S4_TITLE);
+	stage4.setNext(pages[STAGE5_PG]);
+
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S4_PASSVENT);
+	ventOn.setFont(BOLDFONT);
+
+	static Image door;
+	door.setXYpos(186, MB_Y_START);
+	door.loadRes(images[IMG_DOOR]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S4_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S4_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S4_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S4_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S4_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	//std::unique_ptr<InputField> hum(new InputField());
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	//stage4.addItemPtr(std::move(hum));
+
+	stage4.addItem(&ventOn);
+	stage4.addItem(&door);
+	stage4.addItem(&par1);
+	stage4.addItem(&subTitle);
+	stage4.addItem(&timeint);
+	stage4.addItem(&timeCheck);
+
+	stage4.addItem(timeLimit.getLower());
+	stage4.addItem(timeLimit.getDash());
+	stage4.addItem(timeLimit.getHigher());
+
+	stage4.addItem(&temptxt);
+	stage4.addItem(&tempCheck);
+	stage4.addItem(&temp);
+
+	stage4.addItem(&humtxt);
+	stage4.addItem(&humCheck);
+	stage4.addItem(&hum);
+
+	stage4.addItem(&forward);
+
+	return &stage4;
+}
+
+
+Page* buildStage7()
+{
+	static Page stage4;
+	stage4.setTitle(S4_TITLE);
+	stage4.setNext(pages[STAGE5_PG]);
+
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S4_PASSVENT);
+	ventOn.setFont(BOLDFONT);
+
+	static Image door;
+	door.setXYpos(186, MB_Y_START);
+	door.loadRes(images[IMG_DOOR]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S4_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S4_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S4_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S4_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S4_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	//std::unique_ptr<InputField> hum(new InputField());
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	//stage4.addItemPtr(std::move(hum));
+
+	stage4.addItem(&ventOn);
+	stage4.addItem(&door);
+	stage4.addItem(&par1);
+	stage4.addItem(&subTitle);
+	stage4.addItem(&timeint);
+	stage4.addItem(&timeCheck);
+
+	stage4.addItem(timeLimit.getLower());
+	stage4.addItem(timeLimit.getDash());
+	stage4.addItem(timeLimit.getHigher());
+
+	stage4.addItem(&temptxt);
+	stage4.addItem(&tempCheck);
+	stage4.addItem(&temp);
+
+	stage4.addItem(&humtxt);
+	stage4.addItem(&humCheck);
+	stage4.addItem(&hum);
+
+	stage4.addItem(&forward);
+
+	return &stage4;
+}
+
+Page* buildStage8()
+{
+	static Page stage4;
+	stage4.setTitle(S4_TITLE);
+	stage4.setNext(pages[STAGE5_PG]);
+
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S4_PASSVENT);
+	ventOn.setFont(BOLDFONT);
+
+	static Image door;
+	door.setXYpos(186, MB_Y_START);
+	door.loadRes(images[IMG_DOOR]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S4_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S4_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S4_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S4_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S4_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	//std::unique_ptr<InputField> hum(new InputField());
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	//stage4.addItemPtr(std::move(hum));
+
+	stage4.addItem(&ventOn);
+	stage4.addItem(&door);
+	stage4.addItem(&par1);
+	stage4.addItem(&subTitle);
+	stage4.addItem(&timeint);
+	stage4.addItem(&timeCheck);
+
+	stage4.addItem(timeLimit.getLower());
+	stage4.addItem(timeLimit.getDash());
+	stage4.addItem(timeLimit.getHigher());
+
+	stage4.addItem(&temptxt);
+	stage4.addItem(&tempCheck);
+	stage4.addItem(&temp);
+
+	stage4.addItem(&humtxt);
+	stage4.addItem(&humCheck);
+	stage4.addItem(&hum);
+
+	stage4.addItem(&forward);
+
+	return &stage4;
+}
+
+Page* buildStage9()
+{
+	static Page stage4;
+	stage4.setTitle(S4_TITLE);
+	stage4.setNext(pages[STAGE5_PG]);
+
+	static CheckBox ventOn;
+	ventOn.setXYpos(119, MB_Y_START);
+	ventOn.setAlign(LEFT);
+	ventOn.setText(S4_PASSVENT);
+	ventOn.setFont(BOLDFONT);
+
+	static Image door;
+	door.setXYpos(186, MB_Y_START);
+	door.loadRes(images[IMG_DOOR]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setText(S4_PAR1);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S4_SUBTTL);
+
+	static Text timeint;
+	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setText(S4_TIME);
+
+	static CheckBox timeCheck;
+	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setText(EMPTY_STR);
+
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S4_TEMP);
+
+	static CheckBox tempCheck;
+	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setText(EMPTY_STR);
+
+	static InputField temp;
+	temp.setXYpos(45, 210);
+	temp.setText(MORE_THAN);
+	temp.setWidth(FOUR_CHR);
+
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setText(S4_HUM);
+
+	static CheckBox humCheck;
+	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setText(EMPTY_STR);
+
+	//std::unique_ptr<InputField> hum(new InputField());
+	static InputField hum;
+	hum.setXYpos(45, 261);
+	hum.setWidth(FOUR_CHR);
+	hum.setText(MORE_THAN);
+
+	//stage4.addItemPtr(std::move(hum));
+
+	stage4.addItem(&ventOn);
+	stage4.addItem(&door);
+	stage4.addItem(&par1);
+	stage4.addItem(&subTitle);
+	stage4.addItem(&timeint);
+	stage4.addItem(&timeCheck);
+
+	stage4.addItem(timeLimit.getLower());
+	stage4.addItem(timeLimit.getDash());
+	stage4.addItem(timeLimit.getHigher());
+
+	stage4.addItem(&temptxt);
+	stage4.addItem(&tempCheck);
+	stage4.addItem(&temp);
+
+	stage4.addItem(&humtxt);
+	stage4.addItem(&humCheck);
+	stage4.addItem(&hum);
+
+	stage4.addItem(&forward);
+
+	return &stage4;
+}
 
 /*
 std::unique_ptr<Page> currPage;
@@ -2385,8 +2824,14 @@ unsigned long oldMillis;
 
 void buildAllPages()
 {
+	// test
+	pages[STAGE9_PG] = buildStage9();
+	pages[STAGE8_PG] = buildStage8();
+	pages[STAGE7_PG] = buildStage7();
+	pages[STAGE5_PG] = buildStage5();
+	pages[STAGE6_PG] = buildStage6();
 	// stage 4
-	//pages[STAGE4_PG] = buildStage4();
+	pages[STAGE4_PG] = buildStage4();
 
 	// stage 3
 	pages[STAGE3_PG] = buildStage3();
@@ -2539,8 +2984,8 @@ void setup(void)
 	// backlight
 	gBrightness.onClick();
 
-	//currPage = pages[MENU_PG];
-	currPage = pages[FIRST_PG];
+	currPage = pages[MENU_PG];
+	//currPage = pages[FIRST_PG];
 	back.setCallback(callPage, pages[MAIN_PG]);
 	//callPage(pages[FIRST_PG]);
 	currPage->setCurrItem(0);
