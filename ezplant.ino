@@ -25,7 +25,7 @@
 // interrupt
 #define EXPANDER_INT	27
 // backlight
-#define LED_PIN 	23
+#define LED_PIN 	19
 // relay
 #define TDS_MTR_RLY	7
 
@@ -2927,6 +2927,7 @@ void linkPages()
 
 void setup(void)
 {
+
 #ifdef APP_DEBUG
 	Serial.begin(115200);
 #endif
@@ -2947,6 +2948,13 @@ void setup(void)
 
 	// init all stuff in App.h
 	app.init();
+
+	// buttons
+	pinMode(BTN_PREV, INPUT_PULLUP);
+	pinMode(BTN_NEXT, INPUT_PULLUP);
+	pinMode(BTN_OK, INPUT_PULLUP);
+	pinMode(BTN_MIN, INPUT_PULLUP);
+	pinMode(BTN_PLU, INPUT_PULLUP);
 
 	// back button
 	back.setCallback(nop);

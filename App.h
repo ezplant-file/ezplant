@@ -783,6 +783,7 @@ enum {
 
 Toggle* exlMotorTgl[MOTOR_NITEMS];
 
+#define INPUT_READ (!digitalRead(BTN_PREV) || !digitalRead(BTN_NEXT) || !digitalRead(BTN_OK) || !digitalRead(BTN_PLU) || !digitalRead(BTN_MIN))
 class App {
 	private:
 		unsigned long _digMils = 0;
@@ -1041,31 +1042,12 @@ class App {
 			}
 
 
-			// return if no interupts from expander
-			//pinMode(EXPANDER_INT, INPUT);
-			if (digitalRead(EXPANDER_INT) == HIGH) {
-				gInterrupt = false;
-				return;
-			}
-			else {
-				gInterrupt = true;
-			}
-
-#ifdef APP_DEBUG
-			Serial.println("Interrupt...");
-#endif
-
-			// read buttons
-			uint8_t user_input = gpio[0].portRead(0);
-
 			// debounce
-			if ((uint8_t)~user_input) {
+			if (INPUT_READ) {
 				if (millis() - _dbMils > DEBOUNCE) {
-					user_input = gpio[0].portRead(0);
-					if ((uint8_t)~user_input){
+					if (INPUT_READ){
 						_dbMils = millis();
 						_dbFlag = true;
-						_dimMils = millis();
 					}
 				}
 			}
@@ -1074,79 +1056,47 @@ class App {
 			if (!_dbFlag)
 				return;
 
-			//userinput.update();
-
-			if (_inactive) {
-				//Serial.println("Bang!");
-				_inactive = false;
-				gBrightness.setValue(_prevBright);
-				gBrightness.onClick();
-			}
-
-
-			//if (!digitalRead(BTN_PREV)) {
-			if (~user_input & BTN_PREV) {
-				//Serial.println("Bang!");
+			if (!digitalRead(BTN_PREV)) {
 				_cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
 					_iterator = currPage->selSize() - 1;
-
-				ScrObj* tmp;
-				if ((tmp = currPage->getCurrItemAt(_iterator)) != nullptr) {
-					currItem = tmp;
-				}
-
-				//currItem = currPage->getCurrItemAt(_iterator);
+				currItem = currPage->getCurrItemAt(_iterator);
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
-			//else if (!digitalRead(BTN_NEXT)) {
-			else if (~user_input & BTN_NEXT) {
+			else if (!digitalRead(BTN_NEXT)) {
 				_cursor.draw(false);
 				_iterator++;
 				if (_iterator > currPage->selSize() - 1)
 					_iterator = 0;
-
-				ScrObj* tmp;
-				if ((tmp = currPage->getCurrItemAt(_iterator)) != nullptr) {
-					currItem = tmp;
-				}
-
+				currItem = currPage->getCurrItemAt(_iterator);
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
-			//else if (!digitalRead(BTN_MIN)) {
-			else if (~user_input & BTN_MIN) {
+			else if (!digitalRead(BTN_MIN)) {
 				currItem->setValue(currItem->getValue() - 1);
 				if (currItem->hasInput())
 					currItem->onClick();
 				currItem->draw();
 				_dbFlag = false;
 			}
-			else if (~user_input & BTN_PLU) {
+			else if (!digitalRead(BTN_PLU)) {
 				currItem->setValue(currItem->getValue() + 1);
 				if (currItem->hasInput())
 					currItem->onClick();
 				currItem->draw();
 				_dbFlag = false;
 			}
-			else if (~user_input & BTN_OK) {
+			else if (!digitalRead(BTN_OK)) {
 				_cursor.draw(false);
 				currItem->onClick();
-				if (_iterator >= currPage->nItems())
+				if (_iterator >= currPage->selSize())
 					_iterator = 0;
 				currItem = currPage->getCurrItemAt(_iterator);
 				_dbFlag = false;
 			}
-			/*
-			else if (~user_input & BTN_HOME) {
-				struct HeapStats_t stats;
-				vPortGetHeapStats(&stats);
-			}
-			*/
 
-			// don't blink if buttons were pressed...
 			_oldMils = millis();
 		}
 };

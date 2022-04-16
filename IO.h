@@ -48,12 +48,21 @@ iarduino_I2C_TDS tds_meter(TDS_METER_ADDRESS);
 
 // uint16_t pinsIN = buttons.portRead(2);
 // bitmasks (TODO: rename)
+/*
 #define BTN_PREV 	0b00000001
 #define BTN_MIN 	0b00000010
 #define BTN_OK 		0b00000100
 #define BTN_HOME 	0b00001000
 #define BTN_NEXT 	0b00010000
 #define BTN_PLU 	0b00100000
+*/
+
+// buttons defines
+#define BTN_PREV 18
+#define BTN_NEXT 23
+#define BTN_OK 5
+#define BTN_MIN 16
+#define BTN_PLU 17
 
 // keys start bit
 #define KEYS_START_BIT 6
