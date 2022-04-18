@@ -7,6 +7,7 @@ typedef enum {
 	NO_STRING,
 	EMPTY_STR,
 	MORE_THAN,
+	TXT_DAY,
 	BLUE_BTN_NEXT,
 	// main menu strings
 	MENU,
@@ -232,7 +233,9 @@ typedef enum {
 	S5_TITLE,
 	S5_SUBTTL,
 	S5_PAR1,
-	S5_DAY,
+	S5_B1,
+	S5_B2,
+	S5_B3,
 
 	// stage 6
 	S6_TITLE,

@@ -1238,7 +1238,7 @@ Page* buildWiFiSettPage()
 	gwsWifiChBox.setXYpos(69, 37);
 	gwsWifiChBox.setText(WS_CHECK);
 	//gwsWifiChBox.adjustTextY(0);
-	gwsWifiChBox.prepare();
+	//gwsWifiChBox.prepare();
 	gwsWifiChBox.on(g_wifi_on);
 	gwsWifiChBox.setCallback(wifiChCallback);
 
@@ -1462,20 +1462,21 @@ Page* buildLangPage()
 
 	// Яркость подсветки дисплея
 	static Text subtScreen;
+	subtScreen.setXYpos(PG_LEFT_PADD, 63);
 	subtScreen.setFont(SMALLFONT);
 	subtScreen.setText(BRIGHT);
-	subtScreen.setXYpos(PG_LEFT_PADD, 63);
 	subtScreen.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(BACKGROUND)
 			);
 
 	// Поле ввода
-	gBrightness.setFont(SMALLFONT);
 	gBrightness.setXYpos(PG_LEFT_PADD, 83);
+	gBrightness.setFont(SMALLFONT);
 	gBrightness.setValue(g_init_brightness);
 	gBrightness.setText(PERCENT);
 	gBrightness.setCallback(gSetBacklight);
+	gBrightness.setLimits(1, 100);
 	gBrightness.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
@@ -2128,19 +2129,7 @@ Page* buildStage2()
 	par1.setXYpos(PG_LEFT_PADD, 62);
 	par1.setText(S2_PAR1);
 
-	// TODO: make time limits ScrObj
-	static InputField from;
-	from.setXYpos(PG_LEFT_PADD, 143);
-	from.setWidth(FOUR_CHR);
-	from.setText(EMPTY_STR);
-
-	static Line dash(10);
-	dash.setXYpos(67, 154);
-
-	static InputField to;
-	to.setXYpos(87, 143);
-	to.setWidth(FOUR_CHR);
-	to.setText(EMPTY_STR);
+	static HourLimits hlim = HourLimits(PG_LEFT_PADD, 143);
 
 	static Text heading2;
 	heading2.setXYpos(PG_LEFT_PADD, 175);
@@ -2164,9 +2153,11 @@ Page* buildStage2()
 	stage2.addItem(&heading1);
 	stage2.addItem(&lightOn);
 	stage2.addItem(&par1);
-	stage2.addItem(&from);
-	stage2.addItem(&dash);
-	stage2.addItem(&to);
+
+	stage2.addItem(hlim.getLowerPtr());
+	stage2.addItem(hlim.getDashPtr());
+	stage2.addItem(hlim.getHigherPtr());
+
 	stage2.addItem(&heading2);
 	stage2.addItem(&par2);
 	stage2.addItem(&s);
@@ -2185,6 +2176,7 @@ Page* buildStage3()
 	static CheckBox ventOn;
 	ventOn.setXYpos(119, MB_Y_START);
 	ventOn.setText(S3_VENT);
+	ventOn.setAlign(LEFT);
 	ventOn.setFont(BOLDFONT);
 
 	static Image fan;
@@ -2208,7 +2200,11 @@ Page* buildStage3()
 	timeCheck.setXYpos(PG_LEFT_PADD, 163);
 	timeCheck.setText(EMPTY_STR);
 
-	//static HourLimits timeLimit(45, 163);
+	static HourLimits timeLimit(45, 163);
+
+	static Text temptxt;
+	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setText(S3_TEMP);
 
 	static CheckBox tempCheck;
 	tempCheck.setXYpos(PG_LEFT_PADD, 210);
@@ -2218,12 +2214,17 @@ Page* buildStage3()
 	temp.setXYpos(45, 210);
 	temp.setText(MORE_THAN);
 
+	static Text humtxt;
+	humtxt.setXYpos(PG_LEFT_PADD, 237);
+	humtxt.setText(S3_HUM);
+
 	static CheckBox humCheck;
 	humCheck.setXYpos(PG_LEFT_PADD, 261);
-	humCheck.setText(MORE_THAN);
+	humCheck.setText(EMPTY_STR);
 
 	static InputField hum;
 	hum.setXYpos(45, 261);
+	hum.setText(MORE_THAN);
 
 	stage3.addItem(&ventOn);
 	stage3.addItem(&fan);
@@ -2231,13 +2232,15 @@ Page* buildStage3()
 	stage3.addItem(&subTitle);
 	stage3.addItem(&timeint);
 	stage3.addItem(&timeCheck);
-/*
-	stage3.addItem(timeLimit.getLower());
-	stage3.addItem(timeLimit.getDash());
-	stage3.addItem(timeLimit.getHigher());
-	*/
+
+	stage3.addItem(timeLimit.getLowerPtr());
+	stage3.addItem(timeLimit.getDashPtr());
+	stage3.addItem(timeLimit.getHigherPtr());
+
+	stage3.addItem(&temptxt);
 	stage3.addItem(&tempCheck);
 	stage3.addItem(&temp);
+	stage3.addItem(&humtxt);
 	stage3.addItem(&humCheck);
 	stage3.addItem(&hum);
 	stage3.addItem(&forward);
@@ -2245,18 +2248,17 @@ Page* buildStage3()
 	return &stage3;
 }
 
-/*
 Page* buildStage4()
 {
 	static Page stage4;
 	stage4.setTitle(S4_TITLE);
 	stage4.setNext(pages[STAGE5_PG]);
 
-	static CheckBox ventOn;
-	ventOn.setXYpos(119, MB_Y_START);
-	ventOn.setAlign(LEFT);
-	ventOn.setText(S4_PASSVENT);
-	ventOn.setFont(BOLDFONT);
+	static CheckBox passVentOn;
+	passVentOn.setXYpos(145, MB_Y_START);
+	passVentOn.setText(S4_PASSVENT);
+	passVentOn.setAlign(LEFT);
+	passVentOn.setFont(BOLDFONT);
 
 	static Image door;
 	door.setXYpos(186, MB_Y_START);
@@ -2279,7 +2281,7 @@ Page* buildStage4()
 	timeCheck.setXYpos(PG_LEFT_PADD, 163);
 	timeCheck.setText(EMPTY_STR);
 
-	//static HourLimits timeLimit(45, 163);
+	static HourLimits timeLimit(45, 163);
 
 	static Text temptxt;
 	temptxt.setXYpos(PG_LEFT_PADD, 190);
@@ -2295,7 +2297,7 @@ Page* buildStage4()
 	temp.setWidth(FOUR_CHR);
 
 	static Text humtxt;
-	humtxt.setXYpos(PG_LEFT_PADD, 190);
+	humtxt.setXYpos(PG_LEFT_PADD, 237);
 	humtxt.setText(S4_HUM);
 
 	static CheckBox humCheck;
@@ -2305,21 +2307,20 @@ Page* buildStage4()
 	//std::unique_ptr<InputField> hum(new InputField());
 	static InputField hum;
 	hum.setXYpos(45, 261);
-	hum.setWidth(FOUR_CHR);
 	hum.setText(MORE_THAN);
 
 	//stage4.addItemPtr(std::move(hum));
 
-	stage4.addItem(&ventOn);
+	stage4.addItem(&passVentOn);
 	stage4.addItem(&door);
 	stage4.addItem(&par1);
 	stage4.addItem(&subTitle);
 	stage4.addItem(&timeint);
 	stage4.addItem(&timeCheck);
 
-	//stage4.addItem(timeLimit.getLower());
-	//stage4.addItem(timeLimit.getDash());
-	//stage4.addItem(timeLimit.getHigher());
+	stage4.addItem(timeLimit.getLowerPtr());
+	stage4.addItem(timeLimit.getDashPtr());
+	stage4.addItem(timeLimit.getHigherPtr());
 
 	stage4.addItem(&temptxt);
 	stage4.addItem(&tempCheck);
@@ -2333,18 +2334,66 @@ Page* buildStage4()
 
 	return &stage4;
 }
-*/
 
-/*
 Page* buildStage5()
 {
+	int bulletsX = 23;
+	int daysX = 41;
+	static Page stage5;
+	stage5.setTitle(S5_TITLE);
+	stage5.setNext(pages[STAGE6_PG]);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 36);
+	subTitle.setText(S5_SUBTTL);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 57);
+	par1.setText(S5_PAR1);
+
+	static Text first;
+	first.setXYpos(bulletsX, 105);
+	first.setText(S5_B1);
+	static DayLimits firstStageLimits(daysX, 103);
+
+	static Text second;
+	second.setXYpos(bulletsX, 140);
+	second.setText(S5_B2);
+	static DayLimits secondStageLimilts(daysX, 138);
+
+	static Text third;
+	third.setXYpos(bulletsX, 176);
+	third.setText(S5_B3);
+	static DayLimits thirdStageLimits(daysX, 174);
+
+	/*
+	ScrObj* firstHigher = firstStageLimits.getHigher();
+	ScrObj* secondHigher = secondStageLimits.getHigher();
+	ScrObj* thirdHigher = thirdStageLimits.getHigher();
+	*/
+
+	stage5.addItem(&subTitle);
+	stage5.addItem(&par1);
+	stage5.addItem(&first);
+	stage5.addItem(firstStageLimits.getLowerPtr());
+	stage5.addItem(firstStageLimits.getDashPtr());
+	stage5.addItem(firstStageLimits.getHigherPtr());
+	stage5.addItem(&second);
+	stage5.addItem(secondStageLimilts.getLowerPtr());
+	stage5.addItem(secondStageLimilts.getDashPtr());
+	stage5.addItem(secondStageLimilts.getHigherPtr());
+	stage5.addItem(&third);
+	stage5.addItem(thirdStageLimits.getLowerPtr());
+	stage5.addItem(thirdStageLimits.getDashPtr());
+	stage5.addItem(thirdStageLimits.getHigherPtr());
+	stage5.addItem(&forward);
+
+	return &stage5;
 }
-*/
 
 void gSetBacklight(void* arg)
 {
-	uint8_t mapped_br = map(gBrightness.getValue(), 0, 100, 0, 255);
-	analogWrite(LED_PIN, mapped_br);
+	analogWrite(LED_PIN, gBrightness.getValue());
 }
 
 #ifdef APP_DEBUG
@@ -2354,8 +2403,25 @@ unsigned long oldMillis;
 
 void buildAllPages()
 {
+	/*
+	// stage8
+	pages[STAGE9_PG] = buildStage9();
+
+	// stage8
+	pages[STAGE8_PG] = buildStage8();
+
+	// stage7
+	pages[STAGE7_PG] = buildStage7();
+
+	// stage6
+	pages[STAGE6_PG] = buildStage6();
+	*/
+
+	// stage 5
+	pages[STAGE5_PG] = buildStage5();
+
 	// stage 4
-	//pages[STAGE4_PG] = buildStage4();
+	pages[STAGE4_PG] = buildStage4();
 
 	// stage 3
 	pages[STAGE3_PG] = buildStage3();
@@ -2491,26 +2557,11 @@ void setup(void)
 	// setPrev on required pages
 	linkPages();
 
-	/*
-	pinMode(LED_PIN, OUTPUT);
-	pinMode(PORT_F, OUTPUT);
-	pinMode(PORT_G, OUTPUT);
-	pinMode(PORT_H, OUTPUT);
-	pinMode(LED, OUTPUT);
-	pinMode(FAN, OUTPUT);
-	analogWrite(PORT_F, 127);
-	analogWrite(PORT_G, 127);
-	analogWrite(PORT_H, 127);
-	analogWrite(LED, 127);
-	analogWrite(FAN, 127);
-	*/
-
 	// backlight
 	gBrightness.onClick();
 
-	currPage = pages[MENU_PG];
-	//currPage = pages[FIRST_PG];
-	//callPage(pages[FIRST_PG]);
+	//currPage = pages[MENU_PG];
+	currPage = pages[FIRST_PG];
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();
 	currPage->prepare();
@@ -2518,6 +2569,7 @@ void setup(void)
 	//buildTopBar();
 
 	currPage->draw();
+	topBar.prepare();
 	topBar.draw();
 
 #ifdef APP_DEBUG
@@ -2546,9 +2598,37 @@ void setup(void)
 	*/
 }
 
+void delelteSettingsFile()
+{
+	if (SPIFFS.exists(sett_file)) {
+		SPIFFS.remove(sett_file);
+		Serial.println("settings file removed");
+	}
+}
+
+char cmdbuff[20];
+
 void loop()
 {
 	app.update();
+
+	// read init command
+	if (Serial.available()) {
+		static int i = 0;
+		cmdbuff[i] = Serial.read();
+		if (cmdbuff[i] == '\n') {
+			i = 0;
+			String cmd = String(cmdbuff);
+			cmd.trim();
+			if (cmd == "init") {
+				delelteSettingsFile();
+			}
+		}
+		i++;
+		if (i == sizeof(cmdbuff)) {
+			i = 0;
+		}
+	}
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
 

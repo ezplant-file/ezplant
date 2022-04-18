@@ -41,9 +41,9 @@ WebServer server(80);
 
 // settings
 uint8_t g_dimafter = 20;
-int16_t g_init_brightness = 50;
+int16_t g_init_brightness = 30;
 bool g_ntp_sync = false;
-int8_t gUTC = 0;
+int8_t gUTC = 3;
 bool g_wifi_on = true;
 bool g_first_launch = true;
 
@@ -185,6 +185,36 @@ OutputField g_tds_read;
 #define WIFI_UPDATE_INTERVAL 5000
 #define WIFI_IMG_X 213
 #define NET_IMG_X 186
+
+class Data {
+	public:
+		// getters
+		int firstStageDay()
+		{
+			return _firstStageDay;
+		}
+
+		int secondStageDay()
+		{
+			return _secondStageDay;
+		}
+
+		int thirdStageDay()
+		{
+			return _thirdStageDay;
+		}
+
+		// setters
+		void setFirstStageDay(int day)
+		{
+			_firstStageDay = day;
+		}
+
+	private:
+		int _firstStageDay = 0;
+		int _secondStageDay = 20;
+		int _thirdStageDay = 60;
+};
 
 class Panel {
 	public:
@@ -333,13 +363,13 @@ class Panel {
 			_menuText.setXYpos(LEFTMOST, TOPMOST);
 			_menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
 			_menuText.setText(MENU);
-			_menuText.prepare();
+			//_menuText.prepare();
 
 			_time.setFont(MIDFONT);
 			_time.setXYpos(LEFTMOST, TOPMOST);
 			_time.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
 			_time.setText(MENU); // special case
-			_time.prepare();
+			//_time.prepare();
 //rtc.gettime("H:i")
 			_statusWIFI.loadRes(images[_curWiFiImage]);
 			_statusWIFI.setXYpos(WIFI_IMG_X, 0);
@@ -838,13 +868,12 @@ class App {
 			}
 				//rtc.begin();
 			g_ping_success = false;
-			//SPIFFS.begin();
 			tft.init();
 			//tft.initDMA(true);
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
+
 			//Serial.println("Finish INIT");
-#ifdef TASKS
 			createTasks();
 		}
 
@@ -858,17 +887,6 @@ class App {
 					3,
 					NULL
 				   );
-			/*
-			xTaskCreate(
-					rtc_task,
-					"rtc",
-					2000,
-					NULL,
-					1,
-					NULL
-				   );
-				   */
-#endif
 		}
 
 		void update()

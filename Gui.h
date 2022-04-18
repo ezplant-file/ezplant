@@ -83,11 +83,11 @@
 
 // checkbox
 #define CHK_BOX_COL 0xDC
-#define CHK_BOX_SIZE 21
+#define CHK_BOX_SIZE 22
 #define CHK_BOX_FILE "/check.jpg"
 
 // input field height
-#define INPUT_H 24
+#define INPUT_H 22
 
 // radio button
 #define RAD_BTN_SIZE 22
@@ -526,6 +526,9 @@ class Text: public ScrObj {
 
 		virtual void freeRes() override
 		{
+			if (_index == EMPTY_STR)
+				return;
+
 			if (!_txtSp)
 				return;
 			_txtSp->deleteSprite();
@@ -535,6 +538,9 @@ class Text: public ScrObj {
 
 		virtual void draw() override
 		{
+			if (_index == EMPTY_STR)
+				return;
+
 			if (!_invalid || !_isVisible)
 				return;
 
@@ -557,6 +563,9 @@ class Text: public ScrObj {
 
 		virtual void prepare() override
 		{
+			if (_index == EMPTY_STR)
+				return;
+
 			if (!_invalid)
 				return;
 
@@ -611,6 +620,9 @@ class Text: public ScrObj {
 
 		virtual void erase() override
 		{
+			if (_index == EMPTY_STR)
+				return;
+
 			tft.fillRect(_x + _dx, _y + _dy, _w, _h, _bg);
 			freeRes();
 		}
@@ -1285,7 +1297,6 @@ class OutputField: public InputField {
 		}
 };
 
-#define HOUR_LIM_GAP 8
 class HourLimits: public ScrObj {
 	public:
 		HourLimits(int x, int y)
@@ -1301,11 +1312,9 @@ class HourLimits: public ScrObj {
 			_lower.setText(EMPTY_STR);
 			_higher.setText(EMPTY_STR);
 
-			int gap = HOUR_LIM_GAP;
-
 			_lower.setXYpos(_x, _y);
-			_dash.setXYpos(_x + _lower.getW() + gap, _y + _lower.getH()/2);
-			_higher.setXYpos(_x + _lower.getW() + _dash.getW() + gap*2, _y);
+			_dash.setXYpos(_x + _lower.getW() + _GAP, _y + _lower.getH()/2);
+			_higher.setXYpos(_x + _lower.getW() + _dash.getW() + _GAP*2, _y);
 
 			_higher.adjustTextX(-2);
 			_lower.adjustTextX(-2);
@@ -1317,17 +1326,17 @@ class HourLimits: public ScrObj {
 			_higher.setValue(23);
 		}
 
-		ScrObj* getHigher()
+		ScrObj* getHigherPtr()
 		{
 			return &_higher;
 		}
 
-		ScrObj* getLower()
+		ScrObj* getLowerPtr()
 		{
 			return &_lower;
 		}
 
-		ScrObj* getDash()
+		ScrObj* getDashPtr()
 		{
 			return &_dash;
 		}
@@ -1353,16 +1362,76 @@ class HourLimits: public ScrObj {
 		}
 
 	private:
+		static constexpr uint8_t _GAP = 8;
 		InputField _lower = InputField();
 		InputField _higher = InputField();
 		Line _dash = Line(10);
 };
 
+class DayLimits: public ScrObj {
+	public:
+		DayLimits(int x, int y)
+		{
+			setXYpos(x, y);
+
+			_lower.setWidth(TWO_CHR);
+			_higher.setWidth(FOUR_CHR);
+
+			_lower.setText(EMPTY_STR);
+			_higher.setText(EMPTY_STR);
+
+			_lower.setXYpos(_x, _y);
+			_dash.setXYpos(_x + _lower.getW() + _GAP, _y + _lower.getH()/2);
+			_higher.setXYpos(_x + _lower.getW() + _dash.getW() + _GAP*2, _y);
+		}
+
+		ScrObj* getHigherPtr()
+		{
+			return &_higher;
+		}
+
+		ScrObj* getLowerPtr()
+		{
+			return &_lower;
+		}
+
+		ScrObj* getDashPtr()
+		{
+			return &_dash;
+		}
+
+		virtual void invalidate() override
+		{
+		}
+
+		virtual void prepare() override
+		{
+		}
+
+		virtual void draw() override
+		{
+		}
+
+		virtual void freeRes() override
+		{
+		}
+
+		virtual void erase() override
+		{
+		}
+
+	private:
+		static constexpr uint8_t _GAP = 16;
+		OutputField _lower = OutputField();
+		InputField _higher = InputField();
+		Line _dash = Line(6);
+};
+
+
 class CheckBox: public ScrObj {
 	public:
 		CheckBox(): ScrObj(CHK_BOX_SIZE, CHK_BOX_SIZE, SELECTABLE)
 		{
-			reload();
 		}
 
 		~CheckBox()
@@ -1888,6 +1957,7 @@ class Wait: public ScrObj {
 		{
 			setFont(SMALLESTFONT);
 			setText(WAIT_TEXT);
+			_waitText.setColors(COL_GREY_70_565, TFT_WHITE);
 		}
 
 		void setInterval(unsigned long interval)
@@ -1944,10 +2014,6 @@ class Wait: public ScrObj {
 		virtual void prepare() override
 		{
 			_waitText.setXYpos(_x + _waitText.getXpadding(), _y - _waitText.getYpadding()*2);
-			_waitText.setColors(
-					greyscaleColor(FONT_COLOR),
-					greyscaleColor(BACKGROUND)
-					);
 			_waitText.invalidate();
 			_waitText.prepare();
 

@@ -6,8 +6,8 @@
 const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"String not set",
 	"",
-	"Next",
 	">",
+	"Next",
 	// main menu strings
 	"Menu",
 	"New planting",
