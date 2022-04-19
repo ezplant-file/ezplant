@@ -14,6 +14,8 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"3.",
 	"EC",
 	"pH",
+	"minutes",
+	"seconds",
 	// main menu strings
 	"Menu",
 	"New planting",
@@ -265,7 +267,38 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Roots air \nsupply",
 	"Turn off air supply",
 	"",
-	"seconds before the measurement"
+	"seconds before the measurement",
+
+	// stage 9_2
+	"Planting. Stage 9",
+	"Solution \nstirring",
+	"Stir the solution \nwith stirrer or by \nother means",
+	"Turn off the stirring",
+	"",
+	"seconds before the measurement",
+
+	// stage 8_2
+	"Planting. Stage 8",
+	"Plant reservoir \nflooding",
+	"Flood reservoir \nonce every",
+	"Keep reservoir \nflooded for",
+
+	// stage 8_3
+	"Planting. Stage 8",
+	"Sprayer irrigation",
+	"Turn off irrigation",
+	"",
+	"seconds before measurement",
+	"Irrigation mode",
+	"Constant",
+	"Cyclic",
+	"Irrigate for",
+	"Irrigate every",
+
+	// stage 8_4
+	"Planting. Stage 8",
+	"Drip irrigation",
+	"Irrigation mode"
 
 	//end of strings
 };

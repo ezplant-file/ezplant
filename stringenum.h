@@ -14,6 +14,8 @@ typedef enum {
 	BULL_3,
 	TXT_EC,
 	TXT_PH,
+	TXT_MINUTES,
+	TXT_SECONDS,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
@@ -266,6 +268,37 @@ typedef enum {
 	S9_CHECK,
 	S9_INTXT,
 	S9_INPUT,
+
+	// stage9_2
+	S92_TITLE,
+	S92_SUBTTL,
+	S92_PAR1,
+	S92_CHECK,
+	S92_INTXT,
+	S92_INPUT,
+
+	// stage 8_2
+	S82_TITLE,
+	S82_SUBTTL,
+	S82_PAR1,
+	S82_PAR2,
+
+	// stage 8_3
+	S83_TITLE,
+	S83_SUBTTL,
+	S83_CHECK,
+	S83_INTXT,
+	S83_INPUT,
+	S83_MODE,
+	S83_CONST,
+	S83_CYCL,
+	S83_DUR,
+	S83_EVR,
+
+	// stage 8_4
+	S84_TITLE,
+	S84_SUBTTL,
+	S84_MODE,
 
 	END_OF_STRINGS
 } dispStrings_t;

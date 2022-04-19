@@ -2562,6 +2562,65 @@ Page* buildStage6()
 Page* buildStage7()
 {
 	static Page stage7;
+	stage7.setTitle(S7_TITLE);
+	stage7.setNext(pages[STAGE8_PG]);
+
+	static CheckBox acid;
+	static Text par1;
+	static Text bull1;
+	static Text bull2;
+	static Text bull3;
+	static StringText str1;
+	static StringText str2;
+	static StringText str3;
+	static InputField in1;
+	static InputField in2;
+	static InputField in3;
+	static Text par2;
+	static InputField pumptime;
+}
+
+Page* buildStage8()
+{
+	static Page stage8;
+	stage8.setTitle(S8_TITLE);
+	stage8.setNext(pages[STAGE9_PG]);
+
+	static Text subTitle;
+	static Text par1;
+	static Checkbox pumps;
+	static Text za;
+	static InputField seconds;
+}
+
+Page* buildStage9()
+{
+	static Page stage9;
+	stage9.setTitle(S9_TITLE);
+	//stage9.setNext(???);
+	static CheckBox aeration;
+	static Image bubbles;
+	static Text par1;
+	static CheckBox pumps;
+	static Text za;
+	static InputField seconds;
+}
+
+Page* buildStage9_2()
+{
+	static Page stage9;
+	stage9.setTitle(S92_TITLE);
+	//stage9.setNext(???);
+	static CheckBox stir;
+	static Image cycle;
+	static Text par1;
+	static CheckBox pumps;
+	static Text za;
+	static InputField seconds;
+}
+
+Page* buildStage8_2()
+{
 }
 
 void gSetBacklight(void* arg)
