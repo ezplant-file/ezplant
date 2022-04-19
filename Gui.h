@@ -1062,6 +1062,7 @@ class InputField: public ScrObj {
 				tmp+=":00";
 			}
 
+			tmp += _str;
 
 			tft.print(tmp);
 			//tft.print(_value);
@@ -1266,6 +1267,11 @@ class InputField: public ScrObj {
 			_dw = width;
 		}
 
+		void setStr(const char* str)
+		{
+			_str = str;
+		}
+
 	private:
 		int16_t _value = 0;
 		float _fvalue = 0.0;
@@ -1286,6 +1292,7 @@ class InputField: public ScrObj {
 		int16_t _lower = 0;
 		uint8_t _paddingX = IN_FLD_X_PADDING;
 		uint8_t _paddingY = IN_FLD_Y_PADDING;
+		const char* _str = "";
 		placeholder_t _width = THREE_CHR;
 };
 
@@ -1383,6 +1390,7 @@ class DayLimits: public ScrObj {
 			_lower.setXYpos(_x, _y);
 			_dash.setXYpos(_x + _lower.getW() + _GAP, _y + _lower.getH()/2);
 			_higher.setXYpos(_x + _lower.getW() + _dash.getW() + _GAP*2, _y);
+			_lower.setColors(COL_GREY_70_565, TFT_WHITE);
 		}
 
 		ScrObj* getHigherPtr()

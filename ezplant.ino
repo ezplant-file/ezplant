@@ -1522,7 +1522,7 @@ Page* buildLangPage()
 	gDimseconds.setXYpos(55, 125);
 	gDimseconds.setValue(g_dimafter);
 	gDimseconds.setLimits(LOWER_DIMAFTER, HIGHER_DIMAFTER);
-	gDimseconds.setText(SEC);
+	gDimseconds.setText(TXT_SEC);
 	gDimseconds.setCallback(gDimAfter);
 	gDimseconds.setColors(
 			greyscaleColor(FONT_COLOR),
@@ -2295,6 +2295,7 @@ Page* buildStage4()
 	temp.setXYpos(45, 210);
 	temp.setText(MORE_THAN);
 	temp.setWidth(FOUR_CHR);
+	temp.setStr("°C");
 
 	static Text humtxt;
 	humtxt.setXYpos(PG_LEFT_PADD, 237);
@@ -2308,6 +2309,7 @@ Page* buildStage4()
 	static InputField hum;
 	hum.setXYpos(45, 261);
 	hum.setText(MORE_THAN);
+	hum.setStr("%");
 
 	//stage4.addItemPtr(std::move(hum));
 
@@ -2352,18 +2354,21 @@ Page* buildStage5()
 	par1.setText(S5_PAR1);
 
 	static Text first;
-	first.setXYpos(bulletsX, 105);
-	first.setText(S5_B1);
+	first.setXYpos(bulletsX, 107);
+	first.setFont(BOLDFONT);
+	first.setText(BULL_1);
 	static DayLimits firstStageLimits(daysX, 103);
 
 	static Text second;
-	second.setXYpos(bulletsX, 140);
-	second.setText(S5_B2);
+	second.setXYpos(bulletsX, 142);
+	second.setText(BULL_2);
+	second.setFont(BOLDFONT);
 	static DayLimits secondStageLimilts(daysX, 138);
 
 	static Text third;
-	third.setXYpos(bulletsX, 176);
-	third.setText(S5_B3);
+	third.setXYpos(bulletsX, 178);
+	third.setText(BULL_3);
+	third.setFont(BOLDFONT);
 	static DayLimits thirdStageLimits(daysX, 174);
 
 	/*
@@ -2391,6 +2396,174 @@ Page* buildStage5()
 	return &stage5;
 }
 
+Page* buildStage6()
+{
+	static Page stage6;
+	stage6.setTitle(S6_TITLE);
+	stage6.setNext(pages[STAGE7_PG]);
+
+	static CheckBox subTitle;
+	subTitle.setXYpos(170, MB_Y_START);
+	subTitle.setText(S6_SUBTTL);
+	subTitle.setAlign(LEFT);
+	stage6.addItem(&subTitle);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 64);
+	par1.setText(S6_PAR1);
+	stage6.addItem(&par1);
+
+	static Line line1(210);
+	static Line line2(210);
+	static Line line3(210);
+	line1.setXYpos(PG_LEFT_PADD, 136);
+	line2.setXYpos(PG_LEFT_PADD, 198);
+	line3.setXYpos(PG_LEFT_PADD, 259);
+
+	static Text bull1;
+	static Text bull2;
+	static Text bull3;
+	bull1.setXYpos(PG_LEFT_PADD, 88);
+	bull1.setText(BULL_1);
+	bull2.setXYpos(PG_LEFT_PADD, 149);
+	bull2.setText(BULL_2);
+	bull3.setXYpos(PG_LEFT_PADD, 210);
+	bull3.setText(BULL_3);
+	bull1.setFont(BOLDFONT);
+	bull2.setFont(BOLDFONT);
+	bull3.setFont(BOLDFONT);
+
+	static InputField in1;
+	static InputField in2;
+	static InputField in3;
+	in1.setXYpos(125, 80);
+	in1.setText(TXT_EC);
+	in2.setXYpos(125, 142);
+	in2.setText(TXT_EC);
+	in3.setXYpos(125, 202);
+	in3.setText(TXT_EC);
+
+	static String stage1str;
+	static String stage2str;
+	static String stage3str;
+
+	stage1str = (String)"0" + " - " + data.stage1day() + " "
+		+ scrStrings[TXT_DAY];
+	stage2str = (String)data.stage1day() + " - " + data.stage2day() + " "
+		+ scrStrings[TXT_DAY];
+	stage3str = (String)data.stage2day() + " - " + data.stage3day() + " "
+		+ scrStrings[TXT_DAY];
+
+	int strOffset = 38;
+	static StringText str1;
+	static StringText str2;
+	static StringText str3;
+	str1.setXYpos(strOffset, 88);
+	str2.setXYpos(strOffset, 150);
+	str3.setXYpos(strOffset, 210);
+	str1.setText(stage1str);
+	str2.setText(stage2str);
+	str3.setText(stage3str);
+
+	static InputField ifA1;
+	static InputField ifB1;
+	static InputField ifC1;
+	ifA1.setXYpos(30, 108);
+	ifB1.setXYpos(106, 108);
+	ifC1.setXYpos(178, 108);
+	ifA1.setAlign(LEFT);
+	ifB1.setAlign(LEFT);
+	ifC1.setAlign(LEFT);
+	ifA1.setFont(MIDFONT);
+	ifB1.setFont(MIDFONT);
+	ifC1.setFont(MIDFONT);
+	ifA1.setText(TXT_A);
+	ifB1.setText(TXT_B);
+	ifC1.setText(TXT_C);
+
+	static InputField ifA2;
+	static InputField ifB2;
+	static InputField ifC2;
+	ifA2.setXYpos(30, 170);
+	ifB2.setXYpos(106, 170);
+	ifC2.setXYpos(178, 170);
+	ifA2.setAlign(LEFT);
+	ifB2.setAlign(LEFT);
+	ifC2.setAlign(LEFT);
+	ifA2.setFont(MIDFONT);
+	ifB2.setFont(MIDFONT);
+	ifC2.setFont(MIDFONT);
+	ifA2.setText(TXT_A);
+	ifB2.setText(TXT_B);
+	ifC2.setText(TXT_C);
+
+	static InputField ifA3;
+	static InputField ifB3;
+	static InputField ifC3;
+	ifA3.setXYpos(30, 230);
+	ifB3.setXYpos(106, 230);
+	ifC3.setXYpos(178, 230);
+	ifA3.setAlign(LEFT);
+	ifB3.setAlign(LEFT);
+	ifC3.setAlign(LEFT);
+	ifA3.setFont(MIDFONT);
+	ifB3.setFont(MIDFONT);
+	ifC3.setFont(MIDFONT);
+	ifA3.setText(TXT_A);
+	ifB3.setText(TXT_B);
+	ifC3.setText(TXT_C);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 266);
+	par2.setText(S6_PAR2);
+
+	static InputField pumptime;
+	pumptime.setXYpos(74, 279);
+	pumptime.setText(TXT_SEC);
+
+	stage6.addItem(&line1);
+	stage6.addItem(&line2);
+	stage6.addItem(&line3);
+
+	stage6.addItem(&bull1);
+	stage6.addItem(&bull2);
+	stage6.addItem(&bull3);
+
+	stage6.addItem(&str1);
+	stage6.addItem(&str2);
+	stage6.addItem(&str3);
+
+	// selectables
+	stage6.addItem(&in1);
+
+	stage6.addItem(&ifA1);
+	stage6.addItem(&ifB1);
+	stage6.addItem(&ifC1);
+
+	stage6.addItem(&in2);
+
+	stage6.addItem(&ifA2);
+	stage6.addItem(&ifB2);
+	stage6.addItem(&ifC2);
+
+	stage6.addItem(&in3);
+
+	stage6.addItem(&ifA3);
+	stage6.addItem(&ifB3);
+	stage6.addItem(&ifC3);
+
+	stage6.addItem(&par2);
+	stage6.addItem(&pumptime);
+	stage6.addItem(&forward);
+
+	return &stage6;
+}
+
+Page* buildStage7()
+{
+	static Page stage7;
+}
+
 void gSetBacklight(void* arg)
 {
 	analogWrite(LED_PIN, gBrightness.getValue());
@@ -2404,8 +2577,9 @@ unsigned long oldMillis;
 void buildAllPages()
 {
 	/*
-	// stage8
+	// stage9
 	pages[STAGE9_PG] = buildStage9();
+	*/
 
 	// stage8
 	pages[STAGE8_PG] = buildStage8();
@@ -2415,7 +2589,6 @@ void buildAllPages()
 
 	// stage6
 	pages[STAGE6_PG] = buildStage6();
-	*/
 
 	// stage 5
 	pages[STAGE5_PG] = buildStage5();
@@ -2632,8 +2805,11 @@ void loop()
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
 
-		Serial.print("lagest block: ");
+		Serial.print("lagest 8-bit block: ");
 		Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+		Serial.println();
+		Serial.print("lagest 32-bit block: ");
+		Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_32BIT));
 		Serial.println();
 		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 		Serial.print("gui task unused stack: ");

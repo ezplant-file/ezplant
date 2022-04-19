@@ -9,6 +9,11 @@ typedef enum {
 	MORE_THAN,
 	TXT_DAY,
 	BLUE_BTN_NEXT,
+	BULL_1,
+	BULL_2,
+	BULL_3,
+	TXT_EC,
+	TXT_PH,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
@@ -31,7 +36,7 @@ typedef enum {
 	PERCENT,
 	DIM,
 	AFTER,
-	SEC,
+	TXT_SEC,
 	LANG,
 	RUS,
 	ENG,
@@ -233,14 +238,34 @@ typedef enum {
 	S5_TITLE,
 	S5_SUBTTL,
 	S5_PAR1,
-	S5_B1,
-	S5_B2,
-	S5_B3,
 
 	// stage 6
 	S6_TITLE,
 	S6_SUBTTL,
 	S6_PAR1,
+	S6_PAR2,
+	TXT_A, TXT_B, TXT_C,
+
+	// stage 7
+	S7_TITLE,
+	S7_SUBTTL,
+	S7_PAR1,
+
+	// stage 8
+	S8_TITLE,
+	S8_SUBTTL,
+	S8_PAR1,
+	S8_CHECK,
+	S8_INTXT,
+	S8_INPUT,
+
+	// stage 9
+	S9_TITLE,
+	S9_SUBTTL,
+	S9_PAR1,
+	S9_CHECK,
+	S9_INTXT,
+	S9_INPUT,
 
 	END_OF_STRINGS
 } dispStrings_t;

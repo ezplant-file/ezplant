@@ -189,32 +189,42 @@ OutputField g_tds_read;
 class Data {
 	public:
 		// getters
-		int firstStageDay()
+		int stage1day()
 		{
 			return _firstStageDay;
 		}
 
-		int secondStageDay()
+		int stage2day()
 		{
 			return _secondStageDay;
 		}
 
-		int thirdStageDay()
+		int stage3day()
 		{
 			return _thirdStageDay;
 		}
 
 		// setters
-		void setFirstStageDay(int day)
+		void set1stageDay(int day)
 		{
 			_firstStageDay = day;
 		}
 
+		void set2stageDay(int day)
+		{
+			_secondStageDay = day;
+		}
+
+		void set3stageDay(int day)
+		{
+			_thirdStageDay = day;
+		}
+
 	private:
-		int _firstStageDay = 0;
-		int _secondStageDay = 20;
+		int _firstStageDay = 20;
+		int _secondStageDay = 40;
 		int _thirdStageDay = 60;
-};
+} data;
 
 class Panel {
 	public:
@@ -282,12 +292,14 @@ class Panel {
 			int dBm = WiFi.RSSI();
 			uint8_t strength = map(dBm, -95, -45, 0, 4);
 
+			/*
 #ifdef APP_DEBUG
 			Serial.print("WiFi strength: ");
 			Serial.println(dBm);
 			Serial.print("Wifi status: ");
 			Serial.println(WiFi.status());
 #endif
+*/
 
 			strength = clamp(strength, 0, 4);
 

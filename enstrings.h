@@ -7,7 +7,13 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"String not set",
 	"",
 	">",
+	"day",
 	"Next",
+	"1.",
+	"2.",
+	"3.",
+	"EC",
+	"pH",
 	// main menu strings
 	"Menu",
 	"New planting",
@@ -120,17 +126,17 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"7. Taking measurements.\nIt will take a minute",
 
 	// ph/tds fail
-	"Cannot init the senosor,\ncheck wiring or replage\nthe sensor.",
+	"Cannot init the sensor,\ncheck wiring or replace\nthe sensor.",
 
 	/* TDS calib pages */
 	// tds1
 	"1. Prepare calibration solutions 500  and 1500 ppm.",
 	// tds2
 	"3. Put the sensor in 500 ppm solution\nand press the button.",
-	"Сканировать 500 ppm",
+	"Scan 500 ppm",
 	// tds4
 	"6. Put the sensor in 1500 ppm solution\nand press the button.",
-	"Сканировать 1500 ppm",
+	"Scan 1500 ppm",
 
 	/* diag menu */
 
@@ -234,9 +240,32 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Growth stage dependent \nnutrient solution settings",
 
 	// stage 6
+	"Planting. Stage 6",
+	"Concentration (EC)",
+	"Set solution proportions",
+	"Pump time (portion size)"
+	"A", "B", "C",
+
+	// stage 7
+	"Planting. Stage 7",
+	"Acidity (pH)",
+	"Set target acidity and \nportion size.",
+
+	// stage 8
+	"Planting. Stage 8",
+	"Idle pump measuring \nwindow",
+	"It is highly recommended to \nturn off the pump \nto get higher accuracy \nmeasurement",
+	"Turn off the pump",
 	"",
+	"seconds before the measurement",
+
+	// stage 9
+	"Planting. Stage 9",
+	"Solution aeration",
+	"Roots air \nsupply",
+	"Turn off air supply",
 	"",
-	""
+	"seconds before the measurement"
 
 	//end of strings
 };
