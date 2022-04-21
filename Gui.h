@@ -25,6 +25,8 @@
 #define COLOR_DEPTH 16
 
 #include <vector>
+#include <string.h>
+#include <iostream>
 
 #include "images.h"
 
@@ -531,6 +533,7 @@ class Text: public ScrObj {
 
 			if (!_txtSp)
 				return;
+
 			_txtSp->deleteSprite();
 			delete _txtSp;
 			_txtSp = nullptr;
@@ -577,11 +580,11 @@ class Text: public ScrObj {
 			//tft.setTextPadding(_padding);
 
 			/*
-			if (!SPIFFS.exists(FONTS[_fontIndex])) {
-				freeRes();
-				return;
-			}
-			*/
+			   if (!SPIFFS.exists(FONTS[_fontIndex])) {
+			   freeRes();
+			   return;
+			   }
+			 */
 
 			_txtSp->loadFont(FONTS[_fontIndex]);
 
@@ -589,18 +592,49 @@ class Text: public ScrObj {
 				_txtSp->setTextDatum(TR_DATUM);
 			}
 
-			/*
+			/**************************************************/
+
 			// TODO: calculate based on longest substring
 			// calculate _w based on string wrap
-			char* tmp = strtok(const_cast<char*>(scrStrings[_index]), "\n");
 
-			_w = _txtSp->textWidth(tmp) + _paddingX*2;
+			std::vector<char> copy(scrStrings[_index],
+					scrStrings[_index]
+					+ strlen(scrStrings[_index]));
+
+			static const char* TOKEN = "\n";
+
+			char* longest;
+			char* str;
+			size_t tmp = 0;
+			str = strtok(copy.data(), TOKEN);
+
+			while (str != NULL) {
+				size_t sz = strlen(str);
+
+				if (sz > tmp) {
+					longest = str;
+				}
+
+				tmp = std::max(tmp, sz);
+				str = strtok(NULL, TOKEN);
+			}
+
+			//std::cout << '\n' << longest << '\n';
+			//std::cout << tmp << '\n';
+
+
+			_w = _txtSp->textWidth(longest) + _paddingX*2;
+			Serial.println();
+			Serial.println("Calculated sprite width: ");
+			Serial.println(_w);
 
 			// old way:
-			*/
+			/**************************************************/
 
 
+			/*
 			_w = _txtSp->textWidth(scrStrings[_index]) + _paddingX*2;
+				*/
 
 			if (_w > SCR_WIDTH)
 				_w = SCR_WIDTH;

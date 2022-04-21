@@ -150,6 +150,12 @@ typedef enum {
 	STAGE7_PG,
 	STAGE8_PG,
 	STAGE9_PG,
+	// stage 2 alt
+	STAGE92_PG,
+	STAGE82_PG,
+	STAGE83_PG,
+	STAGE84_PG,
+	LSTAGES,
 	NPAGES
 } pages_t;
 

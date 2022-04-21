@@ -1630,12 +1630,13 @@ enum mainMenuItems {
 	MM_DIAG,
 	MM_TEST,
 	MM_FONT,
+	MM_LAST_STAGES,
 	MM_NITEMS
 };
 
 Page* buildMenuPage()
 {
-	static Page mainPage;
+	static Page menuPage;
 	static GreyTextButton menu_items[MM_NITEMS];
 
 	// gap between items
@@ -1648,6 +1649,7 @@ Page* buildMenuPage()
 	menu1[MM_DIAG] = DIAG;
 	menu1[MM_TEST] = TEST_PAGE;
 	menu1[MM_FONT] = FONT_PAGE;
+	menu1[MM_LAST_STAGES] = LSTAGES_STR;
 
 	int j = 0;
 
@@ -1666,18 +1668,19 @@ Page* buildMenuPage()
 	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
 	menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
 	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
+	menu_items[MM_LAST_STAGES].setCallback(callPage, pages[LSTAGES]);
 
 	// add all to page
 	for (int i = 0; i < MM_NITEMS; i++) {
-		mainPage.addItem(&menu_items[i]);
+		menuPage.addItem(&menu_items[i]);
 	}
 
 
-	//mainPage.setPrev(&mainPage);
+	//menuPage.setPrev(&menuPage);
 
-	mainPage.setTitle(MENU);
-	mainPage.addItem(&back);
-	return &mainPage;
+	menuPage.setTitle(MENU);
+	menuPage.addItem(&back);
+	return &menuPage;
 }
 
 enum settingsPageMenuItems {
@@ -2404,8 +2407,9 @@ Page* buildStage6()
 
 	static CheckBox subTitle;
 	subTitle.setXYpos(170, MB_Y_START);
-	subTitle.setText(S6_SUBTTL);
 	subTitle.setAlign(LEFT);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S6_SUBTTL);
 	stage6.addItem(&subTitle);
 
 	static Text par1;
@@ -2566,18 +2570,82 @@ Page* buildStage7()
 	stage7.setNext(pages[STAGE8_PG]);
 
 	static CheckBox acid;
+	acid.setXYpos(165, 36);
+	acid.setFont(BOLDFONT);
+	acid.setAlign(LEFT);
+	acid.setText(S7_SUBTTL);
+
 	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 64);
+	par1.setText(S7_PAR1);
+
 	static Text bull1;
 	static Text bull2;
 	static Text bull3;
+	bull1.setXYpos(PG_LEFT_PADD, 107);
+	bull2.setXYpos(PG_LEFT_PADD, 138);
+	bull3.setXYpos(PG_LEFT_PADD, 169);
+	bull1.setText(BULL_1);
+	bull2.setText(BULL_2);
+	bull3.setText(BULL_3);
+
+	static String stage1str;
+	static String stage2str;
+	static String stage3str;
+
+	stage1str = (String)"0" + " - " + data.stage1day() + " "
+		+ scrStrings[TXT_DAY];
+	stage2str = (String)data.stage1day() + " - " + data.stage2day() + " "
+		+ scrStrings[TXT_DAY];
+	stage3str = (String)data.stage2day() + " - " + data.stage3day() + " "
+		+ scrStrings[TXT_DAY];
+
+	int strOffset = 38;
 	static StringText str1;
+	str1.setXYpos(strOffset, 109);
+	str1.setText(stage1str);
 	static StringText str2;
+	str2.setXYpos(strOffset, 140);
+	str2.setText(stage2str);
 	static StringText str3;
+	str3.setXYpos(strOffset, 170);
+	str3.setText(stage3str);
+
 	static InputField in1;
 	static InputField in2;
 	static InputField in3;
+	in1.setXYpos(126, 100);
+	in2.setXYpos(126, 131);
+	in3.setXYpos(126, 162);
+	in1.setText(TXT_PH);
+	in2.setText(TXT_PH);
+	in3.setText(TXT_PH);
+
 	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 202);
+	par2.setText(S6_PAR2);
+
 	static InputField pumptime;
+	pumptime.setXYpos(74, 216);
+	pumptime.setText(TXT_SEC);
+
+	stage7.addItem(&acid);
+	stage7.addItem(&par1);
+	stage7.addItem(&bull1);
+	stage7.addItem(&bull2);
+	stage7.addItem(&bull3);
+	stage7.addItem(&str1);
+	stage7.addItem(&str2);
+	stage7.addItem(&str3);
+	stage7.addItem(&in1);
+	stage7.addItem(&in2);
+	stage7.addItem(&in3);
+	stage7.addItem(&par2);
+	stage7.addItem(&pumptime);
+
+	stage7.addItem(&forward);
+
+	return &stage7;
 }
 
 Page* buildStage8()
@@ -2587,41 +2655,220 @@ Page* buildStage8()
 	stage8.setNext(pages[STAGE9_PG]);
 
 	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 38);
+	subTitle.setAlign(LEFT);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S8_SUBTTL);
+
 	static Text par1;
-	static Checkbox pumps;
+	par1.setXYpos(PG_LEFT_PADD, 80);
+	par1.setText(S8_PAR1);
+
+	static CheckBox pumps;
+	pumps.setXYpos(PG_LEFT_PADD, 162);
+	pumps.setText(S8_CHECK);
+
 	static Text za;
+	za.setXYpos(PG_LEFT_PADD, 200);
+	za.setText(S8_INTXT);
+
 	static InputField seconds;
+	seconds.setXYpos(36, 194);
+	seconds.setText(S8_INPUT);
+
+	stage8.addItem(&subTitle);
+	stage8.addItem(&par1);
+	stage8.addItem(&pumps);
+	stage8.addItem(&za);
+	stage8.addItem(&seconds);
+
+	stage8.addItem(&forward);
+
+	return &stage8;
 }
 
 Page* buildStage9()
 {
 	static Page stage9;
 	stage9.setTitle(S9_TITLE);
-	//stage9.setNext(???);
+
 	static CheckBox aeration;
+	aeration.setXYpos(164, 33);
+	aeration.setAlign(LEFT);
+	aeration.setFont(BOLDFONT);
+	aeration.setText(S9_SUBTTL);
+
 	static Image bubbles;
+	bubbles.setXYpos(190, 33);
+	bubbles.loadRes(images[IMG_AERO]);
+
 	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 64);
+	par1.setText(S9_PAR1);
+
 	static CheckBox pumps;
+	pumps.setXYpos(PG_LEFT_PADD, 102);
+	pumps.setText(S9_CHECK);
+
 	static Text za;
+	za.setXYpos(PG_LEFT_PADD, 140);
+	za.setText(S9_INTXT);
+
 	static InputField seconds;
+	seconds.setXYpos(36, 134);
+	seconds.setText(S9_INPUT);
+
+	stage9.addItem(&aeration);
+	stage9.addItem(&bubbles);
+	stage9.addItem(&par1);
+	stage9.addItem(&pumps);
+	stage9.addItem(&za);
+	stage9.addItem(&seconds);
+
+	stage9.addItem(&forward);
+
+	return &stage9;
 }
 
 Page* buildStage9_2()
 {
 	static Page stage9;
 	stage9.setTitle(S92_TITLE);
-	//stage9.setNext(???);
+
 	static CheckBox stir;
+	stir.setXYpos(156, 43);
+	stir.setFont(BOLDFONT);
+	stir.setAlign(LEFT);
+	stir.setText(S92_SUBTTL);
+
 	static Image cycle;
+	cycle.setXYpos(188, 38);
+	cycle.loadRes(images[IMG_CYCL]);
+
 	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 87);
+	par1.setText(S92_PAR1);
+
 	static CheckBox pumps;
+	pumps.setXYpos(PG_LEFT_PADD, 148);
+	pumps.setText(S9_CHECK);
+
 	static Text za;
+	za.setXYpos(PG_LEFT_PADD, 186);
+	za.setText(S9_INTXT);
+
 	static InputField seconds;
+	seconds.setXYpos(36, 180);
+	seconds.setText(S9_INPUT);
+
+	stage9.addItem(&stir);
+	stage9.addItem(&cycle);
+	stage9.addItem(&par1);
+	stage9.addItem(&pumps);
+	stage9.addItem(&za);
+	stage9.addItem(&seconds);
+
+	return &stage9;
 }
 
 Page* buildStage8_2()
 {
+	static Page stage8;
+	stage8.setTitle(S82_TITLE);
+
+	stage8.addItem(&forward);
+
+	return &stage8;
 }
+
+Page* buildStage8_3()
+{
+	static Page stage8;
+	stage8.setTitle(S83_TITLE);
+
+	stage8.addItem(&forward);
+
+	return &stage8;
+}
+
+Page* buildStage8_4()
+{
+	static Page stage8;
+	stage8.setTitle(S84_TITLE);
+
+	stage8.addItem(&forward);
+
+	return &stage8;
+}
+
+#define FP_LEFT_PADDING 7
+Page* buildMainPage()
+{
+	static Page mainPage;
+	mainPage.setTitle(FP_TITLE);
+
+	static BlueTextButton menu;
+	menu.setXYpos(FP_LEFT_PADDING, 289);
+	menu.setText(MENU);
+	menu.setCallback(callPage, pages[MENU_PG]);
+
+	mainPage.addItem(&menu);
+
+	return &mainPage;
+}
+
+enum {
+	BTN_92,
+	BTN_82,
+	BTN_83,
+	BTN_84,
+	LP_NBTNS
+};
+
+Page* lastPagesList()
+{
+	static Page menuPage;
+
+	static GreyTextButton menu_items[LP_NBTNS];
+
+	// gap between items
+	int gap = MENU_GAP;
+
+	dispStrings_t menu1[LP_NBTNS];
+	menu1[BTN_92] = S92_TITLE;
+	menu1[BTN_82] = S82_TITLE;
+	menu1[BTN_83] = S83_TITLE;
+	menu1[BTN_84] = S84_TITLE;
+
+	int j = 0;
+
+	for (auto& i:menu_items) {
+		i.setCallback(nop);
+		i.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
+		i.setFont(SMALLFONT);
+		i.setXYpos(PG_LEFT_PADD, MB_Y_START+(GREY_BUTTON_HEIGHT+gap)*j);
+		i.setText(menu1[j]);
+		j++;
+	}
+
+	// set callBacks
+	menu_items[BTN_92].setCallback(callPage, pages[STAGE92_PG]);
+	menu_items[BTN_82].setCallback(callPage, pages[STAGE82_PG]);
+	menu_items[BTN_83].setCallback(callPage, pages[STAGE83_PG]);
+	menu_items[BTN_84].setCallback(callPage, pages[STAGE84_PG]);
+
+	// add all to page
+	for (int i = 0; i < LP_NBTNS; i++) {
+		menuPage.addItem(&menu_items[i]);
+	}
+
+
+	menuPage.setTitle(MENU);
+	menuPage.addItem(&back);
+
+	return &menuPage;
+}
+
 
 void gSetBacklight(void* arg)
 {
@@ -2635,10 +2882,20 @@ unsigned long oldMillis;
 
 void buildAllPages()
 {
-	/*
+	// stage8_4
+	pages[STAGE84_PG] = buildStage8_4();
+
+	// stage8_3
+	pages[STAGE83_PG] = buildStage8_3();
+
+	// stage8_2 (stage 2)
+	pages[STAGE82_PG] = buildStage8_2();
+
+	// stage9_2 (stage 2)
+	pages[STAGE92_PG] = buildStage9_2();
+
 	// stage9
 	pages[STAGE9_PG] = buildStage9();
-	*/
 
 	// stage8
 	pages[STAGE8_PG] = buildStage8();
@@ -2701,7 +2958,12 @@ void buildAllPages()
 	pages[TEST_PG] = buildTestPage();
 	pages[LANG_PG] = buildLangPage();
 	pages[SETT_PG] = buildSettingsPage();
+
+	// list of last stages
+	pages[LSTAGES] = lastPagesList();
+
 	pages[MENU_PG] = buildMenuPage();
+	pages[MAIN_PG] = buildMainPage();
 }
 
 void linkPages()
@@ -2711,6 +2973,22 @@ void linkPages()
 	for (auto i:pages)
 		DEBUG_PRINT_HEX(i);
 #endif
+
+	// debug last stages
+	pages[LSTAGES]->setPrev(pages[MENU_PG]);
+
+	// new planting first page
+	pages[STAGE1_PG]->setPrev(pages[MAIN_PG]);
+
+	// planting last page
+	pages[STAGE9_PG]->setNext(pages[MAIN_PG]);
+	pages[STAGE92_PG]->setNext(pages[MAIN_PG]);
+	pages[STAGE82_PG]->setNext(pages[MAIN_PG]);
+	pages[STAGE83_PG]->setNext(pages[MAIN_PG]);
+	pages[STAGE84_PG]->setNext(pages[MAIN_PG]);
+
+	// menu page prev
+	pages[MENU_PG]->setPrev(pages[MAIN_PG]);
 
 	// first page
 	pages[FIRST_PG]->setPrev(pages[MENU_PG]);
@@ -2770,17 +3048,6 @@ void setup(void)
 	// init all stuff in App.h
 	app.init();
 
-	// back button
-	back.setCallback(nop);
-	back.loadRes(images[IMG_PREV]);
-	back.setXYpos(7, 284);
-	back.setCircle();
-
-	// forward button
-	forward.setCallback(nop);
-	forward.loadRes(images[IMG_NEXT]);
-	forward.setXYpos(204, 284);
-	forward.setCircle();
 
 	buildAllPages();
 
@@ -2797,6 +3064,18 @@ void setup(void)
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();
 	currPage->prepare();
+
+	// back button
+	back.setCallback(callPage, currPage->prev());
+	back.loadRes(images[IMG_PREV]);
+	back.setXYpos(7, 284);
+	back.setCircle();
+
+	// forward button
+	forward.setCallback(callPage, currPage->next());
+	forward.loadRes(images[IMG_NEXT]);
+	forward.setXYpos(204, 284);
+	forward.setCircle();
 
 	//buildTopBar();
 

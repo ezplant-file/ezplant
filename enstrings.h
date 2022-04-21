@@ -298,7 +298,10 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// stage 8_4
 	"Planting. Stage 8",
 	"Drip irrigation",
-	"Irrigation mode"
+	"Irrigation mode",
+
+	// list of last stages
+	"last stages"
 
 	//end of strings
 };

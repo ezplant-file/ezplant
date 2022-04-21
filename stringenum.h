@@ -269,7 +269,7 @@ typedef enum {
 	S9_INTXT,
 	S9_INPUT,
 
-	// stage9_2
+	// stage9_2 (stage 2)
 	S92_TITLE,
 	S92_SUBTTL,
 	S92_PAR1,
@@ -277,13 +277,13 @@ typedef enum {
 	S92_INTXT,
 	S92_INPUT,
 
-	// stage 8_2
+	// stage 8_2 (stage 2)
 	S82_TITLE,
 	S82_SUBTTL,
 	S82_PAR1,
 	S82_PAR2,
 
-	// stage 8_3
+	// stage 8_3 (stage 2)
 	S83_TITLE,
 	S83_SUBTTL,
 	S83_CHECK,
@@ -299,6 +299,9 @@ typedef enum {
 	S84_TITLE,
 	S84_SUBTTL,
 	S84_MODE,
+
+	// list of last stages
+	LSTAGES_STR,
 
 	END_OF_STRINGS
 } dispStrings_t;
