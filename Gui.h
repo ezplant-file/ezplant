@@ -24,9 +24,9 @@
 #define __GUI_H__
 #define COLOR_DEPTH 16
 
-#include <vector>
-#include <string.h>
+#include <vector>	// keep page items in vector
 #include <iostream>
+//#include <string>	// calculate _w based on longest sting
 
 #include "images.h"
 
@@ -597,45 +597,36 @@ class Text: public ScrObj {
 			// TODO: calculate based on longest substring
 			// calculate _w based on string wrap
 
-			std::vector<char> copy(scrStrings[_index],
-					scrStrings[_index]
-					+ strlen(scrStrings[_index]));
+			const char* str = scrStrings[_index];
+			const char* longest = str;
+			const char* currentLine = str;
+			size_t longestSize = 0;
 
-			static const char* TOKEN = "\n";
+			while (*str) {
+				const char* next = str + 1;
+				if (*str == '\n' || !*next) {
+					const size_t currentLinelen = str
+						- currentLine
+						+ (*next ? 0 : 1);
 
-			char* longest;
-			char* str;
-			size_t tmp = 0;
-			str = strtok(copy.data(), TOKEN);
-
-			while (str != NULL) {
-				size_t sz = strlen(str);
-
-				if (sz > tmp) {
-					longest = str;
+					if (currentLinelen > longestSize) {
+						longestSize = currentLinelen;
+						longest = currentLine;
+					}
+					currentLine = next;
 				}
-
-				tmp = std::max(tmp, sz);
-				str = strtok(NULL, TOKEN);
+				str++;
 			}
 
-			//std::cout << '\n' << longest << '\n';
-			//std::cout << tmp << '\n';
+			std::string longestAlone{longest, longestSize};
 
+			_w = _txtSp->textWidth(longestAlone.c_str()) + _paddingX; //*2;
 
-			_w = _txtSp->textWidth(longest) + _paddingX*2;
+#ifdef APP_DEBUG
 			Serial.println();
 			Serial.println("Calculated sprite width: ");
 			Serial.println(_w);
-
-			// old way:
-			/**************************************************/
-
-
-			/*
-			_w = _txtSp->textWidth(scrStrings[_index]) + _paddingX*2;
-				*/
-
+#endif
 			if (_w > SCR_WIDTH)
 				_w = SCR_WIDTH;
 
@@ -756,7 +747,7 @@ class Text: public ScrObj {
 		uint16_t _fg = FONT_COL_565;
 		uint16_t _bg = TFT_WHITE;
 		uint8_t _paddingX = GR_BTN_X_PADDING;
-		uint8_t _paddingY = GR_BTN_Y_PADDING;
+		uint8_t _paddingY = 10; //GR_BTN_Y_PADDING;
 		int8_t _dx = 0;
 		int8_t _dy = 0;
 		TFT_eSprite* _txtSp = nullptr;
@@ -1481,6 +1472,11 @@ class CheckBox: public ScrObj {
 			freeRes();
 		}
 
+		int getTextX()
+		{
+			return _text.getX();
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid || !_isVisible)
@@ -1701,7 +1697,7 @@ class Toggle: public ScrObj {
 					break;
 				case LEFT:
 					_textX = _x - _textLength - _text.getXpadding();
-										break;
+					break;
 				case TOP:
 					_textX = _x + _w + _text.getXpadding();
 					break;

@@ -1,7 +1,6 @@
 #ifndef __APP_H__
 #define __APP_H__
 
-//TODO: figure out i2c time timezone (clue: localtime() might be the cause)
 //TODO: page builder
 
 #include <ctime>

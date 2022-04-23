@@ -2129,22 +2129,22 @@ Page* buildStage2()
 	lightOn.setText(EMPTY_STR);
 
 	static Text par1;
-	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setXYpos(PG_LEFT_PADD, 67);
 	par1.setText(S2_PAR1);
 
 	static HourLimits hlim = HourLimits(PG_LEFT_PADD, 143);
 
 	static Text heading2;
-	heading2.setXYpos(PG_LEFT_PADD, 175);
+	heading2.setXYpos(PG_LEFT_PADD, 180);
 	heading2.setFont(BOLDFONT);
 	heading2.setText(S2_SUBTTL2);
 
 	static Text par2;
-	par2.setXYpos(PG_LEFT_PADD, 199);
+	par2.setXYpos(PG_LEFT_PADD, 204);
 	par2.setText(S2_PAR2);
 
 	static Text s;
-	s.setXYpos(PG_LEFT_PADD, 263);
+	s.setXYpos(PG_LEFT_PADD, 268);
 	s.setText(S2_FROM);
 
 	static InputField days;
@@ -2737,9 +2737,11 @@ Page* buildStage9_2()
 
 	static CheckBox stir;
 	stir.setXYpos(156, 43);
-	stir.setFont(BOLDFONT);
 	stir.setAlign(LEFT);
+	stir.setFont(BOLDFONT);
 	stir.setText(S92_SUBTTL);
+	Serial.print("text X: ");
+	Serial.println(stir.getTextX());
 
 	static Image cycle;
 	cycle.setXYpos(188, 38);
@@ -2768,6 +2770,8 @@ Page* buildStage9_2()
 	stage9.addItem(&za);
 	stage9.addItem(&seconds);
 
+	stage9.addItem(&forward);
+
 	return &stage9;
 }
 
@@ -2775,6 +2779,47 @@ Page* buildStage8_2()
 {
 	static Page stage8;
 	stage8.setTitle(S82_TITLE);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 38);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S82_SUBTTL);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 88);
+	par1.setText(S82_PAR1);
+
+	static InputField fminutes;
+	fminutes.setXYpos(PG_LEFT_PADD, 127);
+	fminutes.setWidth(TWO_CHR);
+	fminutes.setText(TXT_MINUTES);
+
+	static InputField fseconds;
+	fseconds.setXYpos(97, 127);
+	fseconds.setWidth(TWO_CHR);
+	fseconds.setText(TXT_SECONDS);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 174);
+	par2.setText(S82_PAR2);
+
+	static InputField hminutes;
+	hminutes.setXYpos(PG_LEFT_PADD, 212);
+	hminutes.setWidth(TWO_CHR);
+	hminutes.setText(TXT_MINUTES);
+
+	static InputField hseconds;
+	hseconds.setXYpos(97, 212);
+	hseconds.setText(TXT_SECONDS);
+	hseconds.setWidth(TWO_CHR);
+
+	stage8.addItem(&subTitle);
+	stage8.addItem(&par1);
+	stage8.addItem(&fminutes);
+	stage8.addItem(&fseconds);
+	stage8.addItem(&par2);
+	stage8.addItem(&hminutes);
+	stage8.addItem(&hseconds);
 
 	stage8.addItem(&forward);
 
@@ -2786,6 +2831,78 @@ Page* buildStage8_3()
 	static Page stage8;
 	stage8.setTitle(S83_TITLE);
 
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 38);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S83_SUBTTL);
+
+	static CheckBox pumps;
+	pumps.setXYpos(PG_LEFT_PADD, 59);
+	pumps.setText(S83_CHECK);
+
+	static Text za;
+	za.setXYpos(PG_LEFT_PADD, 96);
+	za.setText(S83_INTXT);
+
+	static InputField seconds;
+	seconds.setXYpos(36, 91);
+	seconds.setText(S83_INPUT);
+
+	static Text subTitle2;
+	subTitle2.setXYpos(PG_LEFT_PADD, 131);
+	subTitle2.setFont(BOLDFONT);
+	subTitle2.setText(S83_MODE);
+
+	static CheckBox cons;
+	cons.setXYpos(PG_LEFT_PADD, 153);
+	cons.setText(S83_CONST);
+
+	static CheckBox cycl;
+	cycl.setXYpos(119, 153);
+	cycl.setText(S83_CYCL);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 184);
+	par1.setText(S83_DUR);
+
+	static InputField dminutes;
+	dminutes.setXYpos(PG_LEFT_PADD, 204);
+	dminutes.setWidth(TWO_CHR);
+	dminutes.setText(TXT_MINUTES);
+
+	static InputField dseconds;
+	dseconds.setXYpos(97, 204);
+	dseconds.setWidth(TWO_CHR);
+	dseconds.setText(TXT_SECONDS);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 238);
+	par2.setText(S83_EVR);
+
+	static InputField cminutes;
+	cminutes.setXYpos(PG_LEFT_PADD, 260);
+	cminutes.setWidth(TWO_CHR);
+	cminutes.setText(TXT_MINUTES);
+
+	static InputField cseconds;
+	cseconds.setXYpos(97, 260);
+	cseconds.setText(TXT_SECONDS);
+	cseconds.setWidth(TWO_CHR);
+
+	stage8.addItem(&subTitle);
+	stage8.addItem(&pumps);
+	stage8.addItem(&za);
+	stage8.addItem(&seconds);
+	stage8.addItem(&subTitle2);
+	stage8.addItem(&cons);
+	stage8.addItem(&cycl);
+	stage8.addItem(&par1);
+	stage8.addItem(&dminutes);
+	stage8.addItem(&dseconds);
+	stage8.addItem(&par2);
+	stage8.addItem(&cminutes);
+	stage8.addItem(&cseconds);
+
 	stage8.addItem(&forward);
 
 	return &stage8;
@@ -2795,6 +2912,79 @@ Page* buildStage8_4()
 {
 	static Page stage8;
 	stage8.setTitle(S84_TITLE);
+
+	static Text subTitle;
+	subTitle.setXYpos(PG_LEFT_PADD, 38);
+	subTitle.setFont(BOLDFONT);
+	subTitle.setText(S84_SUBTTL);
+
+	static CheckBox pumps;
+	pumps.setXYpos(PG_LEFT_PADD, 59);
+	pumps.setText(S83_CHECK);
+
+	static Text za;
+	za.setXYpos(PG_LEFT_PADD, 96);
+	za.setText(S83_INTXT);
+
+	static InputField seconds;
+	seconds.setXYpos(36, 91);
+	seconds.setText(S83_INPUT);
+
+	static Text subTitle2;
+	subTitle2.setXYpos(PG_LEFT_PADD, 131);
+	subTitle2.setFont(BOLDFONT);
+	subTitle2.setText(S84_MODE);
+
+	static CheckBox cons;
+	cons.setXYpos(PG_LEFT_PADD, 153);
+	cons.setText(S83_CONST);
+
+	static CheckBox cycl;
+	cycl.setXYpos(119, 153);
+	cycl.setText(S83_CYCL);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 184);
+	par1.setText(S83_DUR);
+
+	static InputField dminutes;
+	dminutes.setXYpos(PG_LEFT_PADD, 204);
+	dminutes.setWidth(TWO_CHR);
+	dminutes.setText(TXT_MINUTES);
+
+	static InputField dseconds;
+	dseconds.setXYpos(97, 204);
+	dseconds.setWidth(TWO_CHR);
+	dseconds.setText(TXT_SECONDS);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 238);
+	par2.setText(S83_EVR);
+
+	static InputField cminutes;
+	cminutes.setXYpos(PG_LEFT_PADD, 260);
+	cminutes.setWidth(TWO_CHR);
+	cminutes.setText(TXT_MINUTES);
+
+	static InputField cseconds;
+	cseconds.setXYpos(97, 260);
+	cseconds.setWidth(TWO_CHR);
+	cseconds.setText(TXT_SECONDS);
+
+	stage8.addItem(&subTitle);
+	stage8.addItem(&pumps);
+	stage8.addItem(&za);
+	stage8.addItem(&seconds);
+	stage8.addItem(&subTitle2);
+	stage8.addItem(&cons);
+	stage8.addItem(&cycl);
+	stage8.addItem(&par1);
+	stage8.addItem(&dminutes);
+	stage8.addItem(&dseconds);
+	stage8.addItem(&par2);
+	stage8.addItem(&cminutes);
+	stage8.addItem(&cseconds);
+
 
 	stage8.addItem(&forward);
 
