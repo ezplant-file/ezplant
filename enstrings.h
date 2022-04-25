@@ -200,7 +200,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// stage 1
 	"Planting. Stage 1",
 	"Choose type",
-	"Underwater cultures",
+	"Deep water cultures",
 	"Nutrient layer",
 	"Periodic flooding",
 	"Aeroponics",

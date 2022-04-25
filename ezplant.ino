@@ -1,6 +1,7 @@
 //TODO: consider resource manager and page builder classes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "settings.h"
 //#include "esp_task_wdt.h"
 
 #define TASKS
@@ -388,19 +389,30 @@ void callPage(void* page_ptr)
 	app.resetIterator();
 
 	//back.setCallback(callPage, currPage);
-	if (page->prev() == nullptr) {
+	/*if (page->prev() == nullptr) {
 		back.setCallback(nop);
 	}
 	else {
 		back.setCallback(callPage, page->prev());
-	}
+	}*/
 
+	back.setCallback([&](){
+			if (page->prev())
+				callPage(page->prev());
+			});
+
+	/*
 	if (page->next() == nullptr) {
 		forward.setCallback(nop);
 	}
 	else {
 		forward.setCallback(callPage, page->next());
-	}
+	}*/
+
+	forward.setCallback([&](){
+			if (page->next())
+				callPage(page->next());
+			});
 
 	currPage->freeRes();
 
@@ -905,7 +917,10 @@ Page* buildPh1Page()
 	static BlueTextButton ph_next;
 	ph_next.setXYpos(PG_LEFT_PADD, 120);
 	ph_next.setText(BLUE_BTN_NEXT);
-	ph_next.setCallback(callPage, pages[CAL_PH2_PG]);
+	//ph_next.setCallback(callPage, pages[CAL_PH2_PG]);
+	ph_next.setCallback([&](){
+			callPage(pages[CAL_PH2_PG]);
+			});
 
 	static Text warn;
 	warn.setXYpos(PG_LEFT_PADD, 160);
@@ -2028,6 +2043,39 @@ Page* buildPwrDiag()
 	return &pwrDiag;
 }
 
+/* settings input fields callback */
+
+enum {
+	SECOND_OUT,
+	THIRD_OUT,
+	NOUTS
+};
+
+OutputField* daysOut[NOUTS];
+
+void inputsCallback(void* inputptr)
+{
+	if (inputptr == nullptr)
+		return;
+
+	InputField* input = (InputField*) inputptr;
+
+	plant_settings_t id = input->getSettingsId();
+
+	if (input->isFloat())
+		g_data.set(id, input->getFvalue());
+	else
+		g_data.set(id, input->getValue());
+
+	// nmeddog...
+	if (id == GR_CYCL_1_DAYS)
+		daysOut[SECOND_OUT]->setValue(input->getValue());
+
+	if (id == GR_CYCL_2_DAYS)
+		daysOut[THIRD_OUT]->setValue(input->getValue());
+}
+
+/******* settings page builders and callbacks *******/
 Page* buildFirstPage()
 {
 	static Page firstPlanting;
@@ -2094,6 +2142,7 @@ Page* buildStage1()
 	}
 
 	rbuttons[RB_UNDERW].setText(S1_UNDERWTR);
+	rbuttons[RB_UNDERW].on(true);
 	rbuttons[RB_LAYER].setText(S1_LAYER);
 	rbuttons[RB_PERIODIC].setText(S1_PERIODIC);
 	rbuttons[RB_AERO].setText(S1_AERO);
@@ -2109,28 +2158,57 @@ Page* buildStage1()
 	return &stage1;
 }
 
+//stage 3 checkbox callback
+void lightCallback(void* checkptr)
+{
+	if (checkptr == nullptr)
+		return;
+
+	CheckBox* check = (CheckBox*) checkptr;
+	Page* page = pages[STAGE2_PG];
+
+	if (check->isOn()) {
+		check->on(false);
+		page->setInvisible();
+		check->setVisible();
+	}
+	else {
+		check->on(true);
+		page->setVisible();
+	}
+	page->restock();
+}
+
 Page* buildStage2()
 {
 	static Page stage2;
 	stage2.setTitle(S2_TITLE);
 	stage2.setNext(pages[STAGE3_PG]);
 
-	static Image bulb;
-	bulb.setXYpos(164, 40);
-	bulb.loadRes(images[IMG_BULB]);
+	static Image bulbImg;
+	bulbImg.setXYpos(164, 40);
+	bulbImg.loadRes(images[IMG_BULB]);
+	bulbImg.neverHide();
 
+	/*
 	static Text heading1;
 	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	heading1.setFont(BOLDFONT);
 	heading1.setText(S2_SUBTTL1);
+	*/
 
-	static CheckBox lightOn;
-	lightOn.setXYpos(111, 40);
-	lightOn.setText(EMPTY_STR);
+	static CheckBox lightCheck;
+	lightCheck.setXYpos(111, MB_Y_START);
+	lightCheck.setText(S2_LIGHT);
+	lightCheck.setAlign(LEFT);
+	lightCheck.setFont(BOLDFONT);
+	lightCheck.setCallback(lightCallback, &lightCheck);
+	lightCheck.neverHide();
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 67);
 	par1.setText(S2_PAR1);
+	par1.neverHide();
 
 	static HourLimits hlim = HourLimits(PG_LEFT_PADD, 143);
 
@@ -2152,9 +2230,9 @@ Page* buildStage2()
 	days.setWidth(FOUR_CHR);
 	days.setText(S2_DAY);
 
-	stage2.addItem(&bulb);
-	stage2.addItem(&heading1);
-	stage2.addItem(&lightOn);
+	stage2.addItem(&bulbImg);
+	//stage2.addItem(&heading1);
+	stage2.addItem(&lightCheck);
 	stage2.addItem(&par1);
 
 	stage2.addItem(hlim.getLowerPtr());
@@ -2165,9 +2243,35 @@ Page* buildStage2()
 	stage2.addItem(&par2);
 	stage2.addItem(&s);
 	stage2.addItem(&days);
+
 	stage2.addItem(&forward);
 
+	// in case of rebuild
+	if (!lightCheck.isOn())
+		stage2.setInvisible();
+
 	return &stage2;
+}
+
+// stage 3 checkbox callback
+void ventCallback(void* checkptr)
+{
+	if (checkptr == nullptr)
+		return;
+
+	CheckBox* check = (CheckBox*) checkptr;
+	Page* page = pages[STAGE3_PG];
+
+	if (check->isOn()) {
+		check->on(false);
+		page->setInvisible();
+		check->setVisible();
+	}
+	else {
+		check->on(true);
+		page->setVisible();
+	}
+	page->restock();
 }
 
 Page* buildStage3()
@@ -2176,27 +2280,31 @@ Page* buildStage3()
 	stage3.setTitle(S3_TITLE);
 	stage3.setNext(pages[STAGE4_PG]);
 
-	static CheckBox ventOn;
-	ventOn.setXYpos(119, MB_Y_START);
-	ventOn.setText(S3_VENT);
-	ventOn.setAlign(LEFT);
-	ventOn.setFont(BOLDFONT);
+	static CheckBox ventCheck;
+	ventCheck.setXYpos(119, MB_Y_START);
+	ventCheck.setText(S3_VENT);
+	ventCheck.setAlign(LEFT);
+	ventCheck.setFont(BOLDFONT);
+	ventCheck.neverHide();
+	ventCheck.setCallback(ventCallback, &ventCheck);
 
-	static Image fan;
-	fan.setXYpos(168, MB_Y_START);
-	fan.loadRes(images[IMG_COOLER]);
+	static Image fanImg;
+	fanImg.setXYpos(168, MB_Y_START);
+	fanImg.loadRes(images[IMG_COOLER]);
+	fanImg.neverHide();
 
 	static Text par1;
-	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setXYpos(PG_LEFT_PADD, 67);
 	par1.setText(S3_PAR1);
+	par1.neverHide();
 
 	static Text subTitle;
-	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setXYpos(PG_LEFT_PADD, 117);
 	subTitle.setFont(BOLDFONT);
 	subTitle.setText(S3_SUBTTL);
 
 	static Text timeint;
-	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setXYpos(PG_LEFT_PADD, 143);
 	timeint.setText(S3_TIME);
 
 	static CheckBox timeCheck;
@@ -2206,7 +2314,7 @@ Page* buildStage3()
 	static HourLimits timeLimit(45, 163);
 
 	static Text temptxt;
-	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setXYpos(PG_LEFT_PADD, 195);
 	temptxt.setText(S3_TEMP);
 
 	static CheckBox tempCheck;
@@ -2218,7 +2326,7 @@ Page* buildStage3()
 	temp.setText(MORE_THAN);
 
 	static Text humtxt;
-	humtxt.setXYpos(PG_LEFT_PADD, 237);
+	humtxt.setXYpos(PG_LEFT_PADD, 242);
 	humtxt.setText(S3_HUM);
 
 	static CheckBox humCheck;
@@ -2229,8 +2337,8 @@ Page* buildStage3()
 	hum.setXYpos(45, 261);
 	hum.setText(MORE_THAN);
 
-	stage3.addItem(&ventOn);
-	stage3.addItem(&fan);
+	stage3.addItem(&ventCheck);
+	stage3.addItem(&fanImg);
 	stage3.addItem(&par1);
 	stage3.addItem(&subTitle);
 	stage3.addItem(&timeint);
@@ -2248,7 +2356,32 @@ Page* buildStage3()
 	stage3.addItem(&hum);
 	stage3.addItem(&forward);
 
+	// in case of rebuild
+	if (!ventCheck.isOn())
+		stage3.setInvisible();
+
 	return &stage3;
+}
+
+// stage 4
+void passVentCallback(void* checkptr)
+{
+	if (checkptr == nullptr)
+		return;
+
+	CheckBox* check = (CheckBox*) checkptr;
+	Page* page = pages[STAGE4_PG];
+
+	if (check->isOn()) {
+		check->on(false);
+		page->setInvisible();
+		check->setVisible();
+	}
+	else {
+		check->on(true);
+		page->setVisible();
+	}
+	page->restock();
 }
 
 Page* buildStage4()
@@ -2257,27 +2390,31 @@ Page* buildStage4()
 	stage4.setTitle(S4_TITLE);
 	stage4.setNext(pages[STAGE5_PG]);
 
-	static CheckBox passVentOn;
-	passVentOn.setXYpos(145, MB_Y_START);
-	passVentOn.setText(S4_PASSVENT);
-	passVentOn.setAlign(LEFT);
-	passVentOn.setFont(BOLDFONT);
+	static CheckBox passVent;
+	passVent.setXYpos(145, 37);
+	passVent.setText(S4_PASSVENT);
+	passVent.setAlign(LEFT);
+	passVent.setFont(BOLDFONT);
+	passVent.setCallback(passVentCallback, &passVent);
+	passVent.neverHide();
 
-	static Image door;
-	door.setXYpos(186, MB_Y_START);
-	door.loadRes(images[IMG_DOOR]);
+	static Image doorImg;
+	doorImg.setXYpos(186, 37);
+	doorImg.loadRes(images[IMG_DOOR]);
+	doorImg.neverHide();
 
 	static Text par1;
-	par1.setXYpos(PG_LEFT_PADD, 62);
+	par1.setXYpos(PG_LEFT_PADD, 67);
 	par1.setText(S4_PAR1);
+	par1.neverHide();
 
 	static Text subTitle;
-	subTitle.setXYpos(PG_LEFT_PADD, 112);
+	subTitle.setXYpos(PG_LEFT_PADD, 117);
 	subTitle.setFont(BOLDFONT);
 	subTitle.setText(S4_SUBTTL);
 
 	static Text timeint;
-	timeint.setXYpos(PG_LEFT_PADD, 138);
+	timeint.setXYpos(PG_LEFT_PADD, 142);
 	timeint.setText(S4_TIME);
 
 	static CheckBox timeCheck;
@@ -2287,7 +2424,7 @@ Page* buildStage4()
 	static HourLimits timeLimit(45, 163);
 
 	static Text temptxt;
-	temptxt.setXYpos(PG_LEFT_PADD, 190);
+	temptxt.setXYpos(PG_LEFT_PADD, 195);
 	temptxt.setText(S4_TEMP);
 
 	static CheckBox tempCheck;
@@ -2301,7 +2438,7 @@ Page* buildStage4()
 	temp.setStr("°C");
 
 	static Text humtxt;
-	humtxt.setXYpos(PG_LEFT_PADD, 237);
+	humtxt.setXYpos(PG_LEFT_PADD, 242);
 	humtxt.setText(S4_HUM);
 
 	static CheckBox humCheck;
@@ -2316,8 +2453,8 @@ Page* buildStage4()
 
 	//stage4.addItemPtr(std::move(hum));
 
-	stage4.addItem(&passVentOn);
-	stage4.addItem(&door);
+	stage4.addItem(&passVent);
+	stage4.addItem(&doorImg);
 	stage4.addItem(&par1);
 	stage4.addItem(&subTitle);
 	stage4.addItem(&timeint);
@@ -2337,6 +2474,10 @@ Page* buildStage4()
 
 	stage4.addItem(&forward);
 
+	// in case of rebuild
+	if (!passVent.isOn())
+		stage4.setInvisible();
+
 	return &stage4;
 }
 
@@ -2344,12 +2485,14 @@ Page* buildStage5()
 {
 	int bulletsX = 23;
 	int daysX = 41;
+
 	static Page stage5;
 	stage5.setTitle(S5_TITLE);
 	stage5.setNext(pages[STAGE6_PG]);
 
 	static Text subTitle;
 	subTitle.setXYpos(PG_LEFT_PADD, 36);
+	subTitle.setFont(BOLDFONT);
 	subTitle.setText(S5_SUBTTL);
 
 	static Text par1;
@@ -2362,11 +2505,24 @@ Page* buildStage5()
 	first.setText(BULL_1);
 	static DayLimits firstStageLimits(daysX, 103);
 
+	InputField* limit = firstStageLimits.getInputFieldPtr();
+	limit->setSettingsId(GR_CYCL_1_DAYS);
+	limit->setValue(int(g_data.get(GR_CYCL_1_DAYS)));
+	limit->setCallback(inputsCallback, limit);
+
 	static Text second;
 	second.setXYpos(bulletsX, 142);
 	second.setText(BULL_2);
 	second.setFont(BOLDFONT);
 	static DayLimits secondStageLimilts(daysX, 138);
+
+	limit = secondStageLimilts.getInputFieldPtr();
+	limit->setSettingsId(GR_CYCL_2_DAYS);
+	limit->setValue(int(g_data.get(GR_CYCL_2_DAYS)));
+	limit->setCallback(inputsCallback, limit);
+
+	OutputField* lower = secondStageLimilts.getOutputFieldPtr();
+	lower->setValue(limit->getValue());
 
 	static Text third;
 	third.setXYpos(bulletsX, 178);
@@ -2374,11 +2530,13 @@ Page* buildStage5()
 	third.setFont(BOLDFONT);
 	static DayLimits thirdStageLimits(daysX, 174);
 
-	/*
-	ScrObj* firstHigher = firstStageLimits.getHigher();
-	ScrObj* secondHigher = secondStageLimits.getHigher();
-	ScrObj* thirdHigher = thirdStageLimits.getHigher();
-	*/
+	limit = thirdStageLimits.getInputFieldPtr();
+	limit->setSettingsId(GR_CYCL_3_DAYS);
+	limit->setValue(int(g_data.get(GR_CYCL_3_DAYS)));
+	limit->setCallback(inputsCallback, limit);
+
+	lower = thirdStageLimits.getOutputFieldPtr();
+	lower->setValue(limit->getValue());
 
 	stage5.addItem(&subTitle);
 	stage5.addItem(&par1);
@@ -2399,22 +2557,48 @@ Page* buildStage5()
 	return &stage5;
 }
 
+void concEcCallback(void* checkptr)
+{
+	if (checkptr == nullptr)
+		return;
+
+	CheckBox* check = (CheckBox*) checkptr;
+	Page* page = pages[STAGE6_PG];
+
+	if (check->isOn()) {
+		check->on(false);
+		page->setInvisible();
+		check->setVisible();
+	}
+	else {
+		check->on(true);
+		page->setVisible();
+	}
+	page->restock();
+}
+
 Page* buildStage6()
 {
 	static Page stage6;
 	stage6.setTitle(S6_TITLE);
 	stage6.setNext(pages[STAGE7_PG]);
 
-	static CheckBox subTitle;
-	subTitle.setXYpos(170, MB_Y_START);
-	subTitle.setAlign(LEFT);
-	subTitle.setFont(BOLDFONT);
-	subTitle.setText(S6_SUBTTL);
-	stage6.addItem(&subTitle);
+	static CheckBox concEc;
+	concEc.setXYpos(170, MB_Y_START);
+	concEc.setAlign(LEFT);
+	concEc.setFont(BOLDFONT);
+	concEc.setText(S6_SUBTTL);
+	//concEc.setCallback(concEcCallback, &concEc);
+	concEc.setCallback([&]() {
+			concEcCallback(&concEc);
+			});
+	concEc.neverHide();
+	stage6.addItem(&concEc);
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 64);
 	par1.setText(S6_PAR1);
+	par1.neverHide();
 	stage6.addItem(&par1);
 
 	static Line line1(210);
@@ -2451,11 +2635,11 @@ Page* buildStage6()
 	static String stage2str;
 	static String stage3str;
 
-	stage1str = (String)"0" + " - " + data.stage1day() + " "
+	stage1str = (String)"0" + " - " + g_data.stage1day() + " "
 		+ scrStrings[TXT_DAY];
-	stage2str = (String)data.stage1day() + " - " + data.stage2day() + " "
+	stage2str = (String)g_data.stage1day() + " - " + g_data.stage2day() + " "
 		+ scrStrings[TXT_DAY];
-	stage3str = (String)data.stage2day() + " - " + data.stage3day() + " "
+	stage3str = (String)g_data.stage2day() + " - " + g_data.stage3day() + " "
 		+ scrStrings[TXT_DAY];
 
 	int strOffset = 38;
@@ -2560,6 +2744,10 @@ Page* buildStage6()
 	stage6.addItem(&pumptime);
 	stage6.addItem(&forward);
 
+	// in case of rebuild
+	if (!concEc.isOn())
+		stage6.setInvisible();
+
 	return &stage6;
 }
 
@@ -2574,10 +2762,12 @@ Page* buildStage7()
 	acid.setFont(BOLDFONT);
 	acid.setAlign(LEFT);
 	acid.setText(S7_SUBTTL);
+	acid.neverHide();
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 64);
 	par1.setText(S7_PAR1);
+	par1.neverHide();
 
 	static Text bull1;
 	static Text bull2;
@@ -2593,11 +2783,11 @@ Page* buildStage7()
 	static String stage2str;
 	static String stage3str;
 
-	stage1str = (String)"0" + " - " + data.stage1day() + " "
+	stage1str = (String)"0" + " - " + g_data.stage1day() + " "
 		+ scrStrings[TXT_DAY];
-	stage2str = (String)data.stage1day() + " - " + data.stage2day() + " "
+	stage2str = (String)g_data.stage1day() + " - " + g_data.stage2day() + " "
 		+ scrStrings[TXT_DAY];
-	stage3str = (String)data.stage2day() + " - " + data.stage3day() + " "
+	stage3str = (String)g_data.stage2day() + " - " + g_data.stage3day() + " "
 		+ scrStrings[TXT_DAY];
 
 	int strOffset = 38;
@@ -2644,6 +2834,10 @@ Page* buildStage7()
 	stage7.addItem(&pumptime);
 
 	stage7.addItem(&forward);
+
+	// in case of rebuild
+	if (!acid.isOn())
+		stage7.setInvisible();
 
 	return &stage7;
 }
@@ -2697,6 +2891,7 @@ Page* buildStage9()
 	aeration.setAlign(LEFT);
 	aeration.setFont(BOLDFONT);
 	aeration.setText(S9_SUBTTL);
+	aeration.neverHide();
 
 	static Image bubbles;
 	bubbles.setXYpos(190, 33);
@@ -3260,12 +3455,14 @@ void setup(void)
 	back.loadRes(images[IMG_PREV]);
 	back.setXYpos(7, 284);
 	back.setCircle();
+	back.neverHide();
 
 	// forward button
 	forward.setCallback(callPage, currPage->next());
 	forward.loadRes(images[IMG_NEXT]);
 	forward.setXYpos(204, 284);
 	forward.setCircle();
+	forward.neverHide();
 
 	//buildTopBar();
 

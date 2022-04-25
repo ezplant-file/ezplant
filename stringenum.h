@@ -211,7 +211,7 @@ typedef enum {
 
 	// stage 2
 	S2_TITLE,
-	S2_SUBTTL1,
+	S2_LIGHT,
 	S2_PAR1,
 	S2_SUBTTL2,
 	S2_PAR2,

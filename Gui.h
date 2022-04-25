@@ -29,6 +29,7 @@
 //#include <string>	// calculate _w based on longest sting
 
 #include "images.h"
+#include "settings.h"	// settings enum
 
 /***************************** defines *************************/
 // gap between menu items
@@ -198,10 +199,9 @@ class ScrObj {
 			return _objptr;
 		}
 
-		void setCallback(std::function<void(void*)> callback, void* objptr = nullptr)
+		void setCallback(std::function<void()> callback)
 		{
 			_callback = callback;
-			_objptr = objptr;
 		}
 
 
@@ -210,7 +210,7 @@ class ScrObj {
 			_isSelectable = isSelectable;
 		}
 
-		bool isVisible()
+		virtual bool isVisible()
 		{
 			return _isVisible;
 		}
@@ -230,6 +230,9 @@ class ScrObj {
 		void setInvisible()
 		{
 			//_isSelectable = false;
+			_invalid = true;
+			if (_neverHide)
+				return;
 			_isVisible = false;
 		}
 
@@ -343,6 +346,26 @@ class ScrObj {
 			_align = align;
 		}
 
+		void neverHide()
+		{
+			_neverHide = true;
+		}
+
+		bool canBeHidden()
+		{
+			return !_neverHide;
+		}
+
+		plant_settings_t getSettingsId()
+		{
+			return _sett_id;
+		}
+
+		void setSettingsId(plant_settings_t id)
+		{
+			_sett_id = id;
+		}
+
 	protected:
 		align_t _align = RIGHT;
 		dispStrings_t _index = NO_STRING;
@@ -353,7 +376,6 @@ class ScrObj {
 		int16_t _h;
 		//void (*_callback)(void*) = nop;
 		std::function<void(void*)> _callback = nop;
-		void* _objptr = nullptr;
 		bool _isVisible = true;
 		bool _isSelectable;
 		//bool _wasSelectable;
@@ -362,8 +384,10 @@ class ScrObj {
 		bool _invalid = false;
 		bool _isSquare = true;
 		bool _isCircle = false;
+		bool _neverHide = false;
 		// cursor erase color
 		uint16_t _curCol = 0xffff;
+		plant_settings_t _sett_id = SETT_EMPY;
 };
 
 class Line: public ScrObj {
@@ -951,16 +975,20 @@ class ImageButton: public ScrObj {
 
 		virtual void draw() override
 		{
-			if (!_invalid || !_isVisible)
+			if (!_invalid)
 				return;
 
-			if (_invalid)
-				reload();
+			reload();
 
-			if (_invalid && _jpegFile) {
+			if (_jpegFile) {
 				ui.drawJpeg(_jpegFile, _x, _y);
 				_invalid = false;
 			}
+		}
+
+		virtual bool isVisible() override
+		{
+			return true;
 		}
 
 		/*
@@ -1107,6 +1135,11 @@ class InputField: public ScrObj {
 		void setFloat()
 		{
 			_isFloat = true;
+		}
+
+		bool isFloat()
+		{
+			return _isFloat;
 		}
 
 		void displayHours()
@@ -1262,12 +1295,18 @@ class InputField: public ScrObj {
 		void setValue(float f)
 		{
 			_fvalue = f;
+			_isFloat = true;
 			_invalid = true;
 		}
 
 		virtual int getValue() override
 		{
 			return _value;
+		}
+
+		float getFvalue()
+		{
+			return _fvalue;
 		}
 
 		void setLimits(int16_t lower, int16_t upper)
@@ -1416,6 +1455,16 @@ class DayLimits: public ScrObj {
 			_dash.setXYpos(_x + _lower.getW() + _GAP, _y + _lower.getH()/2);
 			_higher.setXYpos(_x + _lower.getW() + _dash.getW() + _GAP*2, _y);
 			_lower.setColors(COL_GREY_70_565, TFT_WHITE);
+		}
+
+		InputField* getInputFieldPtr()
+		{
+			return &_higher;
+		}
+
+		OutputField* getOutputFieldPtr()
+		{
+			return &_lower;
 		}
 
 		ScrObj* getHigherPtr()
@@ -2189,7 +2238,7 @@ class Page {
 		{
 			_selectable.clear();
 			for(auto& i:_items) {
-				if (i->isSelectable()) {
+				if (i->isSelectable() && i->isVisible()) {
 					_selectable.push_back(i);
 				}
 			}
@@ -2197,8 +2246,15 @@ class Page {
 
 		void draw()
 		{
-			for (auto& obj:_items)
-				obj->draw();
+			for (auto& obj:_items) {
+				if (obj->isVisible()) {
+					//obj->prepare();
+					obj->draw();
+				}
+				else {
+					obj->erase();
+				}
+			}
 		}
 
 		// set all screen objects for redraw
@@ -2296,6 +2352,22 @@ class Page {
 		void setIconsVis(bool vis)
 		{
 			_iconsVisible = vis;
+		}
+
+		void setInvisible()
+		{
+			for (auto& obj:_items) {
+				if (obj->canBeHidden())
+					obj->setInvisible();
+			}
+		}
+
+		void setVisible()
+		{
+			for (auto& obj:_items) {
+				obj->setVisible();
+				obj->prepare();
+			}
 		}
 
 	private:

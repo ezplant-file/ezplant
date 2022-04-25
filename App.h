@@ -191,8 +191,39 @@ OutputField g_tds_read;
 #define WIFI_IMG_X 213
 #define NET_IMG_X 186
 
+enum {
+	RIG_DEEPWATER,
+	RIG_LAYER,
+	RIG_FLOOD,
+	RIG_AERO,
+	RIG_DRIP,
+	RIG_OPENG,
+	RIG_GREENH,
+	RIG_MIXSOL,
+	NTYPES
+} rig_type;
+
+#include "settings.h" // plant_settings_t
+
 class Data {
 	public:
+		Data()
+		{
+			set(GR_CYCL_1_DAYS, float(_firstStageDay));
+			set(GR_CYCL_2_DAYS, float(_secondStageDay));
+			set(GR_CYCL_3_DAYS, float(_thirdStageDay));
+		}
+
+		float get(plant_settings_t setting)
+		{
+			return _data[setting];
+		}
+
+		void set(plant_settings_t setting, float value)
+		{
+			_data[setting] = value;
+		}
+
 		// getters
 		int stage1day()
 		{
@@ -209,6 +240,7 @@ class Data {
 			return _thirdStageDay;
 		}
 
+		/*
 		// setters
 		void set1stageDay(int day)
 		{
@@ -224,12 +256,15 @@ class Data {
 		{
 			_thirdStageDay = day;
 		}
+		*/
 
 	private:
-		int _firstStageDay = 20;
-		int _secondStageDay = 40;
-		int _thirdStageDay = 60;
-} data;
+		float _data[NSETTINGS];
+
+		static constexpr int _firstStageDay = 20;
+		static constexpr int _secondStageDay = 40;
+		static constexpr int _thirdStageDay = 60;
+} g_data;
 
 class Panel {
 	public:
