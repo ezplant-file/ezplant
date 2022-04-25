@@ -143,7 +143,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 GfxUi ui = GfxUi(&tft);
 
-void nop(void* arg)
+void nop()
 {
 }
 
@@ -175,7 +175,7 @@ class ScrObj {
 		virtual void freeRes() = 0;
 		virtual void prepare()
 		{
-			nop(nullptr);
+			nop();
 		}
 
 		virtual void erase()
@@ -191,13 +191,15 @@ class ScrObj {
 
 		virtual void onClick()
 		{
-			_callback(_objptr);
+			_callback();
 		}
 
+		/*
 		void* returnPtr()
 		{
 			return _objptr;
 		}
+		*/
 
 		void setCallback(std::function<void()> callback)
 		{
@@ -375,7 +377,7 @@ class ScrObj {
 		int16_t _w;
 		int16_t _h;
 		//void (*_callback)(void*) = nop;
-		std::function<void(void*)> _callback = nop;
+		std::function<void()> _callback = nop;
 		bool _isVisible = true;
 		bool _isSelectable;
 		//bool _wasSelectable;
@@ -1701,28 +1703,10 @@ class Toggle: public ScrObj {
 			freeRes();
 		}
 
+		/*
 		virtual void onClick() override
 		{
 			_callback(_objptr, _id);
-		}
-
-		void setCallback(std::function<void(void*, int)> callback, void* objptr = nullptr, int id = 0)
-		{
-			_callback = callback;
-			_objptr = objptr;
-			_id = id;
-		}
-
-		/*
-		virtual void prepare() override
-		{
-			_text.setXYpos(_x + _w + _text.getXpadding(), _y + _text.getYpadding()/2);
-			_text.setColors(
-					greyscaleColor(FONT_COLOR),
-					greyscaleColor(BACKGROUND)
-					);
-			_text.invalidate();
-			_text.prepare();
 		}
 		*/
 
@@ -1802,15 +1786,11 @@ skip:
 		}
 
 	private:
-		std::function<void(void*, int)> _callback;
-		//dispStrings_t _index;
 		Text _text;
-		//fonts_t _fontIndex;
 		uint16_t _bg, _fg, _col, _shaftX, _shaftY, _textX;
 		int _textLength = 0;
 		int _dy = 0;
 		int _id = -1;
-		//bool _textAligned = false;
 		bool _isOn = false;
 		bool _textHardX = false;
 };
@@ -1900,7 +1880,7 @@ class ExclusiveRadio: public CircRadBtn {
 		virtual void onClick() override
 		{
 			if (!this->isOn()) {
-				_callback(nullptr);
+				_callback();
 			}
 		}
 };

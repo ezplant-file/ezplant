@@ -594,7 +594,7 @@ class DateTime: public ScrObj {
 		*/
 
 		// GUI functions
-		void setHours(void* obj)
+		void setHours()
 		{
 			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_hour = _visible[HOUR].getValue();
@@ -602,7 +602,7 @@ class DateTime: public ScrObj {
 			//xSemaphoreGive(xNTPmutex);
 		}
 
-		void setMinutes(void* obj)
+		void setMinutes()
 		{
 			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_min = _visible[MIN].getValue();
@@ -610,7 +610,7 @@ class DateTime: public ScrObj {
 			//xSemaphoreGive(xNTPmutex);
 		}
 
-		void setDay(void* obj)
+		void setDay()
 		{
 			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mday = _visible[DAY].getValue();
@@ -618,7 +618,7 @@ class DateTime: public ScrObj {
 			//xSemaphoreGive(xNTPmutex);
 		}
 
-		void setMon(void* obj)
+		void setMon()
 		{
 			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mon = _visible[MON].getValue() - 1;
@@ -626,7 +626,7 @@ class DateTime: public ScrObj {
 			//xSemaphoreGive(xNTPmutex);
 		}
 
-		void setYear(void* obj)
+		void setYear()
 		{
 			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_year = _visible[YEAR].getValue() - 1900;
@@ -839,11 +839,11 @@ class DateTime: public ScrObj {
 			_visible[DAY].adjustTextY(2);
 			_visible[MON].adjustTextY(2);
 
-			_visible[HOUR].setCallback(std::bind(&DateTime::setHours, this, std::placeholders::_1));
-			_visible[MIN].setCallback(std::bind(&DateTime::setMinutes, this, std::placeholders::_1));
-			_visible[DAY].setCallback(std::bind(&DateTime::setDay, this, std::placeholders::_1));
-			_visible[MON].setCallback(std::bind(&DateTime::setMon, this, std::placeholders::_1));
-			_visible[YEAR].setCallback(std::bind(&DateTime::setYear, this, std::placeholders::_1));
+			_visible[HOUR].setCallback(std::bind(&DateTime::setHours, this));
+			_visible[MIN].setCallback(std::bind(&DateTime::setMinutes, this));
+			_visible[DAY].setCallback(std::bind(&DateTime::setDay, this));
+			_visible[MON].setCallback(std::bind(&DateTime::setMon, this));
+			_visible[YEAR].setCallback(std::bind(&DateTime::setYear, this));
 
 			_visible[YEAR].setWidth(FOUR_CHR);
 			_visible[YEAR].adjustWidth(4);

@@ -363,13 +363,13 @@ void diagToggleCallback(void* arg, int id)
 }
 
 // dim screen setting input field
-void gDimAfter(void* arg)
+void gDimAfter()
 {
 	g_dimafter = gDimseconds.getValue();
 }
 
 // change wifi button
-void gChangeWifi(void* arg)
+void gChangeWifi()
 {
 	SPIFFS.remove(cred_filename);
 	g_wifi_set = false;
@@ -385,33 +385,19 @@ void callPage(void* page_ptr)
 		return;
 
 	Page* page = (Page*) page_ptr;
+	Page* pageprev = page->prev();
+	Page* pagenext = page->next();
 
 	app.resetIterator();
 
-	//back.setCallback(callPage, currPage);
-	/*if (page->prev() == nullptr) {
-		back.setCallback(nop);
-	}
-	else {
-		back.setCallback(callPage, page->prev());
-	}*/
-
 	back.setCallback([&](){
-			if (page->prev())
-				callPage(page->prev());
+			if (pageprev)
+				callPage(pageprev);
 			});
 
-	/*
-	if (page->next() == nullptr) {
-		forward.setCallback(nop);
-	}
-	else {
-		forward.setCallback(callPage, page->next());
-	}*/
-
 	forward.setCallback([&](){
-			if (page->next())
-				callPage(page->next());
+			if (pagenext)
+				callPage(pagenext);
 			});
 
 	currPage->freeRes();
@@ -444,7 +430,7 @@ void callPage(void* page_ptr)
 
 
 // wifi on/off checkbox
-void wifiChCallback(void* arg)
+void wifiChCallback()
 {
 	// gwsConnection in topBar.update()
 	if (gwsWifiChBox.isOn()) {
@@ -461,7 +447,7 @@ void wifiChCallback(void* arg)
 }
 
 // test page callbacks
-void tglCallback(void* arg, int i)
+void tglCallback()
 {
 	if (testTgl.isOn())
 		testTgl.on(false);
@@ -471,7 +457,7 @@ void tglCallback(void* arg, int i)
 	testTgl.draw();
 }
 
-void chkCallback(void* arg)
+void chkCallback()
 {
 	if (testChBox.isOn())
 		testChBox.on(false);
@@ -481,7 +467,7 @@ void chkCallback(void* arg)
 	testChBox.draw();
 }
 
-void radCallback(void* arg)
+void radCallback()
 {
 	if (testRad.isOn())
 		testRad.on(false);
@@ -492,7 +478,7 @@ void radCallback(void* arg)
 }
 
 // lang page callbacks
-void changeLangRus(void* arg)
+void changeLangRus()
 {
 	g_selected_lang = RU_LANG;
 	//gBackBtnOnScreen = true;
@@ -515,7 +501,7 @@ void changeLangRus(void* arg)
 	currPage->draw();
 }
 
-void changeLangEng(void* arg)
+void changeLangEng()
 {
 	g_selected_lang = EN_LANG;
 	//gBackBtnOnScreen = true;
@@ -596,7 +582,7 @@ void calibPH9task(void* arg)
 	vTaskDelete(NULL);
 }
 
-void createPhCalibTasks(void* arg)
+void createPhCalibTasks()
 {
 	if (currPage == pages[CAL_PH2_PG]) {
 		callPage(pages[CAL_PH3_PG]);
@@ -640,7 +626,7 @@ void calibTDS1500task(void* arg)
 	vTaskDelete(NULL);
 }
 
-void createTdsCalibTasks(void* arg)
+void createTdsCalibTasks()
 {
 	if (currPage == pages[CAL_TDS2_PG]) {
 		callPage(pages[CAL_TDS3_PG]);
@@ -676,7 +662,7 @@ void diagTdsTaskWait(void* arg)
 
 // sensor checkers, called before entering calibration pages
 // and diagnostic pages. TDS sensor checker has similar logic
-void checkPhSensor(void* arg)
+void checkPhSensor()
 {
 	// if function is called from settings page
 	if (currPage == pages[CAL_SETT_PG]) {
@@ -714,7 +700,7 @@ void checkPhSensor(void* arg)
 }
 
 // same as ph checker
-void checkTdsSensor(void* arg)
+void checkTdsSensor()
 {
 	if (currPage == pages[CAL_SETT_PG]) {
 		resetCalibFlags();
@@ -869,7 +855,7 @@ Page* buildPh3Page()
 
 	g_ph_next.setXYpos(PG_LEFT_PADD, 95);
 	g_ph_next.setText(BLUE_BTN_NEXT);
-	g_ph_next.setCallback(callPage, pages[CAL_PH4_PG]);
+	g_ph_next.setCallback([&]() {callPage(pages[CAL_PH4_PG]);});
 	g_ph_next.setInvisible();
 
 	ph3page.setTitle(CAL_PH_TITLE);
@@ -1007,7 +993,7 @@ Page* buildTds3Page()
 
 	g_tds_next.setXYpos(PG_LEFT_PADD, 95);
 	g_tds_next.setText(BLUE_BTN_NEXT);
-	g_tds_next.setCallback(callPage, pages[CAL_TDS4_PG]);
+	g_tds_next.setCallback([&](){callPage(pages[CAL_TDS4_PG]);});
 	g_tds_next.setInvisible();
 
 	ph3page.setTitle(CAL_TDS_TITLE);
@@ -1055,7 +1041,7 @@ Page* buildTds1Page()
 	static BlueTextButton ph_next;
 	ph_next.setXYpos(PG_LEFT_PADD, 120);
 	ph_next.setText(BLUE_BTN_NEXT);
-	ph_next.setCallback(callPage, pages[CAL_TDS2_PG]);
+	ph_next.setCallback([&](){callPage(pages[CAL_TDS2_PG]);});
 
 	static Text warn;
 	warn.setXYpos(PG_LEFT_PADD, 160);
@@ -1088,7 +1074,7 @@ Page* buildTimePage()
 	syncCheck.setText(DT_SYNC);
 	syncCheck.adjustTextY(-7);
 	syncCheck.on(g_ntp_sync);
-	syncCheck.setCallback(syncTimeCallback, &syncCheck);
+	syncCheck.setCallback([&](){syncTimeCallback( &syncCheck);});
 	//syncCheck.onClick();
 
 	static Text timeZone;
@@ -1107,7 +1093,8 @@ Page* buildTimePage()
 	utc.adjustTextX(4);
 	utc.setText(DT_UTC);
 	utc.setValue(gUTC);
-	utc.setCallback(std::bind(&DateTime::setUTC, &datetime, std::placeholders::_1), &utc);
+	utc.setCallback([&](){datetime.setUTC(&utc);});
+	//utc.setCallback(std::bind(&DateTime::setUTC, &datetime, std::placeholders::_1), &utc);
 
 	// fields title done in datetime object
 	//static Text currTime;
@@ -1679,11 +1666,11 @@ Page* buildMenuPage()
 	}
 
 	// set callBacks
-	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
-	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
-	menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
-	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
-	menu_items[MM_LAST_STAGES].setCallback(callPage, pages[LSTAGES]);
+	menu_items[MM_SETT].setCallback([&](){callPage( pages[SETT_PG]);});
+	menu_items[MM_TEST].setCallback([&](){callPage( pages[TEST_PG]);});
+	menu_items[MM_FONT].setCallback([&](){callPage( pages[FONT_PG]);});
+	menu_items[MM_DIAG].setCallback([&](){callPage( pages[DIAG_PG]);});
+	menu_items[MM_LAST_STAGES].setCallback([&](){callPage( pages[LSTAGES]);});
 
 	// add all to page
 	for (int i = 0; i < MM_NITEMS; i++) {
@@ -1731,17 +1718,17 @@ Page* buildSettingsPage()
 		j++;
 	}
 
-	settings_items[MN_TIMEDATE].setCallback(callPage, pages[TIME_PG]);
+	settings_items[MN_TIMEDATE].setCallback([&](){callPage( pages[TIME_PG]);});
 
 	if (g_wifi_set) {
-		settings_items[MN_WIFI].setCallback(callPage, pages[WIFI_SETT_PG]);
+		settings_items[MN_WIFI].setCallback([&](){callPage( pages[WIFI_SETT_PG]);});
 	}
 	else {
-		settings_items[MN_WIFI].setCallback(callPage, pages[WIFI_PG]);
+		settings_items[MN_WIFI].setCallback([&](){callPage( pages[WIFI_PG]);});
 	}
-	settings_items[MN_SCREENLANG].setCallback(callPage, pages[LANG_PG]);
+	settings_items[MN_SCREENLANG].setCallback([&](){callPage( pages[LANG_PG]);});
 
-	settings_items[MN_CALIB].setCallback(callPage, pages[CAL_SETT_PG]);
+	settings_items[MN_CALIB].setCallback([&](){callPage( pages[CAL_SETT_PG]);});
 
 	for (int i = 0; i < MN_NITEMS; i++) {
 		settingsPage.addItem(&settings_items[i]);
@@ -1785,10 +1772,10 @@ Page* buildDiagPage()
 		j++;
 	}
 
-	diag_items[DP_SENSD].setCallback(callPage, pages[SENS_DIAG_PG]);
-	diag_items[DP_ADCIN].setCallback(callPage, pages[ADC_DIAG_PG]);
-	diag_items[DP_DIGIN].setCallback(callPage, pages[DIG_DIAG_PG]);
-	diag_items[DP_PWROUT].setCallback(callPage, pages[PWR_DIAG_PG]);
+	diag_items[DP_SENSD].setCallback([&](){callPage( pages[SENS_DIAG_PG]);});
+	diag_items[DP_ADCIN].setCallback([&](){callPage( pages[ADC_DIAG_PG]);});
+	diag_items[DP_DIGIN].setCallback([&](){callPage( pages[DIG_DIAG_PG]);});
+	diag_items[DP_PWROUT].setCallback([&](){callPage( pages[PWR_DIAG_PG]);});
 
 	diagPage.setTitle(DIAG);
 	diagPage.addItem(&back);
@@ -1820,7 +1807,7 @@ Page* buildSensDiag()
 
 // tds relay special case
 // TODO: make structure to deal with all i2c
-void tdsDiagBack(void* arg)
+void tdsDiagBack()
 {
 	// switch off relay
 	second_expander.digitalWrite(TDS_MTR_RLY, LOW);
@@ -2008,7 +1995,7 @@ Page* buildPwrDiag()
 		diagItems[i].setTextX(textx);
 		diagItems[i].setAlign(LEFT);
 		diagItems[i].setXYpos(x, y+(RAD_BTN_SIZE+gap)*j);
-		diagItems[i].setCallback(diagToggleCallback, &diagItems[i], i);
+		diagItems[i].setCallback([&]() {diagToggleCallback(&diagItems[i], i);});
 		pwrDiag.addItem(&diagItems[i]);
 		j++;
 	}
@@ -2091,7 +2078,7 @@ Page* buildFirstPage()
 	static BlueTextButton start;
 	start.setXYpos(PG_LEFT_PADD, 153);
 	start.setText(FP_BTN);
-	start.setCallback(callPage, pages[STAGE1_PG]);
+	start.setCallback([&](){callPage(pages[STAGE1_PG]);});
 
 	static Image seeds;
 	seeds.setXYpos(174, 142);
@@ -2202,7 +2189,7 @@ Page* buildStage2()
 	lightCheck.setText(S2_LIGHT);
 	lightCheck.setAlign(LEFT);
 	lightCheck.setFont(BOLDFONT);
-	lightCheck.setCallback(lightCallback, &lightCheck);
+	lightCheck.setCallback([&]() {lightCallback( &lightCheck);});
 	lightCheck.neverHide();
 
 	static Text par1;
@@ -2286,7 +2273,7 @@ Page* buildStage3()
 	ventCheck.setAlign(LEFT);
 	ventCheck.setFont(BOLDFONT);
 	ventCheck.neverHide();
-	ventCheck.setCallback(ventCallback, &ventCheck);
+	ventCheck.setCallback([&]() {ventCallback( &ventCheck);});
 
 	static Image fanImg;
 	fanImg.setXYpos(168, MB_Y_START);
@@ -2395,7 +2382,7 @@ Page* buildStage4()
 	passVent.setText(S4_PASSVENT);
 	passVent.setAlign(LEFT);
 	passVent.setFont(BOLDFONT);
-	passVent.setCallback(passVentCallback, &passVent);
+	passVent.setCallback([&]() {passVentCallback( &passVent);});
 	passVent.neverHide();
 
 	static Image doorImg;
@@ -2508,7 +2495,7 @@ Page* buildStage5()
 	InputField* limit = firstStageLimits.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_1_DAYS);
 	limit->setValue(int(g_data.get(GR_CYCL_1_DAYS)));
-	limit->setCallback(inputsCallback, limit);
+	limit->setCallback([&]() {inputsCallback( limit);});
 
 	static Text second;
 	second.setXYpos(bulletsX, 142);
@@ -2519,7 +2506,7 @@ Page* buildStage5()
 	limit = secondStageLimilts.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_2_DAYS);
 	limit->setValue(int(g_data.get(GR_CYCL_2_DAYS)));
-	limit->setCallback(inputsCallback, limit);
+	limit->setCallback([&]() {inputsCallback( limit);});
 
 	OutputField* lower = secondStageLimilts.getOutputFieldPtr();
 	lower->setValue(limit->getValue());
@@ -2533,7 +2520,7 @@ Page* buildStage5()
 	limit = thirdStageLimits.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_3_DAYS);
 	limit->setValue(int(g_data.get(GR_CYCL_3_DAYS)));
-	limit->setCallback(inputsCallback, limit);
+	limit->setCallback([&]() {inputsCallback( limit);});
 
 	lower = thirdStageLimits.getOutputFieldPtr();
 	lower->setValue(limit->getValue());
@@ -3195,7 +3182,7 @@ Page* buildMainPage()
 	static BlueTextButton menu;
 	menu.setXYpos(FP_LEFT_PADDING, 289);
 	menu.setText(MENU);
-	menu.setCallback(callPage, pages[MENU_PG]);
+	menu.setCallback([&]() {callPage( pages[MENU_PG]);});
 
 	mainPage.addItem(&menu);
 
@@ -3237,10 +3224,10 @@ Page* lastPagesList()
 	}
 
 	// set callBacks
-	menu_items[BTN_92].setCallback(callPage, pages[STAGE92_PG]);
-	menu_items[BTN_82].setCallback(callPage, pages[STAGE82_PG]);
-	menu_items[BTN_83].setCallback(callPage, pages[STAGE83_PG]);
-	menu_items[BTN_84].setCallback(callPage, pages[STAGE84_PG]);
+	menu_items[BTN_92].setCallback([&]() {callPage( pages[STAGE92_PG]);});
+	menu_items[BTN_82].setCallback([&]() {callPage( pages[STAGE82_PG]);});
+	menu_items[BTN_83].setCallback([&]() {callPage( pages[STAGE83_PG]);});
+	menu_items[BTN_84].setCallback([&]() {callPage( pages[STAGE84_PG]);});
 
 	// add all to page
 	for (int i = 0; i < LP_NBTNS; i++) {
@@ -3255,7 +3242,7 @@ Page* lastPagesList()
 }
 
 
-void gSetBacklight(void* arg)
+void gSetBacklight()
 {
 	analogWrite(LED_PIN, gBrightness.getValue());
 }
@@ -3406,8 +3393,8 @@ void linkPages()
 	pages[PH_DIAG_PG]->setPrev(pages[SENS_DIAG_PG]);
 
 	// calibration pages done buttons
-	g_ph_done.setCallback(callPage, pages[MENU_PG]);
-	g_tds_done.setCallback(callPage, pages[MENU_PG]);
+	g_ph_done.setCallback([&]() {callPage( pages[MENU_PG]);});
+	g_tds_done.setCallback([&]() {callPage( pages[MENU_PG]);});
 }
 
 void setup(void)
@@ -3451,14 +3438,14 @@ void setup(void)
 	currPage->prepare();
 
 	// back button
-	back.setCallback(callPage, currPage->prev());
+	back.setCallback([&]() {callPage( currPage->prev());});
 	back.loadRes(images[IMG_PREV]);
 	back.setXYpos(7, 284);
 	back.setCircle();
 	back.neverHide();
 
 	// forward button
-	forward.setCallback(callPage, currPage->next());
+	forward.setCallback([&]() {callPage( currPage->next());});
 	forward.loadRes(images[IMG_NEXT]);
 	forward.setXYpos(204, 284);
 	forward.setCircle();
