@@ -199,7 +199,7 @@ class ScrObj {
 			return _objptr;
 		}
 
-		void setCallback(std::function<void(void*)> callback, void* objptr = nullptr)
+		virtual void setCallback(std::function<void(void*)> callback, void* objptr = nullptr)
 		{
 			_callback = callback;
 			_objptr = objptr;
@@ -357,12 +357,12 @@ class ScrObj {
 			return !_neverHide;
 		}
 
-		plant_settings_t getSettingsId()
+		rig_settings_t getSettingsId()
 		{
 			return _sett_id;
 		}
 
-		void setSettingsId(plant_settings_t id)
+		void setSettingsId(rig_settings_t id)
 		{
 			_sett_id = id;
 		}
@@ -375,12 +375,10 @@ class ScrObj {
 		uint16_t _y = 0;
 		int16_t _w;
 		int16_t _h;
-		//void (*_callback)(void*) = nop;
 		std::function<void(void*)> _callback = nop;
 		void* _objptr = nullptr;
 		bool _isVisible = true;
 		bool _isSelectable;
-		//bool _wasSelectable;
 		bool _isPressed = false;
 		bool _isSelected = false;
 		bool _invalid = false;
@@ -389,7 +387,7 @@ class ScrObj {
 		bool _neverHide = false;
 		// cursor erase color
 		uint16_t _curCol = 0xffff;
-		plant_settings_t _sett_id = SETT_EMPY;
+		rig_settings_t _sett_id = SETT_EMPY;
 };
 
 class Line: public ScrObj {
@@ -648,11 +646,13 @@ class Text: public ScrObj {
 
 			_w = _txtSp->textWidth(longestAlone.c_str()) + _paddingX; //*2;
 
+			/*
 #ifdef APP_DEBUG
 			Serial.println();
 			Serial.println("Calculated sprite width: ");
 			Serial.println(_w);
 #endif
+*/
 			if (_w > SCR_WIDTH)
 				_w = SCR_WIDTH;
 
@@ -1137,6 +1137,7 @@ class InputField: public ScrObj {
 		void setFloat()
 		{
 			_isFloat = true;
+			_delta.f = 0.1;
 		}
 
 		bool isFloat()
@@ -1264,10 +1265,39 @@ class InputField: public ScrObj {
 			_invalid = true;
 		}
 
-
 		virtual bool hasInput() override
 		{
 			return true;
+		}
+
+		void add()
+		{
+			if (_isFloat) {
+				setValue(_fvalue += _delta.f);
+			}
+			else {
+				setValue(_value += _delta.i);
+			}
+		}
+
+		void sub()
+		{
+			if (_isFloat) {
+				setValue(_fvalue -= _delta.f);
+			}
+			else {
+				setValue(_value -= _delta.i);
+			}
+		}
+
+		void setDelta(int delta)
+		{
+			_delta.i = delta;
+		}
+
+		void setDelta(float fdelta)
+		{
+			_delta.f = fdelta;
 		}
 
 		void setColors(uint16_t fg, uint16_t bg)
@@ -1339,6 +1369,11 @@ class InputField: public ScrObj {
 		}
 
 	private:
+		union {
+			int i = 1;
+			float f;
+		} _delta;
+
 		int16_t _value = 0;
 		float _fvalue = 0.0;
 		bool _isFloat = false;
@@ -1622,6 +1657,26 @@ class CheckBox: public ScrObj {
 			_invalid = true;
 		}
 
+		virtual void setCallback(std::function<void(void*)> callback, void* objptr = nullptr) override
+		{
+			_callback = callback;
+			_objptr = objptr;
+		}
+
+		void setCallback(std::function<void(void*, void*)> callback, void* objptr, void* objptr2 = nullptr)
+		{
+			_callback2 = callback;
+			_objptr = objptr;
+			_objptr2 = objptr2;
+		}
+
+		virtual void onClick() override
+		{
+			if (_objptr2)
+				_callback2(_objptr, _objptr2);
+			else
+				_callback(_objptr);
+		}
 
 		bool isOn()
 		{
@@ -1639,6 +1694,8 @@ class CheckBox: public ScrObj {
 		}
 
 	private:
+		std::function<void(void*, void*)> _callback2;
+		void* _objptr2 = nullptr;
 		Text _text;
 		uint16_t _bg;
 		int8_t _dy = 0;
@@ -2026,6 +2083,41 @@ class RadioButton: public ScrObj {
 		uint8_t _bgcol = RAD_BG_COL;
 };
 
+#include "settings.h" // rig_typ
+
+class RigTypeRadioButton: public RadioButton {
+	public:
+		virtual void onClick() override
+		{
+			if (!this->isOn())
+				_callback(_objptr);
+		}
+
+		/*
+		virtual void setCallback(std::function<void(void*)> callback, void* objptr = nullptr) override
+		{
+			_callback = callback;
+			_objptr = objptr;
+		}
+		*/
+
+		/*
+		void setCallback(std::function<void(void*, rig_type)> callback, void* objptr, rig_type rig)
+		{
+			_callback = callback;
+			_rig = rig;
+		}
+
+		virtual void onClick() override
+		{
+			_callback(_objptr, _rig);
+		}
+
+	private:
+		std::function<void(void*, rig_type)> _callback;
+		*/
+};
+
 class CircIndicator: public RadioButton {
 	public:
 		CircIndicator(): RadioButton(RAD_BTN_SIZE, RAD_BTN_SIZE)
@@ -2226,6 +2318,7 @@ class Cursor {
 		int _h;
 };
 
+//#include "settings.h" // g_data
 class Page {
 	public:
 		void addItem(ScrObj* scrobj)
@@ -2281,8 +2374,21 @@ class Page {
 
 		void prepare()
 		{
-			for (auto& obj:_items)
-				obj->prepare();
+			for (auto& obj:_items) {
+				/*
+				// ::::::: omg, project Zeus :::::::::
+				if (obj->hasInput()) {
+					InputField* itm = (InputField*) currItem;
+					if (itm->isFloat() && itm->getSettingsId())
+						itm->setValue(g_data.getFloat(itm->getSettingsId()));
+					else
+						itm->setValue(g_data.getInt(itm->getSettingsId()));
+				}
+				*/
+
+				if (obj->isVisible())
+					obj->prepare();
+			}
 		}
 
 		ScrObj* getCurrItem()

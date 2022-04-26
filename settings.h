@@ -67,6 +67,77 @@ typedef enum {
 	AERO_PUMP_SEC,
 
 	NSETTINGS
-} plant_settings_t;
+} rig_settings_t;
+
+typedef enum {
+	RIG_DEEPWATER,
+	RIG_LAYER,
+	RIG_FLOOD,
+	RIG_AERO,
+	RIG_DRIP,
+	RIG_OPENG,
+	RIG_GREENH,
+	RIG_MIXSOL,
+	NTYPES
+} rig_type;
+
+rig_type g_rig_type = RIG_DEEPWATER;
+
+class Data {
+	public:
+		Data()
+		{
+			set(GR_CYCL_1_DAYS, _firstStageDay);
+			set(GR_CYCL_2_DAYS, _secondStageDay);
+			set(GR_CYCL_3_DAYS, _thirdStageDay);
+			set(EC_A1, f_A);
+			set(EC_A2, f_A);
+			set(EC_A3, f_A);
+			set(EC_B1, f_B);
+			set(EC_B2, f_B);
+			set(EC_B3, f_B);
+			set(EC_C1, f_C);
+			set(EC_C2, f_C);
+			set(EC_C3, f_C);
+			/*
+			set(EC_CYCL1, _1);
+			set(EC_CYCL2, _2);
+			set(EC_CYCL3, _3);
+			*/
+		}
+
+		float getFloat(rig_settings_t setting)
+		{
+			return _data[setting];
+		}
+
+		int getInt(rig_settings_t setting)
+		{
+			return int(_data[setting]);
+		}
+
+		void set(rig_settings_t setting, float value)
+		{
+			_data[setting] = value;
+		}
+
+		void set(rig_settings_t setting, int value)
+		{
+			_data[setting] = float(value);
+		}
+
+	private:
+		float _data[NSETTINGS];
+
+		static constexpr int _firstStageDay = 20;
+		static constexpr int _secondStageDay = 40;
+		static constexpr int _thirdStageDay = 60;
+		static constexpr float f_A = 1.5;
+		static constexpr float f_B = 1;
+		static constexpr float f_C = 0.5;
+		static constexpr float f_1 = 0.3;
+		static constexpr float f_2 = 0.8;
+		static constexpr float f_3 = 1.2;
+} g_data;
 
 #endif

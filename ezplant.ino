@@ -398,6 +398,17 @@ void callPage(void* page_ptr)
 	if (page->next() == nullptr) {
 		forward.setCallback(nop);
 	}
+	else if (page == pages[STAGE1_PG]) {
+		forward.setCallback(rigtypeForward);
+	}
+	else if (page == pages[STAGE5_PG]) {
+		forward.setCallback(callStage6);
+	}
+	/*
+	else if (page == pages[STAGE6_PG]) {
+		forward.setCallback(callStage7);
+	}
+	*/
 	else {
 		forward.setCallback(callPage, page->next());
 	}
@@ -410,7 +421,6 @@ void callPage(void* page_ptr)
 	topBar.erase();
 	topBar.invalidateAll();
 	currPage->erase();
-	//Serial.println(page->getTitle());
 	topBar.setText(page->getTitle());
 	topBar.prepare();
 	currPage = page;
@@ -1630,7 +1640,7 @@ enum mainMenuItems {
 	MM_DIAG,
 	MM_TEST,
 	MM_FONT,
-	MM_LAST_STAGES,
+	MM_FIRST_PAGE,
 	MM_NITEMS
 };
 
@@ -1649,7 +1659,7 @@ Page* buildMenuPage()
 	menu1[MM_DIAG] = DIAG;
 	menu1[MM_TEST] = TEST_PAGE;
 	menu1[MM_FONT] = FONT_PAGE;
-	menu1[MM_LAST_STAGES] = LSTAGES_STR;
+	menu1[MM_FIRST_PAGE] = FP_SUBTTL;
 
 	int j = 0;
 
@@ -1668,7 +1678,7 @@ Page* buildMenuPage()
 	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
 	menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
 	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
-	menu_items[MM_LAST_STAGES].setCallback(callPage, pages[LSTAGES]);
+	menu_items[MM_FIRST_PAGE].setCallback(callPage, pages[FIRST_PG]);
 
 	// add all to page
 	for (int i = 0; i < MM_NITEMS; i++) {
@@ -2045,7 +2055,7 @@ void inputsCallback(void* inputptr)
 
 	InputField* input = (InputField*) inputptr;
 
-	plant_settings_t id = input->getSettingsId();
+	rig_settings_t id = input->getSettingsId();
 
 	if (input->isFloat())
 		g_data.set(id, input->getFvalue());
@@ -2105,6 +2115,45 @@ enum {
 	RB_NITEMS
 };
 
+RigTypeRadioButton rbuttons[RB_NITEMS];
+
+void rigtypeCallback(void* btn)
+{
+	if (btn == nullptr)
+		return;
+
+	for (auto& i:rbuttons)
+		i.on(false);
+
+	RadioButton* button = (RadioButton*) btn;
+	button->on(true);
+
+	// :::::::::facepalm, project Zeus:::::::::
+	int j = 0;
+	for (auto& i:rbuttons) {
+		if (i.isOn())
+			g_rig_type = (rig_type)j;
+		j++;
+	}
+	forward.setCallback(rigtypeForward);
+	/*
+	Serial.print("rig type: ");
+	Serial.println(g_rig_type);
+	*/
+}
+
+void rigtypeForward(void* arg)
+{
+	switch (g_rig_type) {
+		default: break;
+		case RIG_DEEPWATER: callPage(pages[STAGE2_PG]); break;
+		case RIG_LAYER: callPage(pages[STAGE92_PG]); break;
+		case RIG_FLOOD: callPage(pages[STAGE82_PG]); break;
+		case RIG_AERO: callPage(pages[STAGE83_PG]); break;
+		case RIG_DRIP: callPage(pages[STAGE84_PG]); break;
+	}
+}
+
 Page* buildStage1()
 {
 	static Page stage1;
@@ -2115,13 +2164,13 @@ Page* buildStage1()
 
 	stage1.addItem(&heading1);
 
-	static RadioButton rbuttons[RB_NITEMS];
 
 	int gap = 4;
 	int j = 0;
 
 	for (auto& i:rbuttons) {
 		i.setXYpos(PG_LEFT_PADD, MB_Y_START+20+(RAD_BTN_SIZE+gap)*j);
+		i.setCallback(rigtypeCallback, &i);
 		stage1.addItem(&i);
 		j++;
 	}
@@ -2143,14 +2192,14 @@ Page* buildStage1()
 	return &stage1;
 }
 
-//stage 3 checkbox callback
-void lightCallback(void* checkptr)
+
+void checkBoxCallback(void* checkptr, void* pageptr)
 {
-	if (checkptr == nullptr)
+	if (checkptr == nullptr || pageptr == nullptr)
 		return;
 
 	CheckBox* check = (CheckBox*) checkptr;
-	Page* page = pages[STAGE2_PG];
+	Page* page = (Page*) pageptr;
 
 	if (check->isOn()) {
 		check->on(false);
@@ -2175,19 +2224,13 @@ Page* buildStage2()
 	bulbImg.loadRes(images[IMG_BULB]);
 	bulbImg.neverHide();
 
-	/*
-	static Text heading1;
-	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
-	heading1.setFont(BOLDFONT);
-	heading1.setText(S2_SUBTTL1);
-	*/
-
 	static CheckBox lightCheck;
 	lightCheck.setXYpos(111, MB_Y_START);
 	lightCheck.setText(S2_LIGHT);
 	lightCheck.setAlign(LEFT);
 	lightCheck.setFont(BOLDFONT);
-	lightCheck.setCallback(lightCallback, &lightCheck);
+	//lightCheck.setCallback(lightCallback, &lightCheck);
+	lightCheck.setCallback(checkBoxCallback, &lightCheck, &stage2);
 	lightCheck.neverHide();
 
 	static Text par1;
@@ -2232,31 +2275,10 @@ Page* buildStage2()
 	stage2.addItem(&forward);
 
 	// in case of rebuild
-	if (!lightCheck.isOn())
+	//if (!lightCheck.isOn())
 		stage2.setInvisible();
 
 	return &stage2;
-}
-
-// stage 3 checkbox callback
-void ventCallback(void* checkptr)
-{
-	if (checkptr == nullptr)
-		return;
-
-	CheckBox* check = (CheckBox*) checkptr;
-	Page* page = pages[STAGE3_PG];
-
-	if (check->isOn()) {
-		check->on(false);
-		page->setInvisible();
-		check->setVisible();
-	}
-	else {
-		check->on(true);
-		page->setVisible();
-	}
-	page->restock();
 }
 
 Page* buildStage3()
@@ -2271,7 +2293,7 @@ Page* buildStage3()
 	ventCheck.setAlign(LEFT);
 	ventCheck.setFont(BOLDFONT);
 	ventCheck.neverHide();
-	ventCheck.setCallback(ventCallback, &ventCheck);
+	ventCheck.setCallback(checkBoxCallback, &ventCheck, &stage3);
 
 	static Image fanImg;
 	fanImg.setXYpos(168, MB_Y_START);
@@ -2342,31 +2364,10 @@ Page* buildStage3()
 	stage3.addItem(&forward);
 
 	// in case of rebuild
-	if (!ventCheck.isOn())
+	//if (!ventCheck.isOn())
 		stage3.setInvisible();
 
 	return &stage3;
-}
-
-// stage 4
-void passVentCallback(void* checkptr)
-{
-	if (checkptr == nullptr)
-		return;
-
-	CheckBox* check = (CheckBox*) checkptr;
-	Page* page = pages[STAGE4_PG];
-
-	if (check->isOn()) {
-		check->on(false);
-		page->setInvisible();
-		check->setVisible();
-	}
-	else {
-		check->on(true);
-		page->setVisible();
-	}
-	page->restock();
 }
 
 Page* buildStage4()
@@ -2380,7 +2381,7 @@ Page* buildStage4()
 	passVent.setText(S4_PASSVENT);
 	passVent.setAlign(LEFT);
 	passVent.setFont(BOLDFONT);
-	passVent.setCallback(passVentCallback, &passVent);
+	passVent.setCallback(checkBoxCallback, &passVent, &stage4);
 	passVent.neverHide();
 
 	static Image doorImg;
@@ -2460,7 +2461,7 @@ Page* buildStage4()
 	stage4.addItem(&forward);
 
 	// in case of rebuild
-	if (!passVent.isOn())
+	//if (!passVent.isOn())
 		stage4.setInvisible();
 
 	return &stage4;
@@ -2492,7 +2493,7 @@ Page* buildStage5()
 
 	InputField* limit = firstStageLimits.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_1_DAYS);
-	limit->setValue(int(g_data.get(GR_CYCL_1_DAYS)));
+	limit->setValue(g_data.getInt(GR_CYCL_1_DAYS));
 	limit->setCallback(inputsCallback, limit);
 
 	static Text second;
@@ -2506,7 +2507,7 @@ Page* buildStage5()
 
 	limit = secondStageLimilts.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_2_DAYS);
-	limit->setValue(int(g_data.get(GR_CYCL_2_DAYS)));
+	limit->setValue(g_data.getInt(GR_CYCL_2_DAYS));
 	limit->setCallback(inputsCallback, limit);
 
 
@@ -2521,7 +2522,7 @@ Page* buildStage5()
 
 	limit = thirdStageLimits.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_3_DAYS);
-	limit->setValue(int(g_data.get(GR_CYCL_3_DAYS)));
+	limit->setValue(g_data.getInt(GR_CYCL_3_DAYS));
 	limit->setCallback(inputsCallback, limit);
 
 
@@ -2544,25 +2545,31 @@ Page* buildStage5()
 	return &stage5;
 }
 
-void concEcCallback(void* checkptr)
+String stage1str;
+String stage2str;
+String stage3str;
+
+void callStage6(void* arg)
 {
-	if (checkptr == nullptr)
-		return;
+	stage1str = (String)"0" + " - "
+		+ g_data.getInt(GR_CYCL_1_DAYS) + " "
+		+ scrStrings[TXT_DAY];
+	stage2str = (String)g_data.getInt(GR_CYCL_1_DAYS)
+		+ " - " + g_data.getInt(GR_CYCL_2_DAYS) + " "
+		+ scrStrings[TXT_DAY];
+	stage3str = (String)g_data.getInt(GR_CYCL_2_DAYS) + " - "
+		+ g_data.getInt(GR_CYCL_3_DAYS) + " "
+		+ scrStrings[TXT_DAY];
 
-	CheckBox* check = (CheckBox*) checkptr;
-	Page* page = pages[STAGE6_PG];
-
-	if (check->isOn()) {
-		check->on(false);
-		page->setInvisible();
-		check->setVisible();
-	}
-	else {
-		check->on(true);
-		page->setVisible();
-	}
-	page->restock();
+	callPage(pages[STAGE6_PG]);
 }
+
+/*
+void callStage7(void* arg)
+{
+	callPage(pages[STAGE7_PG]);
+}
+*/
 
 Page* buildStage6()
 {
@@ -2575,7 +2582,8 @@ Page* buildStage6()
 	concEc.setAlign(LEFT);
 	concEc.setFont(BOLDFONT);
 	concEc.setText(S6_SUBTTL);
-	concEc.setCallback(concEcCallback, &concEc);
+	concEc.setSettingsId(EC_ON);
+	concEc.setCallback(checkBoxCallback, &concEc, &stage6);
 	concEc.neverHide();
 	stage6.addItem(&concEc);
 
@@ -2609,21 +2617,36 @@ Page* buildStage6()
 	static InputField in2;
 	static InputField in3;
 	in1.setXYpos(125, 80);
+	in1.setFloat();
+	in1.setSettingsId(EC_CYCL1);
+	in1.setValue(g_data.getFloat(in1.getSettingsId()));
 	in1.setText(TXT_EC);
 	in2.setXYpos(125, 142);
+	in2.setFloat();
+	in2.setSettingsId(EC_CYCL2);
+	in2.setValue(g_data.getFloat(in2.getSettingsId()));
 	in2.setText(TXT_EC);
 	in3.setXYpos(125, 202);
+	in3.setFloat();
+	in3.setSettingsId(EC_CYCL3);
+	in3.setValue(g_data.getFloat(in3.getSettingsId()));
 	in3.setText(TXT_EC);
 
+	/*
 	static String stage1str;
 	static String stage2str;
 	static String stage3str;
+	*/
 
-	stage1str = (String)"0" + " - " + g_data.stage1day() + " "
+	//TODO: manual alloc strings or change StringText field
+	stage1str = (String)"0" + " - "
+		+ g_data.getInt(GR_CYCL_1_DAYS) + " "
 		+ scrStrings[TXT_DAY];
-	stage2str = (String)g_data.stage1day() + " - " + g_data.stage2day() + " "
+	stage2str = (String)g_data.getInt(GR_CYCL_1_DAYS)
+		+ " - " + g_data.getInt(GR_CYCL_2_DAYS) + " "
 		+ scrStrings[TXT_DAY];
-	stage3str = (String)g_data.stage2day() + " - " + g_data.stage3day() + " "
+	stage3str = (String)g_data.getInt(GR_CYCL_2_DAYS) + " - "
+		+ g_data.getInt(GR_CYCL_3_DAYS) + " "
 		+ scrStrings[TXT_DAY];
 
 	int strOffset = 38;
@@ -2643,6 +2666,19 @@ Page* buildStage6()
 	ifA1.setXYpos(30, 108);
 	ifB1.setXYpos(106, 108);
 	ifC1.setXYpos(178, 108);
+
+	// TODO: make float input field class...
+	ifA1.setFloat();
+	ifB1.setFloat();
+	ifC1.setFloat();
+
+	ifA1.setSettingsId(EC_A1);
+	ifB1.setSettingsId(EC_B1);
+	ifC1.setSettingsId(EC_C1);
+	ifA1.setValue(g_data.getFloat(ifA1.getSettingsId()));
+	ifB1.setValue(g_data.getFloat(ifB1.getSettingsId()));
+	ifC1.setValue(g_data.getFloat(ifC1.getSettingsId()));
+
 	ifA1.setAlign(LEFT);
 	ifB1.setAlign(LEFT);
 	ifC1.setAlign(LEFT);
@@ -2659,6 +2695,18 @@ Page* buildStage6()
 	ifA2.setXYpos(30, 170);
 	ifB2.setXYpos(106, 170);
 	ifC2.setXYpos(178, 170);
+
+	ifA2.setFloat();
+	ifB2.setFloat();
+	ifC2.setFloat();
+
+	ifA2.setSettingsId(EC_A2);
+	ifB2.setSettingsId(EC_B2);
+	ifC2.setSettingsId(EC_C2);
+	ifA2.setValue(g_data.getFloat(ifA2.getSettingsId()));
+	ifB2.setValue(g_data.getFloat(ifB2.getSettingsId()));
+	ifC2.setValue(g_data.getFloat(ifC2.getSettingsId()));
+
 	ifA2.setAlign(LEFT);
 	ifB2.setAlign(LEFT);
 	ifC2.setAlign(LEFT);
@@ -2675,6 +2723,18 @@ Page* buildStage6()
 	ifA3.setXYpos(30, 230);
 	ifB3.setXYpos(106, 230);
 	ifC3.setXYpos(178, 230);
+
+	ifA3.setFloat();
+	ifB3.setFloat();
+	ifC3.setFloat();
+
+	ifA3.setSettingsId(EC_A3);
+	ifB3.setSettingsId(EC_B3);
+	ifC3.setSettingsId(EC_C3);
+	ifA3.setValue(g_data.getFloat(ifA3.getSettingsId()));
+	ifB3.setValue(g_data.getFloat(ifB3.getSettingsId()));
+	ifC3.setValue(g_data.getFloat(ifC3.getSettingsId()));
+
 	ifA3.setAlign(LEFT);
 	ifB3.setAlign(LEFT);
 	ifC3.setAlign(LEFT);
@@ -2746,6 +2806,7 @@ Page* buildStage7()
 	acid.setFont(BOLDFONT);
 	acid.setAlign(LEFT);
 	acid.setText(S7_SUBTTL);
+	acid.setCallback(checkBoxCallback, &acid, &stage7);
 	acid.neverHide();
 
 	static Text par1;
@@ -2763,16 +2824,21 @@ Page* buildStage7()
 	bull2.setText(BULL_2);
 	bull3.setText(BULL_3);
 
+	/*
 	static String stage1str;
 	static String stage2str;
 	static String stage3str;
 
-	stage1str = (String)"0" + " - " + g_data.stage1day() + " "
+	stage1str = (String)"0" + " - "
+		+ g_data.getInt(GR_CYCL_1_DAYS) + " "
 		+ scrStrings[TXT_DAY];
-	stage2str = (String)g_data.stage1day() + " - " + g_data.stage2day() + " "
+	stage2str = (String)g_data.getInt(GR_CYCL_1_DAYS)
+		+ " - " + g_data.getInt(GR_CYCL_2_DAYS) + " "
 		+ scrStrings[TXT_DAY];
-	stage3str = (String)g_data.stage2day() + " - " + g_data.stage3day() + " "
+	stage3str = (String)g_data.getInt(GR_CYCL_2_DAYS) + " - "
+		+ g_data.getInt(GR_CYCL_3_DAYS) + " "
 		+ scrStrings[TXT_DAY];
+		*/
 
 	int strOffset = 38;
 	static StringText str1;
@@ -2876,15 +2942,18 @@ Page* buildStage9()
 	aeration.setFont(BOLDFONT);
 	//aeration.adjustTextX(5);
 	aeration.setText(S9_SUBTTL);
+	aeration.setCallback(checkBoxCallback, &aeration, &stage9);
 	aeration.neverHide();
 
 	static Image bubbles;
 	bubbles.setXYpos(190, 33);
 	bubbles.loadRes(images[IMG_AERO]);
+	bubbles.neverHide();
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 64);
 	par1.setText(S9_PAR1);
+	par1.neverHide();
 
 	static CheckBox pumps;
 	pumps.setXYpos(PG_LEFT_PADD, 102);
@@ -2915,21 +2984,27 @@ Page* buildStage9_2()
 	static Page stage9;
 	stage9.setTitle(S92_TITLE);
 
-	static CheckBox stir;
-	stir.setXYpos(156, 43);
-	stir.setAlign(LEFT);
+	static Text stir;
+	stir.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	stir.setFont(BOLDFONT);
 	stir.setText(S92_SUBTTL);
-	Serial.print("text X: ");
-	Serial.println(stir.getTextX());
+	stir.neverHide();
+
+	static CheckBox stirCh;
+	stirCh.setXYpos(156, 43);
+	stirCh.setText(EMPTY_STR);
+	stirCh.setCallback(checkBoxCallback, &stirCh, &stage9);
+	stirCh.neverHide();
 
 	static Image cycle;
 	cycle.setXYpos(188, 38);
 	cycle.loadRes(images[IMG_CYCL]);
+	cycle.neverHide();
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 87);
 	par1.setText(S92_PAR1);
+	par1.neverHide();
 
 	static CheckBox pumps;
 	pumps.setXYpos(PG_LEFT_PADD, 148);
@@ -2944,6 +3019,7 @@ Page* buildStage9_2()
 	seconds.setText(S9_INPUT);
 
 	stage9.addItem(&stir);
+	stage9.addItem(&stirCh);
 	stage9.addItem(&cycle);
 	stage9.addItem(&par1);
 	stage9.addItem(&pumps);
@@ -3195,6 +3271,7 @@ enum {
 	LP_NBTNS
 };
 
+/*
 Page* lastPagesList()
 {
 	static Page menuPage;
@@ -3238,6 +3315,7 @@ Page* lastPagesList()
 
 	return &menuPage;
 }
+*/
 
 
 void gSetBacklight(void* arg)
@@ -3330,7 +3408,7 @@ void buildAllPages()
 	pages[SETT_PG] = buildSettingsPage();
 
 	// list of last stages
-	pages[LSTAGES] = lastPagesList();
+	//pages[LSTAGES] = lastPagesList();
 
 	pages[MENU_PG] = buildMenuPage();
 	pages[MAIN_PG] = buildMainPage();
@@ -3345,7 +3423,7 @@ void linkPages()
 #endif
 
 	// debug last stages
-	pages[LSTAGES]->setPrev(pages[MENU_PG]);
+//	pages[LSTAGES]->setPrev(pages[MENU_PG]);
 
 	// new planting first page
 	pages[STAGE1_PG]->setPrev(pages[MAIN_PG]);
@@ -3452,6 +3530,7 @@ void setup(void)
 	//buildTopBar();
 
 	currPage->draw();
+	topBar.setText(currPage->getTitle());
 	topBar.prepare();
 	topBar.draw();
 
@@ -3481,7 +3560,7 @@ void setup(void)
 	*/
 }
 
-void delelteSettingsFile()
+void deleteSettingsFile()
 {
 	if (SPIFFS.exists(sett_file)) {
 		SPIFFS.remove(sett_file);
@@ -3504,7 +3583,7 @@ void loop()
 			String cmd = String(cmdbuff);
 			cmd.trim();
 			if (cmd == "init") {
-				delelteSettingsFile();
+				deleteSettingsFile();
 			}
 		}
 		i++;
@@ -3512,15 +3591,9 @@ void loop()
 			i = 0;
 		}
 	}
+	/*
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
-
-		Serial.print("lagest 8-bit block: ");
-		Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-		Serial.println();
-		Serial.print("lagest 32-bit block: ");
-		Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_32BIT));
-		Serial.println();
 		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 		Serial.print("gui task unused stack: ");
 		Serial.println(unused);
@@ -3528,5 +3601,6 @@ void loop()
 		oldMillis = millis();
 	}
 #endif
+*/
 
 }

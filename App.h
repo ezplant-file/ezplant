@@ -97,11 +97,13 @@ void ping_task_callback(void* arg)
 				g_ping_success = false;
 			}
 		}
+		/*
 #ifdef APP_DEBUG
 		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 		Serial.print("ping task unused stack: ");
 		Serial.println(unused);
 #endif
+*/
 		sleep(10000);
 	}
 }
@@ -191,80 +193,14 @@ OutputField g_tds_read;
 #define WIFI_IMG_X 213
 #define NET_IMG_X 186
 
-enum {
-	RIG_DEEPWATER,
-	RIG_LAYER,
-	RIG_FLOOD,
-	RIG_AERO,
-	RIG_DRIP,
-	RIG_OPENG,
-	RIG_GREENH,
-	RIG_MIXSOL,
-	NTYPES
-} rig_type;
+#include "settings.h" // rig_settings_t, rig_type, g_data
+/*
+typedef union {
 
-#include "settings.h" // plant_settings_t
+} settings_t;
+*/
 
-class Data {
-	public:
-		Data()
-		{
-			set(GR_CYCL_1_DAYS, float(_firstStageDay));
-			set(GR_CYCL_2_DAYS, float(_secondStageDay));
-			set(GR_CYCL_3_DAYS, float(_thirdStageDay));
-		}
 
-		float get(plant_settings_t setting)
-		{
-			return _data[setting];
-		}
-
-		void set(plant_settings_t setting, float value)
-		{
-			_data[setting] = value;
-		}
-
-		// getters
-		int stage1day()
-		{
-			return _firstStageDay;
-		}
-
-		int stage2day()
-		{
-			return _secondStageDay;
-		}
-
-		int stage3day()
-		{
-			return _thirdStageDay;
-		}
-
-		/*
-		// setters
-		void set1stageDay(int day)
-		{
-			_firstStageDay = day;
-		}
-
-		void set2stageDay(int day)
-		{
-			_secondStageDay = day;
-		}
-
-		void set3stageDay(int day)
-		{
-			_thirdStageDay = day;
-		}
-		*/
-
-	private:
-		float _data[NSETTINGS];
-
-		static constexpr int _firstStageDay = 20;
-		static constexpr int _secondStageDay = 40;
-		static constexpr int _thirdStageDay = 60;
-} g_data;
 
 class Panel {
 	public:
@@ -1112,12 +1048,21 @@ class App {
 			sleep(10);
 #endif
 #ifdef APP_DEBUG
-#define DEBUG_TIMER 10000
+#define DEBUG_TIMER 2000
 			static unsigned long debugMils = 0;
 			if (millis() - debugMils > DEBUG_TIMER) {
 				debugMils = millis();
+				Serial.println("**************************************");
 				Serial.print("Free heap: ");
 				Serial.println(ESP.getFreeHeap());
+				Serial.println();
+				Serial.print("lagest 8-bit block: ");
+				Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+				Serial.println();
+				Serial.print("lagest 32-bit block: ");
+				Serial.println(heap_caps_get_largest_free_block(MALLOC_CAP_32BIT));
+				Serial.println();
+				Serial.println("**************************************");
 			}
 #endif
 
@@ -1208,16 +1153,22 @@ class App {
 			}
 			//else if (!digitalRead(BTN_MIN)) {
 			else if (~user_input & BTN_MIN) {
-				currItem->setValue(currItem->getValue() - 1);
-				if (currItem->hasInput())
+				if (currItem->hasInput()) {
+					InputField* itm = (InputField*) currItem;
+					itm->sub();
+					//currItem->setValue(currItem->getValue() - 1);
 					currItem->onClick();
+				}
 				currItem->draw();
 				_dbFlag = false;
 			}
 			else if (~user_input & BTN_PLU) {
-				currItem->setValue(currItem->getValue() + 1);
-				if (currItem->hasInput())
+				if (currItem->hasInput()) {
+					InputField* itm = (InputField*) currItem;
+					itm->add();
+					//currItem->setValue(currItem->getValue() + 1);
 					currItem->onClick();
+				}
 				currItem->draw();
 				_dbFlag = false;
 			}
