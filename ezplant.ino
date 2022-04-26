@@ -388,31 +388,19 @@ void callPage(void* page_ptr)
 
 	app.resetIterator();
 
-	//back.setCallback(callPage, currPage);
-	/*if (page->prev() == nullptr) {
+	if (page->prev() == nullptr) {
 		back.setCallback(nop);
 	}
 	else {
 		back.setCallback(callPage, page->prev());
-	}*/
+	}
 
-	back.setCallback([&](){
-			if (page->prev())
-				callPage(page->prev());
-			});
-
-	/*
 	if (page->next() == nullptr) {
 		forward.setCallback(nop);
 	}
 	else {
 		forward.setCallback(callPage, page->next());
-	}*/
-
-	forward.setCallback([&](){
-			if (page->next())
-				callPage(page->next());
-			});
+	}
 
 	currPage->freeRes();
 
@@ -917,10 +905,7 @@ Page* buildPh1Page()
 	static BlueTextButton ph_next;
 	ph_next.setXYpos(PG_LEFT_PADD, 120);
 	ph_next.setText(BLUE_BTN_NEXT);
-	//ph_next.setCallback(callPage, pages[CAL_PH2_PG]);
-	ph_next.setCallback([&](){
-			callPage(pages[CAL_PH2_PG]);
-			});
+	ph_next.setCallback(callPage, pages[CAL_PH2_PG]);
 
 	static Text warn;
 	warn.setXYpos(PG_LEFT_PADD, 160);
@@ -2515,28 +2500,30 @@ Page* buildStage5()
 	second.setText(BULL_2);
 	second.setFont(BOLDFONT);
 	static DayLimits secondStageLimilts(daysX, 138);
+	OutputField* lower = secondStageLimilts.getOutputFieldPtr();
+	daysOut[SECOND_OUT] = lower;
+	lower->setValue(limit->getValue());
 
 	limit = secondStageLimilts.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_2_DAYS);
 	limit->setValue(int(g_data.get(GR_CYCL_2_DAYS)));
 	limit->setCallback(inputsCallback, limit);
 
-	OutputField* lower = secondStageLimilts.getOutputFieldPtr();
-	lower->setValue(limit->getValue());
 
 	static Text third;
 	third.setXYpos(bulletsX, 178);
 	third.setText(BULL_3);
 	third.setFont(BOLDFONT);
 	static DayLimits thirdStageLimits(daysX, 174);
+	lower = thirdStageLimits.getOutputFieldPtr();
+	daysOut[THIRD_OUT] = lower;
+	lower->setValue(limit->getValue());
 
 	limit = thirdStageLimits.getInputFieldPtr();
 	limit->setSettingsId(GR_CYCL_3_DAYS);
 	limit->setValue(int(g_data.get(GR_CYCL_3_DAYS)));
 	limit->setCallback(inputsCallback, limit);
 
-	lower = thirdStageLimits.getOutputFieldPtr();
-	lower->setValue(limit->getValue());
 
 	stage5.addItem(&subTitle);
 	stage5.addItem(&par1);
@@ -2588,10 +2575,7 @@ Page* buildStage6()
 	concEc.setAlign(LEFT);
 	concEc.setFont(BOLDFONT);
 	concEc.setText(S6_SUBTTL);
-	//concEc.setCallback(concEcCallback, &concEc);
-	concEc.setCallback([&]() {
-			concEcCallback(&concEc);
-			});
+	concEc.setCallback(concEcCallback, &concEc);
 	concEc.neverHide();
 	stage6.addItem(&concEc);
 
@@ -2890,6 +2874,7 @@ Page* buildStage9()
 	aeration.setXYpos(164, 33);
 	aeration.setAlign(LEFT);
 	aeration.setFont(BOLDFONT);
+	//aeration.adjustTextX(5);
 	aeration.setText(S9_SUBTTL);
 	aeration.neverHide();
 

@@ -199,9 +199,10 @@ class ScrObj {
 			return _objptr;
 		}
 
-		void setCallback(std::function<void()> callback)
+		void setCallback(std::function<void(void*)> callback, void* objptr = nullptr)
 		{
 			_callback = callback;
+			_objptr = objptr;
 		}
 
 
@@ -376,6 +377,7 @@ class ScrObj {
 		int16_t _h;
 		//void (*_callback)(void*) = nop;
 		std::function<void(void*)> _callback = nop;
+		void* _objptr = nullptr;
 		bool _isVisible = true;
 		bool _isSelectable;
 		//bool _wasSelectable;
