@@ -99,11 +99,9 @@ class Data {
 			set(EC_C1, f_C);
 			set(EC_C2, f_C);
 			set(EC_C3, f_C);
-			/*
-			set(EC_CYCL1, _1);
-			set(EC_CYCL2, _2);
-			set(EC_CYCL3, _3);
-			*/
+			set(EC_CYCL1, EC_1);
+			set(EC_CYCL2, EC_2);
+			set(EC_CYCL3, EC_3);
 		}
 
 		float getFloat(rig_settings_t setting)
@@ -138,6 +136,9 @@ class Data {
 		static constexpr float f_1 = 0.3;
 		static constexpr float f_2 = 0.8;
 		static constexpr float f_3 = 1.2;
+		static constexpr float EC_1 = 0.3;
+		static constexpr float EC_2 = 0.8;
+		static constexpr float EC_3 = 1.2;
 } g_data;
 
 #endif

@@ -386,6 +386,7 @@ class Panel {
 } topBar;
 
 
+void callPage(void*);
 
 
 void vSyncNTPtask(void* arg)
@@ -1154,8 +1155,7 @@ class App {
 			//else if (!digitalRead(BTN_MIN)) {
 			else if (~user_input & BTN_MIN) {
 				if (currItem->hasInput()) {
-					InputField* itm = (InputField*) currItem;
-					itm->sub();
+					currItem->sub();
 					//currItem->setValue(currItem->getValue() - 1);
 					currItem->onClick();
 				}
@@ -1164,8 +1164,7 @@ class App {
 			}
 			else if (~user_input & BTN_PLU) {
 				if (currItem->hasInput()) {
-					InputField* itm = (InputField*) currItem;
-					itm->add();
+					currItem->add();
 					//currItem->setValue(currItem->getValue() + 1);
 					currItem->onClick();
 				}
@@ -1180,12 +1179,12 @@ class App {
 				currItem = currPage->getCurrItemAt(_iterator);
 				_dbFlag = false;
 			}
-			/*
 			else if (~user_input & BTN_HOME) {
-				struct HeapStats_t stats;
-				vPortGetHeapStats(&stats);
+				_cursor.draw(false);
+				callPage(pages[MAIN_PG]);
+				currItem = currPage->getCurrItemAt(_iterator);
+				_dbFlag = false;
 			}
-			*/
 
 			// don't blink if buttons were pressed...
 			_oldMils = millis();

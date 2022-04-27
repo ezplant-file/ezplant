@@ -367,6 +367,14 @@ class ScrObj {
 			_sett_id = id;
 		}
 
+		virtual void add()
+		{
+		}
+
+		virtual void sub()
+		{
+		}
+
 	protected:
 		align_t _align = RIGHT;
 		dispStrings_t _index = NO_STRING;
@@ -1229,12 +1237,12 @@ class InputField: public ScrObj {
 				default:
 				case RIGHT:
 					_text.setXYpos(_x + _w + _text.getXpadding(),
-							_y + _dy + int(_h/2) - int(_text.getH()/2));
+							_y + _dy + int(_h/2) - int(_text.getH()/2) + 3);
 							//+  _text.getYpadding()/2);
 					break;
 				case LEFT:
 					_text.setXYpos(_x - _textLength - _text.getXpadding(),
-							_y + _dy + int(_h/2) - int(_text.getH()/2));
+							_y + _dy + int(_h/2) - int(_text.getH()/2) + 3);
 							//+ _text.getYpadding()/2);
 					break;
 				case TOP:
@@ -1270,7 +1278,7 @@ class InputField: public ScrObj {
 			return true;
 		}
 
-		void add()
+		virtual void add() override
 		{
 			if (_isFloat) {
 				setValue(_fvalue += _delta.f);
@@ -1280,7 +1288,7 @@ class InputField: public ScrObj {
 			}
 		}
 
-		void sub()
+		virtual void sub() override
 		{
 			if (_isFloat) {
 				setValue(_fvalue -= _delta.f);
@@ -2324,7 +2332,7 @@ class Page {
 		void addItem(ScrObj* scrobj)
 		{
 			_items.push_back(scrobj);
-			if (scrobj->isSelectable()) {
+			if (scrobj->isSelectable() && scrobj->isVisible()) {
 				_selectable.push_back(scrobj);
 			}
 		}
@@ -2478,7 +2486,18 @@ class Page {
 			}
 		}
 
+		bool lastStage()
+		{
+			return _lastStage;
+		}
+
+		void setLastStage()
+		{
+			_lastStage = true;
+		}
+
 	private:
+		bool _lastStage = false;
 		bool _iconsVisible = true;
 		Page* _prev = nullptr;
 		Page* _next = nullptr;
