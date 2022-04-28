@@ -5,7 +5,7 @@
 
 // all settings
 typedef enum {
-	SETT_EMPY,
+	SETT_EMPTY,
 	// stage 2 settings
 	LIGHT_ON,
 	LIGHT_FROM,
@@ -87,6 +87,7 @@ typedef enum {
 
 rig_type g_rig_type = RIG_DEEPWATER;
 
+// TODO: save g_data to file, populate g_data on startup from file
 class Data {
 	public:
 		Data()
@@ -106,6 +107,18 @@ class Data {
 			set(EC_CYCL1, EC_1);
 			set(EC_CYCL2, EC_2);
 			set(EC_CYCL3, EC_3);
+		}
+
+		void print()
+		{
+			int count = 0;
+			for (auto& i:_data) {
+				Serial.print(i);
+				Serial.print("\t");
+				if (count % 20 == 0)
+					Serial.println();
+				count++;
+			}
 		}
 
 		float getFloat(rig_settings_t setting)

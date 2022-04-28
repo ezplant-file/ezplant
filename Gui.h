@@ -395,7 +395,7 @@ class ScrObj {
 		bool _neverHide = false;
 		// cursor erase color
 		uint16_t _curCol = 0xffff;
-		rig_settings_t _sett_id = SETT_EMPY;
+		rig_settings_t _sett_id = SETT_EMPTY;
 };
 
 class Line: public ScrObj {
@@ -1442,12 +1442,12 @@ class HourLimits: public ScrObj {
 			_higher.setValue(23);
 		}
 
-		ScrObj* getHigherPtr()
+		void* getHigherPtr()
 		{
 			return &_higher;
 		}
 
-		ScrObj* getLowerPtr()
+		void* getLowerPtr()
 		{
 			return &_lower;
 		}
