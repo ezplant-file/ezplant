@@ -1,6 +1,9 @@
 #ifndef __SETTINGS_H__
 #define __SETTINGS_H__
 
+#include "json.hpp"
+
+// all settings
 typedef enum {
 	SETT_EMPY,
 	// stage 2 settings
@@ -69,6 +72,7 @@ typedef enum {
 	NSETTINGS
 } rig_settings_t;
 
+// rig types
 typedef enum {
 	RIG_DEEPWATER,
 	RIG_LAYER,
