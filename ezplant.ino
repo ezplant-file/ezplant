@@ -2105,6 +2105,7 @@ Page* buildFirstPage()
 	return &firstPlanting;
 }
 
+/*
 enum {
 	RB_UNDERW,
 	RB_LAYER,
@@ -2116,8 +2117,9 @@ enum {
 	RB_MIXING,
 	RB_NITEMS
 };
+*/
 
-RigTypeRadioButton rbuttons[RB_NITEMS];
+RigTypeRadioButton rbuttons[RIG_NTYPES];
 
 void rigtypeCallback(void* btn)
 {
@@ -2215,15 +2217,17 @@ Page* buildStage1()
 		j++;
 	}
 
-	rbuttons[RB_UNDERW].setText(S1_UNDERWTR);
-	rbuttons[RB_UNDERW].on(true);
-	rbuttons[RB_LAYER].setText(S1_LAYER);
-	rbuttons[RB_PERIODIC].setText(S1_PERIODIC);
-	rbuttons[RB_AERO].setText(S1_AERO);
-	rbuttons[RB_DRIP].setText(S1_DRIP);
-	rbuttons[RB_OPENG].setText(S1_OPENG);
-	rbuttons[RB_GREENHS].setText(S1_GREENHS);
-	rbuttons[RB_MIXING].setText(S1_MIXING);
+	rbuttons[RIG_DEEPWATER].setText(S1_UNDERWTR);
+	rbuttons[RIG_LAYER].setText(S1_LAYER);
+	rbuttons[RIG_FLOOD].setText(S1_PERIODIC);
+	rbuttons[RIG_AERO].setText(S1_AERO);
+	rbuttons[RIG_DRIP].setText(S1_DRIP);
+	rbuttons[RIG_OPENG].setText(S1_OPENG);
+	rbuttons[RIG_GREENH].setText(S1_GREENHS);
+	rbuttons[RIG_MIXSOL].setText(S1_MIXING);
+
+	//
+	rbuttons[g_rig_type].on(true);
 
 	stage1.setNext(pages[STAGE2_PG]);
 	stage1.setTitle(S1_TITLE);
@@ -2275,6 +2279,7 @@ Page* buildStage2()
 	//lightCheck.setCallback(lightCallback, &lightCheck);
 	lightCheck.setSettingsId(LIGHT_ON);
 	lightCheck.setCallback(checkBoxCallback, &lightCheck, &stage2);
+	lightCheck.on(g_data.getInt(LIGHT_ON));
 	lightCheck.neverHide();
 
 	static Text par1;
@@ -2289,6 +2294,8 @@ Page* buildStage2()
 	high->setSettingsId(LIGHT_TO);
 	low->setCallback(saveInputFieldSetting, low);
 	high->setCallback(saveInputFieldSetting, high);
+	low->setValue(g_data.getInt(LIGHT_FROM));
+	high->setValue(g_data.getInt(LIGHT_TO));
 
 	static Text heading2;
 	heading2.setXYpos(PG_LEFT_PADD, 180);
@@ -2308,6 +2315,7 @@ Page* buildStage2()
 	days.setWidth(FOUR_CHR);
 	days.setText(S2_DAY);
 	days.setSettingsId(LIGHT_DAY);
+	days.setValue(g_data.getInt(LIGHT_DAY));
 	days.setCallback(saveInputFieldSetting, &days);
 
 	stage2.addItem(&bulbImg);
@@ -2326,8 +2334,10 @@ Page* buildStage2()
 
 	stage2.addItem(&forward);
 
-	stage2.setInvisible();
-	stage2.restock();
+	if (!lightCheck.isOn()) {
+		stage2.setInvisible();
+		stage2.restock();
+	}
 
 	return &stage2;
 }
@@ -2346,6 +2356,7 @@ Page* buildStage3()
 	ventCheck.neverHide();
 	ventCheck.setSettingsId(VENT_ON);
 	ventCheck.setCallback(checkBoxCallback, &ventCheck, &stage3);
+	ventCheck.on(g_data.getInt(VENT_ON));
 
 	static Image fanImg;
 	fanImg.setXYpos(168, MB_Y_START);
@@ -2371,6 +2382,7 @@ Page* buildStage3()
 	timeCheck.setText(EMPTY_STR);
 	timeCheck.setSettingsId(VENT_TIME_LIM);
 	timeCheck.setCallback(saveCheckBoxSetting, &timeCheck);
+	timeCheck.on(g_data.getInt(VENT_TIME_LIM));
 
 	static HourLimits timeLimit(45, 163);
 	InputField* low = (InputField*) timeLimit.getLowerPtr();
@@ -2379,7 +2391,8 @@ Page* buildStage3()
 	high->setSettingsId(VENT_TIME_TO);
 	low->setCallback(saveInputFieldSetting, low);
 	high->setCallback(saveInputFieldSetting, high);
-
+	low->setValue(g_data.getInt(VENT_TIME_FROM));
+	high->setValue(g_data.getInt(VENT_TIME_TO));
 
 	static Text temptxt;
 	temptxt.setXYpos(PG_LEFT_PADD, 195);
@@ -2390,11 +2403,13 @@ Page* buildStage3()
 	tempCheck.setText(EMPTY_STR);
 	tempCheck.setSettingsId(VENT_TEMP_LIM);
 	tempCheck.setCallback(saveCheckBoxSetting, &tempCheck);
+	tempCheck.on(g_data.getInt(VENT_TEMP_LIM));
 
 	static InputField temp;
 	temp.setXYpos(45, 210);
 	temp.setText(MORE_THAN);
 	temp.setSettingsId(VENT_TEMP_THRES);
+	temp.setValue(g_data.getInt(VENT_TEMP_THRES));
 	temp.setCallback(saveInputFieldSetting, &temp);
 
 	static Text humtxt;
@@ -2406,11 +2421,13 @@ Page* buildStage3()
 	humCheck.setText(EMPTY_STR);
 	humCheck.setSettingsId(VENT_HUM_LIM);
 	humCheck.setCallback(saveCheckBoxSetting, &humCheck);
+	humCheck.on(g_data.getInt(VENT_HUM_LIM));
 
 	static InputField hum;
 	hum.setXYpos(45, 261);
 	hum.setText(MORE_THAN);
 	hum.setSettingsId(VENT_HUM_THRES);
+	hum.setValue(g_data.getInt(VENT_HUM_THRES));
 	hum.setCallback(saveInputFieldSetting, &hum);
 
 	stage3.addItem(&ventCheck);
@@ -2432,8 +2449,10 @@ Page* buildStage3()
 	stage3.addItem(&hum);
 	stage3.addItem(&forward);
 
-	stage3.setInvisible();
-	stage3.restock();
+	if (!ventCheck.isOn()) {
+		stage3.setInvisible();
+		stage3.restock();
+	}
 
 	return &stage3;
 }
@@ -2450,6 +2469,7 @@ Page* buildStage4()
 	passVent.setAlign(LEFT);
 	passVent.setFont(BOLDFONT);
 	passVent.setSettingsId(PASSVENT);
+	passVent.on(g_data.getInt(PASSVENT));
 	passVent.setCallback(checkBoxCallback, &passVent, &stage4);
 	passVent.neverHide();
 
@@ -2477,6 +2497,7 @@ Page* buildStage4()
 	timeCheck.setText(EMPTY_STR);
 	timeCheck.setSettingsId(PASSVENT_TIME_LIM);
 	timeCheck.setCallback(saveCheckBoxSetting, &timeCheck);
+	timeCheck.on(g_data.getInt(PASSVENT_TIME_LIM));
 
 	static HourLimits timeLimit(45, 163);
 	InputField* low = (InputField*) timeLimit.getLowerPtr();
@@ -2485,6 +2506,8 @@ Page* buildStage4()
 	high->setSettingsId(PASSVENT_TIME_TO);
 	low->setCallback(saveInputFieldSetting, low);
 	high->setCallback(saveInputFieldSetting, high);
+	low->setValue(g_data.getInt(PASSVENT_TIME_FROM));
+	high->setValue(g_data.getInt(PASSVENT_TIME_TO));
 
 	static Text temptxt;
 	temptxt.setXYpos(PG_LEFT_PADD, 195);
@@ -2495,6 +2518,7 @@ Page* buildStage4()
 	tempCheck.setText(EMPTY_STR);
 	tempCheck.setSettingsId(PASSVENT_TEMP_LIM);
 	tempCheck.setCallback(saveCheckBoxSetting, &tempCheck);
+	tempCheck.on(g_data.getInt(PASSVENT_TEMP_LIM));
 
 	static InputField temp;
 	temp.setXYpos(45, 210);
@@ -2502,6 +2526,7 @@ Page* buildStage4()
 	temp.setWidth(FOUR_CHR);
 	temp.setStr("°C");
 	temp.setSettingsId(PASSVENT_TEMP_THRES);
+	temp.setValue(g_data.getInt(PASSVENT_TEMP_THRES));
 	temp.setCallback(saveInputFieldSetting, &temp);
 
 	static Text humtxt;
@@ -2513,6 +2538,7 @@ Page* buildStage4()
 	humCheck.setText(EMPTY_STR);
 	humCheck.setSettingsId(PASSVENT_HUM_LIM);
 	humCheck.setCallback(saveCheckBoxSetting, &humCheck);
+	humCheck.on(g_data.getInt(PASSVENT_HUM_LIM));
 
 	//std::unique_ptr<InputField> hum(new InputField());
 	static InputField hum;
@@ -2520,6 +2546,7 @@ Page* buildStage4()
 	hum.setText(MORE_THAN);
 	hum.setStr("%");
 	hum.setSettingsId(PASSVENT_HUM_THRES);
+	hum.setValue(g_data.getInt(PASSVENT_HUM_THRES));
 	hum.setCallback(saveInputFieldSetting, &hum);
 
 	//stage4.addItemPtr(std::move(hum));
@@ -2545,8 +2572,10 @@ Page* buildStage4()
 
 	stage4.addItem(&forward);
 
-	stage4.setInvisible();
-	stage4.restock();
+	if (!passVent.isOn()) {
+		stage4.setInvisible();
+		stage4.restock();
+	}
 
 	return &stage4;
 }
@@ -2665,6 +2694,7 @@ Page* buildStage6()
 	concEc.setText(S6_SUBTTL);
 	concEc.setSettingsId(EC_ON);
 	concEc.setCallback(checkBoxCallback, &concEc, &stage6);
+	concEc.on(g_data.getInt(EC_ON));
 	concEc.neverHide();
 	stage6.addItem(&concEc);
 
@@ -2845,6 +2875,7 @@ Page* buildStage6()
 	pumptime.setXYpos(74, 279);
 	pumptime.setText(TXT_SEC);
 	pumptime.setSettingsId(EC_PUMPS);
+	pumptime.setValue(g_data.getInt(EC_PUMPS));
 	pumptime.setCallback(saveInputFieldSetting, &pumptime);
 
 	stage6.addItem(&line1);
@@ -2882,8 +2913,10 @@ Page* buildStage6()
 	stage6.addItem(&pumptime);
 	stage6.addItem(&forward);
 
-	stage6.setInvisible();
-	stage6.restock();
+	if (!concEc.isOn()) {
+		stage6.setInvisible();
+		stage6.restock();
+	}
 
 	return &stage6;
 }
@@ -2900,6 +2933,7 @@ Page* buildStage7()
 	acid.setAlign(LEFT);
 	acid.setText(S7_SUBTTL);
 	acid.setSettingsId(ACID_ON);
+	acid.on(g_data.getInt(ACID_ON));
 	acid.setCallback(checkBoxCallback, &acid, &stage7);
 	acid.neverHide();
 
@@ -2959,6 +2993,7 @@ Page* buildStage7()
 	pumptime.setXYpos(74, 216);
 	pumptime.setText(TXT_SEC);
 	pumptime.setSettingsId(ACID_PUMPS);
+	pumptime.setValue(g_data.getInt(ACID_PUMPS));
 	pumptime.setCallback(saveInputFieldSetting, &pumptime);
 
 	stage7.addItem(&acid);
@@ -2977,8 +3012,10 @@ Page* buildStage7()
 
 	stage7.addItem(&forward);
 
-	stage7.setInvisible();
-	stage7.restock();
+	if (!acid.isOn()) {
+		stage7.setInvisible();
+		stage7.restock();
+	}
 
 	return &stage7;
 }
@@ -3014,6 +3051,7 @@ Page* buildStage8()
 	pumps.setXYpos(PG_LEFT_PADD, 162);
 	pumps.setText(S8_CHECK);
 	pumps.setSettingsId(PUMP_OFF);
+	pumps.on(g_data.getInt(PUMP_OFF));
 	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
@@ -3024,6 +3062,7 @@ Page* buildStage8()
 	seconds.setXYpos(36, 194);
 	seconds.setText(S8_INPUT);
 	seconds.setSettingsId(PUMP_SEC);
+	seconds.setValue(g_data.getInt(PUMP_SEC));
 	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	stage8.addItem(&subTitle);
@@ -3050,6 +3089,7 @@ Page* buildStage9()
 	//aeration.adjustTextX(5);
 	aeration.setText(S9_SUBTTL);
 	aeration.setSettingsId(AERO_ON);
+	aeration.on(g_data.getInt(AERO_ON));
 	aeration.setCallback(checkBoxCallback, &aeration, &stage9);
 	aeration.neverHide();
 
@@ -3067,6 +3107,7 @@ Page* buildStage9()
 	pumps.setXYpos(PG_LEFT_PADD, 102);
 	pumps.setText(S9_CHECK);
 	pumps.setSettingsId(AERO_PUMP);
+	pumps.on(g_data.getInt(AERO_PUMP));
 	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
@@ -3077,6 +3118,7 @@ Page* buildStage9()
 	seconds.setXYpos(36, 134);
 	seconds.setText(S9_INPUT);
 	seconds.setSettingsId(AERO_PUMP_SEC);
+	seconds.setValue(g_data.getInt(AERO_PUMP_SEC));
 	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	stage9.addItem(&aeration);
@@ -3088,8 +3130,10 @@ Page* buildStage9()
 
 	stage9.addItem(&forward);
 
-	stage9.setInvisible();
-	stage9.restock();
+	if (!aeration.isOn()) {
+		stage9.setInvisible();
+		stage9.restock();
+	}
 
 	return &stage9;
 }
@@ -3110,6 +3154,7 @@ Page* buildStage9_2()
 	stirCh.setXYpos(156, 43);
 	stirCh.setText(EMPTY_STR);
 	stirCh.setSettingsId(STIR_ON);
+	stirCh.on(g_data.getInt(STIR_ON));
 	stirCh.setCallback(checkBoxCallback, &stirCh, &stage9);
 	stirCh.neverHide();
 
@@ -3127,6 +3172,7 @@ Page* buildStage9_2()
 	pumps.setXYpos(PG_LEFT_PADD, 148);
 	pumps.setText(S9_CHECK);
 	pumps.setSettingsId(STIR_PUMP);
+	pumps.on(g_data.getInt(STIR_PUMP));
 	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
@@ -3137,6 +3183,7 @@ Page* buildStage9_2()
 	seconds.setXYpos(36, 180);
 	seconds.setText(S9_INPUT);
 	seconds.setSettingsId(STIR_PUMP_SEC);
+	seconds.setValue(g_data.getInt(STIR_PUMP_SEC));
 	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	stage9.addItem(&stir);
@@ -3149,8 +3196,10 @@ Page* buildStage9_2()
 
 	stage9.addItem(&forward);
 
-	stage9.setInvisible();
-	stage9.restock();
+	if (!stirCh.isOn()) {
+		stage9.setInvisible();
+		stage9.restock();
+	}
 
 	return &stage9;
 }
@@ -3175,6 +3224,7 @@ Page* buildStage8_2()
 	fminutes.setWidth(TWO_CHR);
 	fminutes.setText(TXT_MINUTES);
 	fminutes.setSettingsId(FLOOD_HOURS);
+	fminutes.setValue(g_data.getInt(FLOOD_HOURS));
 	fminutes.setCallback(saveInputFieldSetting, &fminutes);
 
 	static InputField fseconds;
@@ -3182,6 +3232,7 @@ Page* buildStage8_2()
 	fseconds.setWidth(TWO_CHR);
 	fseconds.setText(TXT_SECONDS);
 	fseconds.setSettingsId(FLOOD_MIN);
+	fseconds.setValue(g_data.getInt(FLOOD_MIN));
 	fseconds.setCallback(saveInputFieldSetting, &fseconds);
 
 	static Text par2;
@@ -3193,6 +3244,7 @@ Page* buildStage8_2()
 	hminutes.setWidth(TWO_CHR);
 	hminutes.setText(TXT_MINUTES);
 	hminutes.setSettingsId(FLOOD_HOLD_MIN);
+	hminutes.setValue(g_data.getInt(FLOOD_HOLD_MIN));
 	hminutes.setCallback(saveInputFieldSetting, &hminutes);
 
 	static InputField hseconds;
@@ -3200,6 +3252,7 @@ Page* buildStage8_2()
 	hseconds.setText(TXT_SECONDS);
 	hseconds.setWidth(TWO_CHR);
 	hseconds.setSettingsId(FLOOD_HOLD_SEC);
+	hseconds.setValue(g_data.getInt(FLOOD_HOLD_SEC));
 	hseconds.setCallback(saveInputFieldSetting, &hseconds);
 
 	stage8.addItem(&subTitle);
@@ -3253,6 +3306,7 @@ Page* buildStage8_3()
 	pumps.setXYpos(PG_LEFT_PADD, 59);
 	pumps.setText(S83_CHECK);
 	pumps.setSettingsId(SPRAY_PUMP);
+	pumps.on(g_data.getInt(SPRAY_PUMP));
 	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
@@ -3263,6 +3317,7 @@ Page* buildStage8_3()
 	seconds.setXYpos(36, 91);
 	seconds.setText(S83_INPUT);
 	seconds.setSettingsId(SPRAY_PUMP_SEC);
+	seconds.setValue(g_data.getInt(SPRAY_PUMP_SEC));
 	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	static Text subTitle2;
@@ -3275,6 +3330,7 @@ Page* buildStage8_3()
 	cons.setXYpos(PG_LEFT_PADD, 153);
 	cons.setText(S83_CONST);
 	cons.setSettingsId(SPRAY_CONS);
+	cons.on(g_data.getInt(SPRAY_CONS));
 	cons.setCallback(sprayRadioCallback, &cons);
 
 	static RadioButton cycl;
@@ -3282,6 +3338,7 @@ Page* buildStage8_3()
 	cycl.setXYpos(119, 153);
 	cycl.setText(S83_CYCL);
 	cycl.setSettingsId(SPRAY_CYCL);
+	cycl.on(g_data.getInt(SPRAY_CYCL));
 	cycl.setCallback(sprayRadioCallback, &cycl);
 
 	static Text par1;
@@ -3293,6 +3350,7 @@ Page* buildStage8_3()
 	dminutes.setWidth(TWO_CHR);
 	dminutes.setText(TXT_MINUTES);
 	dminutes.setSettingsId(SPRAY_MIN);
+	dminutes.setValue(g_data.getInt(SPRAY_MIN));
 	dminutes.setCallback(saveInputFieldSetting, &dminutes);
 
 	static InputField dseconds;
@@ -3300,6 +3358,7 @@ Page* buildStage8_3()
 	dseconds.setWidth(TWO_CHR);
 	dseconds.setText(TXT_SECONDS);
 	dseconds.setSettingsId(SPRAY_SEC);
+	dseconds.setValue(g_data.getInt(SPRAY_SEC));
 	dseconds.setCallback(saveInputFieldSetting, &dseconds);
 
 	static Text par2;
@@ -3311,6 +3370,7 @@ Page* buildStage8_3()
 	cminutes.setWidth(TWO_CHR);
 	cminutes.setText(TXT_MINUTES);
 	cminutes.setSettingsId(SPRAY_CYCL_MIN);
+	cminutes.setValue(g_data.getInt(SPRAY_CYCL_MIN));
 	cminutes.setCallback(saveInputFieldSetting, &cminutes);
 
 	static InputField cseconds;
@@ -3318,6 +3378,7 @@ Page* buildStage8_3()
 	cseconds.setText(TXT_SECONDS);
 	cseconds.setWidth(TWO_CHR);
 	cseconds.setSettingsId(SPRAY_CYCL_SEC);
+	cseconds.setValue(g_data.getInt(SPRAY_CYCL_SEC));
 	cseconds.setCallback(saveInputFieldSetting, &cseconds);
 
 	stage8.addItem(&subTitle);
@@ -3371,6 +3432,7 @@ Page* buildStage8_4()
 	pumps.setXYpos(PG_LEFT_PADD, 59);
 	pumps.setText(S83_CHECK);
 	pumps.setSettingsId(DRIP_PUMP);
+	pumps.on(g_data.getInt(DRIP_PUMP));
 	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
@@ -3381,6 +3443,7 @@ Page* buildStage8_4()
 	seconds.setXYpos(36, 91);
 	seconds.setText(S83_INPUT);
 	seconds.setSettingsId(DRIP_PUMP_SEC);
+	seconds.setValue(g_data.getInt(DRIP_PUMP_SEC));
 	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	static Text subTitle2;
@@ -3389,18 +3452,20 @@ Page* buildStage8_4()
 	subTitle2.setText(S84_MODE);
 
 	static RadioButton cons;
-	spray_type[RB_CONST] = &cons;
+	drip_type[RB_CONST] = &cons;
 	cons.setXYpos(PG_LEFT_PADD, 153);
 	cons.setText(S83_CONST);
 	cons.setSettingsId(DRIP_CONS);
-	cons.setCallback(sprayRadioCallback, &cons);
+	cons.on(g_data.getInt(DRIP_CONS));
+	cons.setCallback(dripRadioCallback, &cons);
 
 	static RadioButton cycl;
-	spray_type[RB_CYCL] = &cycl;
+	drip_type[RB_CYCL] = &cycl;
 	cycl.setXYpos(119, 153);
 	cycl.setText(S83_CYCL);
 	cycl.setSettingsId(DRIP_CYCL);
-	cycl.setCallback(sprayRadioCallback, &cycl);
+	cycl.on(g_data.getInt(DRIP_CYCL));
+	cycl.setCallback(dripRadioCallback, &cycl);
 
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 184);
@@ -3411,6 +3476,7 @@ Page* buildStage8_4()
 	dminutes.setWidth(TWO_CHR);
 	dminutes.setText(TXT_MINUTES);
 	dminutes.setSettingsId(DRIP_MIN);
+	dminutes.setValue(g_data.getInt(DRIP_MIN));
 	dminutes.setCallback(saveInputFieldSetting, &dminutes);
 
 	static InputField dseconds;
@@ -3418,6 +3484,7 @@ Page* buildStage8_4()
 	dseconds.setWidth(TWO_CHR);
 	dseconds.setText(TXT_SECONDS);
 	dseconds.setSettingsId(DRIP_SEC);
+	dseconds.setValue(g_data.getInt(DRIP_SEC));
 	dseconds.setCallback(saveInputFieldSetting, &dseconds);
 
 	static Text par2;
@@ -3429,6 +3496,7 @@ Page* buildStage8_4()
 	cminutes.setWidth(TWO_CHR);
 	cminutes.setText(TXT_MINUTES);
 	cminutes.setSettingsId(DRIP_CYCL_MIN);
+	cminutes.setValue(g_data.getInt(DRIP_CYCL_MIN));
 	cminutes.setCallback(saveInputFieldSetting, &cminutes);
 
 	static InputField cseconds;
@@ -3436,6 +3504,7 @@ Page* buildStage8_4()
 	cseconds.setWidth(TWO_CHR);
 	cseconds.setText(TXT_SECONDS);
 	cseconds.setSettingsId(DRIP_CYCL_SEC);
+	cseconds.setValue(g_data.getInt(DRIP_CYCL_SEC));
 	cseconds.setCallback(saveInputFieldSetting, &cseconds);
 
 	stage8.addItem(&subTitle);
@@ -3783,6 +3852,14 @@ void deleteSettingsFile()
 	}
 }
 
+void deleteDataFile()
+{
+	if (SPIFFS.exists(data_file)) {
+		SPIFFS.remove(data_file);
+		Serial.println("data file removed");
+	}
+}
+
 //char cmdbuff[20];
 
 void loop()
@@ -3799,6 +3876,7 @@ void loop()
 		}
 		else if (cmd == "init") {
 			deleteSettingsFile();
+			deleteDataFile();
 		}
 		else if (cmd == "load") {
 			g_data.load();

@@ -119,7 +119,7 @@ typedef enum {
 	RIG_OPENG,
 	RIG_GREENH,
 	RIG_MIXSOL,
-	NTYPES
+	RIG_NTYPES
 } rig_type;
 
 rig_type g_rig_type = RIG_DEEPWATER;
@@ -147,6 +147,10 @@ class Data {
 			set(ACID_1, 5.5f);
 			set(ACID_2, 6.0f);
 			set(ACID_3, 6.2f);
+			set(DRIP_CONS, true);
+			set(DRIP_CYCL, false);
+			set(SPRAY_CONS, true);
+			set(SPRAY_CYCL, false);
 		}
 
 		void print()
@@ -206,6 +210,7 @@ class Data {
 #endif
 				json load = json::parse(content.c_str());
 
+				g_rig_type = load["RIG_TYPE"];
 				_data[LIGHT_ON] = load[STR(LIGHT_ON)].get<float>();
 				_data[LIGHT_FROM] = load[STR(LIGHT_FROM)].get<float>();
 				_data[LIGHT_TO] = load[STR(LIGHT_TO)].get<float>();
@@ -294,36 +299,37 @@ class Data {
 		void save()
 		{
 			json d;
-			d[STR(LIGHT_ON)] = bool(_data[LIGHT_ON]);
+			d["RIG_TYPE"] = g_rig_type;
+			d[STR(LIGHT_ON)] = (_data[LIGHT_ON]);
 
-			d[STR(LIGHT_ON)] = bool(_data[LIGHT_ON]);
-			d[STR(LIGHT_FROM)] = int(_data[LIGHT_FROM]);
-			d[STR(LIGHT_TO)] = int(_data[LIGHT_TO]);
-			d[STR(LIGHT_DAY)] = int(_data[LIGHT_DAY]);
+			d[STR(LIGHT_ON)] = (_data[LIGHT_ON]);
+			d[STR(LIGHT_FROM)] = (_data[LIGHT_FROM]);
+			d[STR(LIGHT_TO)] = (_data[LIGHT_TO]);
+			d[STR(LIGHT_DAY)] = (_data[LIGHT_DAY]);
 
-			d[STR(VENT_ON)] = bool(_data[VENT_ON]);
-			d[STR(VENT_TIME_LIM)] = bool(_data[VENT_TIME_LIM]);
-			d[STR(VENT_TIME_FROM)] = int(_data[VENT_TIME_FROM]);
-			d[STR(VENT_TIME_TO)] = int(_data[VENT_TIME_TO]);
-			d[STR(VENT_TEMP_LIM)] = bool(_data[VENT_TEMP_LIM]);
-			d[STR(VENT_TEMP_THRES)] = int(_data[VENT_TEMP_THRES]);
-			d[STR(VENT_HUM_LIM)] = bool(_data[VENT_HUM_LIM]);
-			d[STR(VENT_HUM_THRES)] = int(_data[VENT_HUM_THRES]);
+			d[STR(VENT_ON)] = (_data[VENT_ON]);
+			d[STR(VENT_TIME_LIM)] = (_data[VENT_TIME_LIM]);
+			d[STR(VENT_TIME_FROM)] = (_data[VENT_TIME_FROM]);
+			d[STR(VENT_TIME_TO)] = (_data[VENT_TIME_TO]);
+			d[STR(VENT_TEMP_LIM)] = (_data[VENT_TEMP_LIM]);
+			d[STR(VENT_TEMP_THRES)] = (_data[VENT_TEMP_THRES]);
+			d[STR(VENT_HUM_LIM)] = (_data[VENT_HUM_LIM]);
+			d[STR(VENT_HUM_THRES)] = (_data[VENT_HUM_THRES]);
 
-			d[STR(PASSVENT)] = bool(_data[PASSVENT]);
-			d[STR(PASSVENT_TIME_LIM)] = bool(_data[PASSVENT_TIME_LIM]);
-			d[STR(PASSVENT_TIME_FROM)] = int(_data[PASSVENT_TIME_FROM]);
+			d[STR(PASSVENT)] = (_data[PASSVENT]);
+			d[STR(PASSVENT_TIME_LIM)] = (_data[PASSVENT_TIME_LIM]);
+			d[STR(PASSVENT_TIME_FROM)] = (_data[PASSVENT_TIME_FROM]);
 			d[STR(PASSVENT_TIME_TO)] = _data[PASSVENT_TIME_TO];
-			d[STR(PASSVENT_TEMP_LIM)] = bool(_data[PASSVENT_TEMP_LIM]);
-			d[STR(PASSVENT_TEMP_THRES)] = int(_data[PASSVENT_TEMP_THRES]);
-			d[STR(PASSVENT_HUM_LIM)] = bool(_data[PASSVENT_HUM_LIM]);
-			d[STR(PASSVENT_HUM_THRES)] = int(_data[PASSVENT_HUM_THRES]);
+			d[STR(PASSVENT_TEMP_LIM)] = (_data[PASSVENT_TEMP_LIM]);
+			d[STR(PASSVENT_TEMP_THRES)] = (_data[PASSVENT_TEMP_THRES]);
+			d[STR(PASSVENT_HUM_LIM)] = (_data[PASSVENT_HUM_LIM]);
+			d[STR(PASSVENT_HUM_THRES)] = (_data[PASSVENT_HUM_THRES]);
 
-			d[STR(GR_CYCL_1_DAYS)] = int(_data[GR_CYCL_1_DAYS]);
-			d[STR(GR_CYCL_2_DAYS)] = int(_data[GR_CYCL_2_DAYS]);
-			d[STR(GR_CYCL_3_DAYS)] = int(_data[GR_CYCL_3_DAYS]);
+			d[STR(GR_CYCL_1_DAYS)] = (_data[GR_CYCL_1_DAYS]);
+			d[STR(GR_CYCL_2_DAYS)] = (_data[GR_CYCL_2_DAYS]);
+			d[STR(GR_CYCL_3_DAYS)] = (_data[GR_CYCL_3_DAYS]);
 
-			d[STR(EC_ON)] = bool(_data[EC_ON]);
+			d[STR(EC_ON)] = (_data[EC_ON]);
 			d[STR(EC_CYCL1)] = _data[EC_CYCL1];
 			d[STR(EC_A1)] = _data[EC_A1];
 			d[STR(EC_B1)] = _data[EC_B1];
@@ -336,47 +342,47 @@ class Data {
 			d[STR(EC_A3)] = _data[EC_A3];
 			d[STR(EC_B3)] = _data[EC_B3];
 			d[STR(EC_C3)] = _data[EC_C3];
-			d[STR(EC_PUMPS)] = int(_data[EC_PUMPS]);
+			d[STR(EC_PUMPS)] = (_data[EC_PUMPS]);
 
-			d[STR(ACID_ON)] = bool(_data[ACID_ON]);
+			d[STR(ACID_ON)] = (_data[ACID_ON]);
 			d[STR(ACID_1)] = _data[ACID_1];
 			d[STR(ACID_2)] = _data[ACID_2];
 			d[STR(ACID_3)] = _data[ACID_3];
-			d[STR(ACID_PUMPS)] = int(_data[ACID_PUMPS]);
+			d[STR(ACID_PUMPS)] = (_data[ACID_PUMPS]);
 
-			d[STR(PUMP_OFF)] = bool(_data[PUMP_OFF]);
-			d[STR(PUMP_SEC)] = int(_data[PUMP_SEC]);
+			d[STR(PUMP_OFF)] = (_data[PUMP_OFF]);
+			d[STR(PUMP_SEC)] = (_data[PUMP_SEC]);
 
-			d[STR(AERO_ON)] = bool(_data[AERO_ON]);
-			d[STR(AERO_PUMP)] = bool(_data[AERO_PUMP]);
-			d[STR(AERO_PUMP_SEC)] = int(_data[AERO_PUMP_SEC]);
+			d[STR(AERO_ON)] = (_data[AERO_ON]);
+			d[STR(AERO_PUMP)] = (_data[AERO_PUMP]);
+			d[STR(AERO_PUMP_SEC)] = (_data[AERO_PUMP_SEC]);
 
-			d[STR(STIR_ON)] = bool(_data[STIR_ON]);
-			d[STR(STIR_PUMP)] = bool(_data[STIR_PUMP]);
-			d[STR(STIR_PUMP_SEC)] = int(_data[STIR_PUMP_SEC]);
+			d[STR(STIR_ON)] = (_data[STIR_ON]);
+			d[STR(STIR_PUMP)] = (_data[STIR_PUMP]);
+			d[STR(STIR_PUMP_SEC)] = (_data[STIR_PUMP_SEC]);
 
-			d[STR(FLOOD_HOURS)] = int(_data[FLOOD_HOURS]);
-			d[STR(FLOOD_MIN)] = int(_data[FLOOD_MIN]);
-			d[STR(FLOOD_HOLD_MIN)] = int(_data[FLOOD_HOLD_MIN]);
-			d[STR(FLOOD_HOLD_SEC)] = int(_data[FLOOD_HOLD_SEC]);
+			d[STR(FLOOD_HOURS)] = (_data[FLOOD_HOURS]);
+			d[STR(FLOOD_MIN)] = (_data[FLOOD_MIN]);
+			d[STR(FLOOD_HOLD_MIN)] = (_data[FLOOD_HOLD_MIN]);
+			d[STR(FLOOD_HOLD_SEC)] = (_data[FLOOD_HOLD_SEC]);
 
-			d[STR(SPRAY_PUMP)] = bool(_data[SPRAY_PUMP]);
-			d[STR(SPRAY_PUMP_SEC)] = int(_data[SPRAY_PUMP_SEC]);
-			d[STR(SPRAY_CONS)] = bool(_data[SPRAY_CONS]);
-			d[STR(SPRAY_CYCL)] = bool(_data[SPRAY_CYCL]);
-			d[STR(SPRAY_MIN)] = int(_data[SPRAY_MIN]);
-			d[STR(SPRAY_SEC)] = int(_data[SPRAY_SEC]);
-			d[STR(SPRAY_CYCL_MIN)] = int(_data[SPRAY_CYCL_MIN]);
-			d[STR(SPRAY_CYCL_SEC)] = int(_data[SPRAY_CYCL_SEC]);
+			d[STR(SPRAY_PUMP)] = (_data[SPRAY_PUMP]);
+			d[STR(SPRAY_PUMP_SEC)] = (_data[SPRAY_PUMP_SEC]);
+			d[STR(SPRAY_CONS)] = (_data[SPRAY_CONS]);
+			d[STR(SPRAY_CYCL)] = (_data[SPRAY_CYCL]);
+			d[STR(SPRAY_MIN)] = (_data[SPRAY_MIN]);
+			d[STR(SPRAY_SEC)] = (_data[SPRAY_SEC]);
+			d[STR(SPRAY_CYCL_MIN)] = (_data[SPRAY_CYCL_MIN]);
+			d[STR(SPRAY_CYCL_SEC)] = (_data[SPRAY_CYCL_SEC]);
 
-			d[STR(DRIP_PUMP)] = bool(_data[DRIP_PUMP]);
-			d[STR(DRIP_PUMP_SEC)] = int(_data[DRIP_PUMP_SEC]);
-			d[STR(DRIP_CONS)] = bool(_data[DRIP_CONS]);
-			d[STR(DRIP_CYCL)] = bool(_data[DRIP_CYCL]);
-			d[STR(DRIP_MIN)] = int(_data[DRIP_MIN]);
-			d[STR(DRIP_SEC)] = int(_data[DRIP_SEC]);
-			d[STR(DRIP_CYCL_MIN)] = int(_data[DRIP_CYCL_MIN]);
-			d[STR(DRIP_CYCL_SEC)] = int(_data[DRIP_CYCL_SEC]);
+			d[STR(DRIP_PUMP)] = (_data[DRIP_PUMP]);
+			d[STR(DRIP_PUMP_SEC)] = (_data[DRIP_PUMP_SEC]);
+			d[STR(DRIP_CONS)] = (_data[DRIP_CONS]);
+			d[STR(DRIP_CYCL)] = (_data[DRIP_CYCL]);
+			d[STR(DRIP_MIN)] = (_data[DRIP_MIN]);
+			d[STR(DRIP_SEC)] = (_data[DRIP_SEC]);
+			d[STR(DRIP_CYCL_MIN)] = (_data[DRIP_CYCL_MIN]);
+			d[STR(DRIP_CYCL_SEC)] = (_data[DRIP_CYCL_SEC]);
 
 			File file = SPIFFS.open(data_file, "w");
 			if (!file) {
