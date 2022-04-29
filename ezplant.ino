@@ -1,11 +1,11 @@
 //TODO: consider resource manager and page builder classes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "settings.h"
 //#include "esp_task_wdt.h"
 
 #define TASKS
 #define APP_DEBUG
+#include "settings.h"
 
 /*
 #define PORT_F 	17
@@ -410,6 +410,7 @@ void callPage(void* page_ptr)
 
 	if (currPage->lastStage()) {
 		g_first_launch = false;
+		g_data.save();
 		saveSettings();
 	}
 
@@ -2189,7 +2190,7 @@ void saveRadioBtnSetting(void* radio)
 
 	RadioButton* rb = (RadioButton*) radio;
 
-	g_data.set(rb->getSettingId(), rb->isOn());
+	g_data.set(rb->getSettingsId(), rb->isOn());
 }
 */
 
@@ -2241,7 +2242,6 @@ void checkBoxCallback(void* checkptr, void* pageptr)
 	CheckBox* check = (CheckBox*) checkptr;
 	Page* page = (Page*) pageptr;
 
-	g_data.set(check->getSettingsId(), check->isOn());
 
 	if (check->isOn()) {
 		check->on(false);
@@ -2252,6 +2252,7 @@ void checkBoxCallback(void* checkptr, void* pageptr)
 		check->on(true);
 		page->setVisible();
 	}
+	g_data.set(check->getSettingsId(), check->isOn());
 	page->restock();
 }
 
@@ -2519,6 +2520,7 @@ Page* buildStage4()
 	hum.setText(MORE_THAN);
 	hum.setStr("%");
 	hum.setSettingsId(PASSVENT_HUM_THRES);
+	hum.setCallback(saveInputFieldSetting, &hum);
 
 	//stage4.addItemPtr(std::move(hum));
 
@@ -2699,16 +2701,19 @@ Page* buildStage6()
 	in1.setFloat();
 	in1.setSettingsId(EC_CYCL1);
 	in1.setValue(g_data.getFloat(in1.getSettingsId()));
+	in1.setCallback(saveInputFieldSetting, &in1);
 	in1.setText(TXT_EC);
 	in2.setXYpos(125, 142);
 	in2.setFloat();
 	in2.setSettingsId(EC_CYCL2);
 	in2.setValue(g_data.getFloat(in2.getSettingsId()));
+	in2.setCallback(saveInputFieldSetting, &in2);
 	in2.setText(TXT_EC);
 	in3.setXYpos(125, 202);
 	in3.setFloat();
 	in3.setSettingsId(EC_CYCL3);
 	in3.setValue(g_data.getFloat(in3.getSettingsId()));
+	in3.setCallback(saveInputFieldSetting, &in3);
 	in3.setText(TXT_EC);
 
 	/*
@@ -2717,7 +2722,6 @@ Page* buildStage6()
 	static String stage3str;
 	*/
 
-	//TODO: manual alloc strings or change StringText field
 	stage1str = (String)"0" + " - "
 		+ g_data.getInt(GR_CYCL_1_DAYS) + " "
 		+ scrStrings[TXT_DAY];
@@ -2757,6 +2761,9 @@ Page* buildStage6()
 	ifA1.setValue(g_data.getFloat(ifA1.getSettingsId()));
 	ifB1.setValue(g_data.getFloat(ifB1.getSettingsId()));
 	ifC1.setValue(g_data.getFloat(ifC1.getSettingsId()));
+	ifA1.setCallback(saveInputFieldSetting, &ifA1);
+	ifB1.setCallback(saveInputFieldSetting, &ifB1);
+	ifC1.setCallback(saveInputFieldSetting, &ifC1);
 
 	ifA1.setAlign(LEFT);
 	ifB1.setAlign(LEFT);
@@ -2785,6 +2792,9 @@ Page* buildStage6()
 	ifA2.setValue(g_data.getFloat(ifA2.getSettingsId()));
 	ifB2.setValue(g_data.getFloat(ifB2.getSettingsId()));
 	ifC2.setValue(g_data.getFloat(ifC2.getSettingsId()));
+	ifA2.setCallback(saveInputFieldSetting, &ifA2);
+	ifB2.setCallback(saveInputFieldSetting, &ifB2);
+	ifC2.setCallback(saveInputFieldSetting, &ifC2);
 
 	ifA2.setAlign(LEFT);
 	ifB2.setAlign(LEFT);
@@ -2813,6 +2823,9 @@ Page* buildStage6()
 	ifA3.setValue(g_data.getFloat(ifA3.getSettingsId()));
 	ifB3.setValue(g_data.getFloat(ifB3.getSettingsId()));
 	ifC3.setValue(g_data.getFloat(ifC3.getSettingsId()));
+	ifA3.setCallback(saveInputFieldSetting, &ifA3);
+	ifB3.setCallback(saveInputFieldSetting, &ifB3);
+	ifC3.setCallback(saveInputFieldSetting, &ifC3);
 
 	ifA3.setAlign(LEFT);
 	ifB3.setAlign(LEFT);
@@ -2928,12 +2941,12 @@ Page* buildStage7()
 	in1.setFloat();
 	in2.setFloat();
 	in3.setFloat();
-	in1.setValue(5.5f);
-	in2.setValue(6.0f);
-	in3.setValue(6.2f);
 	in1.setSettingsId(ACID_1);
 	in2.setSettingsId(ACID_2);
 	in3.setSettingsId(ACID_3);
+	in1.setValue(g_data.getFloat(in1.getSettingsId()));
+	in2.setValue(g_data.getFloat(in2.getSettingsId()));
+	in3.setValue(g_data.getFloat(in3.getSettingsId()));
 	in1.setCallback(saveInputFieldSetting, &in1);
 	in2.setCallback(saveInputFieldSetting, &in2);
 	in3.setCallback(saveInputFieldSetting, &in3);
@@ -2970,7 +2983,6 @@ Page* buildStage7()
 	return &stage7;
 }
 
-/*
 void tmpCheckBoxCallback(void* check)
 {
 	if (check == nullptr)
@@ -2981,7 +2993,6 @@ void tmpCheckBoxCallback(void* check)
 	ch->invalidate();
 	ch->prepare();
 }
-*/
 
 Page* buildStage8()
 {
@@ -3098,6 +3109,7 @@ Page* buildStage9_2()
 	static CheckBox stirCh;
 	stirCh.setXYpos(156, 43);
 	stirCh.setText(EMPTY_STR);
+	stirCh.setSettingsId(STIR_ON);
 	stirCh.setCallback(checkBoxCallback, &stirCh, &stage9);
 	stirCh.neverHide();
 
@@ -3114,7 +3126,8 @@ Page* buildStage9_2()
 	static CheckBox pumps;
 	pumps.setXYpos(PG_LEFT_PADD, 148);
 	pumps.setText(S9_CHECK);
-	pumps.setCallback(tmpCheckBoxCallback, &pumps);
+	pumps.setSettingsId(STIR_PUMP);
+	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
 	za.setXYpos(PG_LEFT_PADD, 186);
@@ -3123,6 +3136,8 @@ Page* buildStage9_2()
 	static InputField seconds;
 	seconds.setXYpos(36, 180);
 	seconds.setText(S9_INPUT);
+	seconds.setSettingsId(STIR_PUMP_SEC);
+	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	stage9.addItem(&stir);
 	stage9.addItem(&stirCh);
@@ -3159,11 +3174,15 @@ Page* buildStage8_2()
 	fminutes.setXYpos(PG_LEFT_PADD, 127);
 	fminutes.setWidth(TWO_CHR);
 	fminutes.setText(TXT_MINUTES);
+	fminutes.setSettingsId(FLOOD_HOURS);
+	fminutes.setCallback(saveInputFieldSetting, &fminutes);
 
 	static InputField fseconds;
 	fseconds.setXYpos(97, 127);
 	fseconds.setWidth(TWO_CHR);
 	fseconds.setText(TXT_SECONDS);
+	fseconds.setSettingsId(FLOOD_MIN);
+	fseconds.setCallback(saveInputFieldSetting, &fseconds);
 
 	static Text par2;
 	par2.setXYpos(PG_LEFT_PADD, 174);
@@ -3173,11 +3192,15 @@ Page* buildStage8_2()
 	hminutes.setXYpos(PG_LEFT_PADD, 212);
 	hminutes.setWidth(TWO_CHR);
 	hminutes.setText(TXT_MINUTES);
+	hminutes.setSettingsId(FLOOD_HOLD_MIN);
+	hminutes.setCallback(saveInputFieldSetting, &hminutes);
 
 	static InputField hseconds;
 	hseconds.setXYpos(97, 212);
 	hseconds.setText(TXT_SECONDS);
 	hseconds.setWidth(TWO_CHR);
+	hseconds.setSettingsId(FLOOD_HOLD_SEC);
+	hseconds.setCallback(saveInputFieldSetting, &hseconds);
 
 	stage8.addItem(&subTitle);
 	stage8.addItem(&par1);
@@ -3212,7 +3235,7 @@ void sprayRadioCallback(void* btn)
 	RadioButton* button = (RadioButton*) btn;
 	button->on(true);
 	for (auto& i:spray_type)
-		g_data.set(i->getSettingId(), i->isOn());
+		g_data.set(i->getSettingsId(), i->isOn());
 }
 
 Page* buildStage8_3()
@@ -3229,7 +3252,8 @@ Page* buildStage8_3()
 	static CheckBox pumps;
 	pumps.setXYpos(PG_LEFT_PADD, 59);
 	pumps.setText(S83_CHECK);
-	pumps.setCallback(tmpCheckBoxCallback, &pumps);
+	pumps.setSettingsId(SPRAY_PUMP);
+	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
 	za.setXYpos(PG_LEFT_PADD, 96);
@@ -3238,6 +3262,8 @@ Page* buildStage8_3()
 	static InputField seconds;
 	seconds.setXYpos(36, 91);
 	seconds.setText(S83_INPUT);
+	seconds.setSettingsId(SPRAY_PUMP_SEC);
+	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	static Text subTitle2;
 	subTitle2.setXYpos(PG_LEFT_PADD, 131);
@@ -3248,12 +3274,14 @@ Page* buildStage8_3()
 	spray_type[RB_CONST] = &cons;
 	cons.setXYpos(PG_LEFT_PADD, 153);
 	cons.setText(S83_CONST);
+	cons.setSettingsId(SPRAY_CONS);
 	cons.setCallback(sprayRadioCallback, &cons);
 
 	static RadioButton cycl;
 	spray_type[RB_CYCL] = &cycl;
 	cycl.setXYpos(119, 153);
 	cycl.setText(S83_CYCL);
+	cycl.setSettingsId(SPRAY_CYCL);
 	cycl.setCallback(sprayRadioCallback, &cycl);
 
 	static Text par1;
@@ -3264,11 +3292,15 @@ Page* buildStage8_3()
 	dminutes.setXYpos(PG_LEFT_PADD, 204);
 	dminutes.setWidth(TWO_CHR);
 	dminutes.setText(TXT_MINUTES);
+	dminutes.setSettingsId(SPRAY_MIN);
+	dminutes.setCallback(saveInputFieldSetting, &dminutes);
 
 	static InputField dseconds;
 	dseconds.setXYpos(97, 204);
 	dseconds.setWidth(TWO_CHR);
 	dseconds.setText(TXT_SECONDS);
+	dseconds.setSettingsId(SPRAY_SEC);
+	dseconds.setCallback(saveInputFieldSetting, &dseconds);
 
 	static Text par2;
 	par2.setXYpos(PG_LEFT_PADD, 238);
@@ -3278,11 +3310,15 @@ Page* buildStage8_3()
 	cminutes.setXYpos(PG_LEFT_PADD, 260);
 	cminutes.setWidth(TWO_CHR);
 	cminutes.setText(TXT_MINUTES);
+	cminutes.setSettingsId(SPRAY_CYCL_MIN);
+	cminutes.setCallback(saveInputFieldSetting, &cminutes);
 
 	static InputField cseconds;
 	cseconds.setXYpos(97, 260);
 	cseconds.setText(TXT_SECONDS);
 	cseconds.setWidth(TWO_CHR);
+	cseconds.setSettingsId(SPRAY_CYCL_SEC);
+	cseconds.setCallback(saveInputFieldSetting, &cseconds);
 
 	stage8.addItem(&subTitle);
 	stage8.addItem(&pumps);
@@ -3317,7 +3353,7 @@ void dripRadioCallback(void* btn)
 	button->on(true);
 
 	for (auto& i:drip_type)
-		g_data.set(i->getSettingId(), i->isOn());
+		g_data.set(i->getSettingsId(), i->isOn());
 }
 
 Page* buildStage8_4()
@@ -3334,7 +3370,8 @@ Page* buildStage8_4()
 	static CheckBox pumps;
 	pumps.setXYpos(PG_LEFT_PADD, 59);
 	pumps.setText(S83_CHECK);
-	pumps.setCallback(tmpCheckBoxCallback, &pumps);
+	pumps.setSettingsId(DRIP_PUMP);
+	pumps.setCallback(saveCheckBoxSetting, &pumps);
 
 	static Text za;
 	za.setXYpos(PG_LEFT_PADD, 96);
@@ -3343,6 +3380,8 @@ Page* buildStage8_4()
 	static InputField seconds;
 	seconds.setXYpos(36, 91);
 	seconds.setText(S83_INPUT);
+	seconds.setSettingsId(DRIP_PUMP_SEC);
+	seconds.setCallback(saveInputFieldSetting, &seconds);
 
 	static Text subTitle2;
 	subTitle2.setXYpos(PG_LEFT_PADD, 131);
@@ -3353,12 +3392,14 @@ Page* buildStage8_4()
 	spray_type[RB_CONST] = &cons;
 	cons.setXYpos(PG_LEFT_PADD, 153);
 	cons.setText(S83_CONST);
+	cons.setSettingsId(DRIP_CONS);
 	cons.setCallback(sprayRadioCallback, &cons);
 
 	static RadioButton cycl;
 	spray_type[RB_CYCL] = &cycl;
 	cycl.setXYpos(119, 153);
 	cycl.setText(S83_CYCL);
+	cycl.setSettingsId(DRIP_CYCL);
 	cycl.setCallback(sprayRadioCallback, &cycl);
 
 	static Text par1;
@@ -3369,11 +3410,15 @@ Page* buildStage8_4()
 	dminutes.setXYpos(PG_LEFT_PADD, 204);
 	dminutes.setWidth(TWO_CHR);
 	dminutes.setText(TXT_MINUTES);
+	dminutes.setSettingsId(DRIP_MIN);
+	dminutes.setCallback(saveInputFieldSetting, &dminutes);
 
 	static InputField dseconds;
 	dseconds.setXYpos(97, 204);
 	dseconds.setWidth(TWO_CHR);
 	dseconds.setText(TXT_SECONDS);
+	dseconds.setSettingsId(DRIP_SEC);
+	dseconds.setCallback(saveInputFieldSetting, &dseconds);
 
 	static Text par2;
 	par2.setXYpos(PG_LEFT_PADD, 238);
@@ -3383,11 +3428,15 @@ Page* buildStage8_4()
 	cminutes.setXYpos(PG_LEFT_PADD, 260);
 	cminutes.setWidth(TWO_CHR);
 	cminutes.setText(TXT_MINUTES);
+	cminutes.setSettingsId(DRIP_CYCL_MIN);
+	cminutes.setCallback(saveInputFieldSetting, &cminutes);
 
 	static InputField cseconds;
 	cseconds.setXYpos(97, 260);
 	cseconds.setWidth(TWO_CHR);
 	cseconds.setText(TXT_SECONDS);
+	cseconds.setSettingsId(DRIP_CYCL_SEC);
+	cseconds.setCallback(saveInputFieldSetting, &cseconds);
 
 	stage8.addItem(&subTitle);
 	stage8.addItem(&pumps);
@@ -3651,6 +3700,7 @@ void setup(void)
 #endif
 	}
 
+	g_data.load();
 
 	// connect to wifi or create AP
 	checkWifi();
@@ -3733,14 +3783,28 @@ void deleteSettingsFile()
 	}
 }
 
-char cmdbuff[20];
+//char cmdbuff[20];
 
 void loop()
 {
 	app.update();
 
 	// read init command
-	if (Serial.available()) {
+	while (Serial.available() > 0) {
+		String cmd = Serial.readStringUntil('\n');
+		cmd.trim();
+
+		if (cmd == "data") {
+			g_data.print();
+		}
+		else if (cmd == "init") {
+			deleteSettingsFile();
+		}
+		else if (cmd == "load") {
+			g_data.load();
+		}
+	}
+		/*
 		static int i = 0;
 		cmdbuff[i] = Serial.read();
 		if (cmdbuff[i] == '\n') {
@@ -3760,6 +3824,7 @@ void loop()
 			i = 0;
 		}
 	}
+	*/
 	/*
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {

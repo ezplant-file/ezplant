@@ -1120,9 +1120,7 @@ class App {
 			}
 
 
-			//if (!digitalRead(BTN_PREV)) {
 			if (~user_input & BTN_PREV) {
-				//Serial.println("Bang!");
 				_cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
@@ -1133,11 +1131,9 @@ class App {
 					currItem = tmp;
 				}
 
-				//currItem = currPage->getCurrItemAt(_iterator);
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
-			//else if (!digitalRead(BTN_NEXT)) {
 			else if (~user_input & BTN_NEXT) {
 				_cursor.draw(false);
 				_iterator++;
@@ -1152,7 +1148,6 @@ class App {
 				_cursor.draw(true);
 				_dbFlag = false;
 			}
-			//else if (!digitalRead(BTN_MIN)) {
 			else if (~user_input & BTN_MIN) {
 				if (currItem->hasInput()) {
 					currItem->sub();
