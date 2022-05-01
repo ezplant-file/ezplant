@@ -8,6 +8,7 @@
 #include <iarduino_I2C_pH.h>
 #include <iarduino_I2C_TDS.h>
 #include <iarduino_PCA9555.h>
+#include <FunctionalInterrupt.h>
 
 #define PH_METER_ADDRESS 0x0a
 #define TDS_METER_ADDRESS 0x0b
@@ -125,6 +126,14 @@ class InputOutput {
 	public:
 		void update()
 		{
+			if (_pressed) {
+				readDigital();
+			}
+		}
+
+		void ARDUINO_ISR_ATTR isr()
+		{
+			_pressed = true;
 		}
 
 		void init()
@@ -137,6 +146,7 @@ class InputOutput {
 			gpio[SECOND_EXPANDER].portMode(FIRST_PORT, pinsAll(OUTPUT));
 			gpio[SECOND_EXPANDER].portWrite(FIRST_PORT, pinsAll(LOW));
 			pinMode(EXPANDER_INT, INPUT_PULLUP);
+			attachInterrupt(EXPANDER_INT, std::bind(&InputOutput:isr, this), FALLING);
 			pinMode(PORT_F, OUTPUT);
 			pinMode(PORT_G, OUTPUT);
 			pinMode(PORT_H, OUTPUT);
@@ -212,8 +222,7 @@ class InputOutput {
 		// TODO: make private, operate on interrupt
 		void readDigital()
 		{
-			uint16_t keys = gpio[FIRST_EXPANDER].portRead(BOTH_PORTS);
-
+			uint16_t keys = _readExpanders();
 
 			keys >>= KEYS_START_BIT;
 
@@ -228,8 +237,9 @@ class InputOutput {
 		}
 
 	private:
-		void _readExpanders()
+		uint16_t _readExpanders()
 		{
+			_keys = gpio[FIRST_EXPANDER].portRead(BOTH_PORTS);
 		}
 
 		void _writeExpanders()
@@ -253,6 +263,7 @@ class InputOutput {
 		}
 
 	private:
+		bool _pressed = false;
 		bool _lock = false;
 		float _last_ph = 0.0;
 		int _last_tds = 0;
