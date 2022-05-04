@@ -27,7 +27,7 @@ WebServer server(80);
 
 // debounce stuff
 #define CURSOR_TIMER 500
-#define DEBOUNCE 200
+#define DEBOUNCE 150
 
 #define sleep(A) (vTaskDelay((A) / portTICK_PERIOD_MS))
 
@@ -194,12 +194,10 @@ OutputField g_tds_read;
 #define NET_IMG_X 186
 
 #include "settings.h" // rig_settings_t, rig_type, g_data
-/*
-typedef union {
 
-} settings_t;
-*/
-
+class Rig {
+	public:
+};
 
 
 class Panel {
@@ -1074,6 +1072,13 @@ class App {
 				_blink = !_blink;
 			}
 
+			/*
+			if (!io.update()) {
+				return;
+			}
+			*/
+
+			/*
 
 			// return if no interupts from expander
 			//pinMode(EXPANDER_INT, INPUT);
@@ -1084,6 +1089,7 @@ class App {
 			else {
 				gInterrupt = true;
 			}
+			*/
 
 			/*
 #ifdef APP_DEBUG
@@ -1091,9 +1097,12 @@ class App {
 #endif
 */
 
+			/*
 			// read buttons
 			uint8_t user_input = gpio[0].portRead(0);
+			*/
 
+			/*
 			// debounce
 			if ((uint8_t)~user_input) {
 				if (millis() - _dbMils > DEBOUNCE) {
@@ -1105,22 +1114,30 @@ class App {
 					}
 				}
 			}
+			*/
 
+			/*
 			// input proc
 			if (!_dbFlag)
 				return;
+				*/
 
-			//userinput.update();
-
-			if (_inactive) {
-				//Serial.println("Bang!");
+			if (io.update() && _inactive) {
 				_inactive = false;
 				gBrightness.setValue(_prevBright);
 				gBrightness.onClick();
 			}
 
+			if (io.update() && millis() - _dbMils > DEBOUNCE) {
+				_dbMils = millis();
+				_dbFlag = true;
+			}
 
-			if (~user_input & BTN_PREV) {
+			if (!_dbFlag) {
+				return;
+			}
+
+			if (io.userBack()) {
 				_cursor.draw(false);
 				_iterator--;
 				if (_iterator < 0)
@@ -1132,9 +1149,10 @@ class App {
 				}
 
 				_cursor.draw(true);
-				_dbFlag = false;
+				//_dbFlag = false;
+				//_oldMils = _dimMils = millis();
 			}
-			else if (~user_input & BTN_NEXT) {
+			else if (io.userForw()) {
 				_cursor.draw(false);
 				_iterator++;
 				if (_iterator > currPage->selSize() - 1)
@@ -1146,43 +1164,44 @@ class App {
 				}
 
 				_cursor.draw(true);
-				_dbFlag = false;
+				//_dbFlag = false;
+				//_oldMils = _dimMils = millis();
 			}
-			else if (~user_input & BTN_MIN) {
+			else if (io.userMinus()) {
 				if (currItem->hasInput()) {
 					currItem->sub();
-					//currItem->setValue(currItem->getValue() - 1);
 					currItem->onClick();
 				}
 				currItem->draw();
-				_dbFlag = false;
+				//_dbFlag = false;
+				//_oldMils =_dimMils = millis();
 			}
-			else if (~user_input & BTN_PLU) {
+			else if (io.userPlus()) {
 				if (currItem->hasInput()) {
 					currItem->add();
-					//currItem->setValue(currItem->getValue() + 1);
 					currItem->onClick();
 				}
 				currItem->draw();
-				_dbFlag = false;
+				//_oldMils = _dimMils = millis();
 			}
-			else if (~user_input & BTN_OK) {
+			else if (io.userOK()) {
 				_cursor.draw(false);
 				currItem->onClick();
 				if (_iterator >= currPage->nItems())
 					_iterator = 0;
 				currItem = currPage->getCurrItemAt(_iterator);
-				_dbFlag = false;
+				//_oldMils = _dimMils = millis();
+				//_dbFlag = false;
 			}
-			else if (~user_input & BTN_HOME) {
+			else if (io.userHome()) {
 				_cursor.draw(false);
 				callPage(pages[MAIN_PG]);
 				currItem = currPage->getCurrItemAt(_iterator);
-				_dbFlag = false;
 			}
 
+			_dbFlag = false;
+			_oldMils = _dimMils = millis();
 			// don't blink if buttons were pressed...
-			_oldMils = millis();
 		}
 };
 

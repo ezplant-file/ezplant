@@ -89,7 +89,7 @@ enum {
 	ADC_4
 };
 
-// digital inputs
+// digital inputs bits (position matter!)
 enum {
 	DIG_KEY1,
 	DIG_KEY2,
@@ -104,7 +104,7 @@ enum {
 	DIG_NKEYS
 };
 
-// power diag page items
+// power diag page items bits (position matter!)
 enum {
 	PWR_PG_PORT_A,
 	PWR_PG_PORT_B,
@@ -121,14 +121,34 @@ enum {
 	PWR_PG_NITEMS
 };
 
+// user keys bits (position matter!)
+enum {
+	UI_BACK,
+	UI_MINUS,
+	UI_OK,
+	UI_HOME,
+	UI_FORW,
+	UI_PLUS,
+	UI_NKEYS
+};
+
 
 class InputOutput {
 	public:
-		void update()
+		bool update()
 		{
 			if (_pressed) {
 				readDigital();
+				_pressed = false;
 			}
+
+			for (auto& i:_ui_keys) {
+				if (i) {
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		void ARDUINO_ISR_ATTR isr()
@@ -146,7 +166,7 @@ class InputOutput {
 			gpio[SECOND_EXPANDER].portMode(FIRST_PORT, pinsAll(OUTPUT));
 			gpio[SECOND_EXPANDER].portWrite(FIRST_PORT, pinsAll(LOW));
 			pinMode(EXPANDER_INT, INPUT_PULLUP);
-			attachInterrupt(EXPANDER_INT, std::bind(&InputOutput:isr, this), FALLING);
+			attachInterrupt(EXPANDER_INT, std::bind(&InputOutput::isr, this), FALLING);
 			pinMode(PORT_F, OUTPUT);
 			pinMode(PORT_G, OUTPUT);
 			pinMode(PORT_H, OUTPUT);
@@ -224,6 +244,15 @@ class InputOutput {
 		{
 			uint16_t keys = _readExpanders();
 
+			for (int i = 0; i < UI_NKEYS; i++) {
+				if (keys & (0x0001 << i)) {
+					_ui_keys[i] = false;
+				}
+				else {
+					_ui_keys[i] = true;
+				}
+			}
+
 			keys >>= KEYS_START_BIT;
 
 			for (int i = 0; i < DIG_NKEYS; i++) {
@@ -236,10 +265,40 @@ class InputOutput {
 			}
 		}
 
+		bool userPlus()
+		{
+			return _ui_keys[UI_PLUS];
+		}
+
+		bool userMinus()
+		{
+			return _ui_keys[UI_MINUS];
+		}
+
+		bool userBack()
+		{
+			return _ui_keys[UI_BACK];
+		}
+
+		bool userForw()
+		{
+			return _ui_keys[UI_FORW];
+		}
+
+		bool userOK()
+		{
+			return _ui_keys[UI_OK];
+		}
+
+		bool userHome()
+		{
+			return _ui_keys[UI_HOME];
+		}
+
 	private:
 		uint16_t _readExpanders()
 		{
-			_keys = gpio[FIRST_EXPANDER].portRead(BOTH_PORTS);
+			return gpio[FIRST_EXPANDER].portRead(BOTH_PORTS);
 		}
 
 		void _writeExpanders()
@@ -270,6 +329,7 @@ class InputOutput {
 		//uint16_t _buttons_buffer[10];
 		uint16_t _adc[N_ADC];
 		bool _dig_keys[DIG_NKEYS];
+		bool _ui_keys[UI_NKEYS];
 } io;
 
 #endif

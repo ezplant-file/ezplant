@@ -1332,9 +1332,14 @@ class InputField: public ScrObj {
 			_ignoreLimits = true;
 		}
 
-		void setValue(float f)
+		void setValue(float value)
 		{
-			_fvalue = f;
+			if (value > _fupper)
+				value = _flower;
+			if (value < _flower)
+				value = _fupper;
+
+			_fvalue = value;
 			_isFloat = true;
 			_invalid = true;
 		}
@@ -1353,6 +1358,12 @@ class InputField: public ScrObj {
 		{
 			_upper = upper;
 			_lower = lower;
+		}
+
+		void setfLimits(float lower, float upper)
+		{
+			_fupper = upper;
+			_flower = lower;
 		}
 
 		void showPlus(bool show)
@@ -1374,6 +1385,21 @@ class InputField: public ScrObj {
 		void setStr(const char* str)
 		{
 			_str = str;
+		}
+
+		void setTDS()
+		{
+			setfLimits(0.1, 5.0);
+		}
+
+		void setPh()
+		{
+			setfLimits(3.0, 8.0);
+		}
+
+		void setMult()
+		{
+			setfLimits(0.1, 10.0);
 		}
 
 	private:
@@ -1399,6 +1425,8 @@ class InputField: public ScrObj {
 		//uint16_t _textw;
 		int16_t _upper = 100;
 		int16_t _lower = 0;
+		float _fupper = 14.0;
+		float _flower = 0.1;
 		uint8_t _paddingX = IN_FLD_X_PADDING;
 		uint8_t _paddingY = IN_FLD_Y_PADDING;
 		const char* _str = "";

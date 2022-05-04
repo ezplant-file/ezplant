@@ -398,7 +398,10 @@ void callPage(void* page_ptr)
 	if (page->next() == nullptr) {
 		forward.setCallback(nop);
 	}
-	else if (page == pages[STAGE1_PG]) {
+	else if (page == pages[STAGE7_PG]) {
+		forward.setCallback(rigtypeForward);
+	}
+	else if (page == pages[STAGE8_PG]) {
 		forward.setCallback(rigtypeForward);
 	}
 	else if (page == pages[STAGE5_PG]) {
@@ -1642,7 +1645,7 @@ enum mainMenuItems {
 	MM_DIAG,
 	MM_TEST,
 	MM_FONT,
-	MM_FIRST_PAGE,
+	//MM_FIRST_PAGE,
 	MM_NITEMS
 };
 
@@ -1661,7 +1664,7 @@ Page* buildMenuPage()
 	menu1[MM_DIAG] = DIAG;
 	menu1[MM_TEST] = TEST_PAGE;
 	menu1[MM_FONT] = FONT_PAGE;
-	menu1[MM_FIRST_PAGE] = FP_SUBTTL;
+	//menu1[MM_FIRST_PAGE] = FP_SUBTTL;
 
 	int j = 0;
 
@@ -1676,11 +1679,12 @@ Page* buildMenuPage()
 	}
 
 	// set callBacks
+	menu_items[MM_PLANT].setCallback(callPage, pages[STAGE1_PG]);
 	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
 	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
 	menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
 	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
-	menu_items[MM_FIRST_PAGE].setCallback(callPage, pages[FIRST_PG]);
+	//menu_items[MM_FIRST_PAGE].setCallback(callPage, pages[STAGE1_PG]);
 
 	// add all to page
 	for (int i = 0; i < MM_NITEMS; i++) {
@@ -2148,13 +2152,35 @@ void rigtypeCallback(void* btn)
 
 void rigtypeForward(void* arg)
 {
-	switch (g_rig_type) {
-		default: break;
-		case RIG_DEEPWATER: callPage(pages[STAGE2_PG]); break;
-		case RIG_LAYER: callPage(pages[STAGE92_PG]); break;
-		case RIG_FLOOD: callPage(pages[STAGE82_PG]); break;
-		case RIG_AERO: callPage(pages[STAGE83_PG]); break;
-		case RIG_DRIP: callPage(pages[STAGE84_PG]); break;
+	if (currPage == pages[STAGE1_PG]) {
+		switch (g_rig_type) {
+			default: break;
+			case RIG_DEEPWATER:
+			case RIG_LAYER:
+			case RIG_FLOOD:
+			case RIG_AERO:
+			case RIG_DRIP: callPage(pages[STAGE2_PG]); break;
+		}
+	}
+	else if (currPage == pages[STAGE7_PG]) {
+		switch (g_rig_type) {
+			default: break;
+			case RIG_DEEPWATER: callPage(pages[STAGE8_PG]); break;
+			case RIG_LAYER: callPage(pages[STAGE8_PG]); break;
+			case RIG_FLOOD: callPage(pages[STAGE82_PG]); break;
+			case RIG_AERO: callPage(pages[STAGE83_PG]); break;
+			case RIG_DRIP: callPage(pages[STAGE84_PG]); break;
+		}
+	}
+	else if (currPage == pages[STAGE8_PG]) {
+		switch (g_rig_type) {
+			default: break;
+			case RIG_DEEPWATER: callPage(pages[STAGE9_PG]); break;
+			case RIG_LAYER: callPage(pages[STAGE92_PG]); break;
+			case RIG_FLOOD: callPage(pages[MAIN_PG]); break;
+			case RIG_AERO: callPage(pages[STAGE92_PG]); break;
+			case RIG_DRIP: callPage(pages[STAGE92_PG]); break;
+		}
 	}
 }
 
@@ -2745,6 +2771,9 @@ Page* buildStage6()
 	in3.setValue(g_data.getFloat(in3.getSettingsId()));
 	in3.setCallback(saveInputFieldSetting, &in3);
 	in3.setText(TXT_EC);
+	in1.setTDS();
+	in2.setTDS();
+	in3.setTDS();
 
 	/*
 	static String stage1str;
@@ -2785,6 +2814,10 @@ Page* buildStage6()
 	ifB1.setFloat();
 	ifC1.setFloat();
 
+	ifA1.setMult();
+	ifB1.setMult();
+	ifC1.setMult();
+
 	ifA1.setSettingsId(EC_A1);
 	ifB1.setSettingsId(EC_B1);
 	ifC1.setSettingsId(EC_C1);
@@ -2816,6 +2849,10 @@ Page* buildStage6()
 	ifB2.setFloat();
 	ifC2.setFloat();
 
+	ifA2.setMult();
+	ifB2.setMult();
+	ifC2.setMult();
+
 	ifA2.setSettingsId(EC_A2);
 	ifB2.setSettingsId(EC_B2);
 	ifC2.setSettingsId(EC_C2);
@@ -2846,6 +2883,10 @@ Page* buildStage6()
 	ifA3.setFloat();
 	ifB3.setFloat();
 	ifC3.setFloat();
+
+	ifA3.setMult();
+	ifB3.setMult();
+	ifC3.setMult();
 
 	ifA3.setSettingsId(EC_A3);
 	ifB3.setSettingsId(EC_B3);
@@ -2975,6 +3016,9 @@ Page* buildStage7()
 	in1.setFloat();
 	in2.setFloat();
 	in3.setFloat();
+	in1.setPh();
+	in2.setPh();
+	in3.setPh();
 	in1.setSettingsId(ACID_1);
 	in2.setSettingsId(ACID_2);
 	in3.setSettingsId(ACID_3);
@@ -3707,6 +3751,7 @@ void linkPages()
 
 	// new planting first page
 	pages[STAGE1_PG]->setPrev(pages[MAIN_PG]);
+	pages[STAGE1_PG]->setNext(pages[STAGE2_PG]);
 
 	// planting last page
 	pages[STAGE9_PG]->setNext(pages[MAIN_PG]);
@@ -3827,21 +3872,6 @@ void setup(void)
 
 	rtc.begin();
 	datetime.init();
-	//datetime.prepare();
-
-	//delay(500);
-
-	/*
-	xTaskCreate(
-			gui,
-			"gui",
-			getArduinoLoopTaskStackSize(),
-			NULL,
-			1,
-			NULL
-		   );
-	vTaskDelete(NULL);
-	*/
 }
 
 void deleteSettingsFile()
@@ -3859,8 +3889,6 @@ void deleteDataFile()
 		Serial.println("data file removed");
 	}
 }
-
-//char cmdbuff[20];
 
 void loop()
 {
@@ -3882,27 +3910,6 @@ void loop()
 			g_data.load();
 		}
 	}
-		/*
-		static int i = 0;
-		cmdbuff[i] = Serial.read();
-		if (cmdbuff[i] == '\n') {
-			i = 0;
-			String cmd = String(cmdbuff);
-			memset(cmdbuff, 0, sizeof(cmdbuff));
-			cmd.trim();
-			if (cmd == "init") {
-				deleteSettingsFile();
-			}
-			else if (cmd == "data") {
-				g_data.print();
-			}
-		}
-		i++;
-		if (i == sizeof(cmdbuff)) {
-			i = 0;
-		}
-	}
-	*/
 	/*
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
