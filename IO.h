@@ -14,6 +14,9 @@
 #define TDS_METER_ADDRESS 0x0b
 #define RTC_CLOCK_MODEL RTC_RX8025
 
+// interrupt pin
+#define EXPANDER_INT	27
+
 #define MOTOR_SW_DELAY 25
 
 iarduino_PCA9555 gpio[2]{0x20, 0x21};
@@ -172,6 +175,36 @@ class InputOutput {
 			pinMode(PORT_H, OUTPUT);
 			pinMode(LED, OUTPUT);
 			pinMode(FAN, OUTPUT);
+		}
+
+		void drivePWMout(int id, uint8_t pwm)
+		{
+			if (id < PWR_PG_PORT_F || id > PWR_PG_LIGHT)
+				return;
+
+			switch (id) {
+				default: break;
+				case PWR_PG_PORT_F: analogWrite(PORT_F, pwm); break;
+				case PWR_PG_PORT_G: analogWrite(PORT_G, pwm); break;
+				case PWR_PG_PORT_H: analogWrite(PORT_H, pwm); break;
+				case PWR_PG_FAN: analogWrite(FAN, pwm);
+				case PWR_PG_LIGHT: analogWrite(LED, pwm);
+			}
+		}
+
+		void haltPWMout(int id)
+		{
+			if (id < PWR_PG_PORT_F || id > PWR_PG_LIGHT)
+				return;
+
+			switch (id) {
+				default: break;
+				case PWR_PG_PORT_F: digitalWrite(PORT_F, LOW); break;
+				case PWR_PG_PORT_G: digitalWrite(PORT_G, LOW); break;
+				case PWR_PG_PORT_H: digitalWrite(PORT_H, LOW); break;
+				case PWR_PG_FAN: digitalWrite(FAN, LOW); break;
+				case PWR_PG_LIGHT: digitalWrite(LED, LOW); break;
+			}
 		}
 
 		void driveOut(int id, bool state)

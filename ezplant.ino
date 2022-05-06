@@ -7,24 +7,6 @@
 #define APP_DEBUG
 #include "settings.h"
 
-/*
-#define PORT_F 	17
-#define PORT_G 	18
-#define PORT_H 	19
-#define LED	32
-#define FAN	33
-
-// buttons defines
-#define BTN_PREV 	0b00000001
-#define BTN_MIN 	0b00000010
-#define BTN_OK 		0b00000100
-#define BTN_HOME 	0b00001000
-#define BTN_NEXT 	0b00010000
-#define BTN_PLU 	0b00100000
-*/
-
-// interrupt
-#define EXPANDER_INT	27
 // backlight
 #define LED_PIN 	23
 // relay

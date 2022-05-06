@@ -82,7 +82,6 @@ Page timePage;
 #define USER_INPUT_SETTLE 500
 
 std::atomic<bool> g_sync_succ;
-SemaphoreHandle_t xNTPmutex;
 std::atomic<int8_t> g_utc;
 
 void ping_task_callback(void* arg)
@@ -195,9 +194,6 @@ OutputField g_tds_read;
 
 #include "settings.h" // rig_settings_t, rig_type, g_data
 
-class Rig {
-	public:
-};
 
 
 class Panel {
@@ -277,12 +273,6 @@ class Panel {
 
 			strength = clamp(strength, 0, 4);
 
-			/*
-			if (WiFi.status() == WL_DISCONNECTED && gwsWifiChBox.isOn()) {
-				WiFi.reconnect();
-			}
-			*/
-
 			if (WiFi.status() != WL_CONNECTED) {
 				_curWiFiImage = IMG_NO_WIFI;
 				_curNetImage = IMG_NET_NO;
@@ -295,7 +285,6 @@ class Panel {
 			else {
 				if (g_ping_success) {
 					_curNetImage = IMG_NET_OK;
-
 				}
 				else {
 					_curNetImage = IMG_NET_NO;
@@ -349,21 +338,16 @@ class Panel {
 			_menuText.setXYpos(LEFTMOST, TOPMOST);
 			_menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
 			_menuText.setText(MENU);
-			//_menuText.prepare();
 
 			_time.setFont(MIDFONT);
 			_time.setXYpos(LEFTMOST, TOPMOST);
 			_time.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
 			_time.setText(MENU); // special case
-			//_time.prepare();
-//rtc.gettime("H:i")
 			_statusWIFI.loadRes(images[_curWiFiImage]);
 			_statusWIFI.setXYpos(WIFI_IMG_X, 0);
-			//_statusWIFI.freeRes();
 
 			_statusInternet.loadRes(images[_curNetImage]);
 			_statusInternet.setXYpos(NET_IMG_X, 0);
-			//_statusInternet.freeRes();
 		}
 	private:
 		SimpleBox _topBox;
@@ -383,35 +367,15 @@ class Panel {
 		images_t _prevNetImage = IMG_NET_NO;
 } topBar;
 
-
+// ezplant.ino:
 void callPage(void*);
 
-
-void vSyncNTPtask(void* arg)
-{
-	if (arg == nullptr)
-		vTaskDelete(NULL);
-
-	xSemaphoreTake(xNTPmutex, portMAX_DELAY);
-
-	struct tm* task_tm = (struct tm*) arg;
-	//configTime(3600*_utc, 0, NTP_SERVER);
-	configTime(3600*g_utc, 0, NTP_SERVER);
-	if (!getLocalTime(task_tm)) {
-		g_sync_succ = false;
-#ifdef APP_DEBUG
-		Serial.println("failed to sync ntp time");
-#endif
-	}
-	else {
-		g_sync_succ = true;
-	}
-	xSemaphoreGive(xNTPmutex);
-
-	vTaskDelete(NULL);
-}
-
-
+/*
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <condition_variable>
+*/
 
 // TODO: always get time from i2c, sync i2c once per hour...
 class DateTime: public ScrObj {
@@ -429,7 +393,6 @@ class DateTime: public ScrObj {
 		void init()
 		{
 			g_sync_succ = false;
-			xNTPmutex = xSemaphoreCreateMutex();
 			getI2Ctime();
 			if (_sync) {
 				syncNTP();
@@ -437,22 +400,26 @@ class DateTime: public ScrObj {
 		}
 
 	private:
-		//SemaphoreHandle_t xNTPmutex;
 		InputField _visible[N_DATETIME_VISIBLE];
 		Text _fieldsTitle;
 		bool _sync = false;
 		bool _userInputSettled = false;
 		bool _timeSynced = false;
-		//int8_t _utc = 0;
 		struct tm  _timeinfo;
-		unsigned long _oldMils = 0;
+		unsigned long _rtcMils = 0;
 		const char* const _nptServer = NTP_SERVER;
 		unsigned long _userInputTimestamp = 0;
 		int _count = 0;
-		//uint16_t _y = 225;
-		//TFT_eSprite _sprite = TFT_eSprite(&tft);
-		//std::thread timesynchelper;
+		unsigned startday = 0;
 	public:
+
+		void setStartDay()
+		{
+		}
+
+		unsigned getStartDay()
+		{
+		}
 
 		// TODO: redo.
 		void update()
@@ -470,25 +437,15 @@ class DateTime: public ScrObj {
 				_userInputSettled = false;
 				_timeSynced = true;
 			}
-			/* TODO: add configTime utc when on i2c
-			else if (_userInputSettled) {
-				initUTC(g_utc);
-				prepare();
-				invalidate();
-				_userInputSettled = false;
-				//_timeSynced = true;
-			}
-			*/
 
 			if (g_sync_succ) {
-				//setI2Ctime();
 				invalidate();
 				prepare();
 				g_sync_succ = false;
 			}
 
-			if (millis() - _oldMils > RTC_CHECK_INTERVAL) {
-				_oldMils = millis();
+			if (millis() - _rtcMils > RTC_CHECK_INTERVAL) {
+				_rtcMils = millis();
 
 				if (_sync && _count == 0) {
 					syncNTP();
@@ -519,54 +476,35 @@ class DateTime: public ScrObj {
 			// page methods deal with that
 		}
 
-		/*
-		virtual void erase() override
-		{
-			for (auto& i:_visible) {
-				i.erase();
-			}
-		}
-		*/
-
 		// GUI functions
 		void setHours(void* obj)
 		{
-			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_hour = _visible[HOUR].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
-			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setMinutes(void* obj)
 		{
-			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_min = _visible[MIN].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
-			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setDay(void* obj)
 		{
-			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mday = _visible[DAY].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
-			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setMon(void* obj)
 		{
-			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_mon = _visible[MON].getValue() - 1;
 			rtc.settimeUnix(mktime(&_timeinfo));
-			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void setYear(void* obj)
 		{
-			//xSemaphoreTake(xNTPmutex, portMAX_DELAY);
 			_timeinfo.tm_year = _visible[YEAR].getValue() - 1900;
 			rtc.settimeUnix(mktime(&_timeinfo));
-			//xSemaphoreGive(xNTPmutex);
 		}
 
 		bool getSync()
@@ -590,7 +528,6 @@ class DateTime: public ScrObj {
 			else {
 				getI2Ctime();
 			}
-			//prepare();
 		}
 
 		int8_t getUTC()
@@ -616,16 +553,6 @@ class DateTime: public ScrObj {
 			InputField* utc = (InputField*) obj;
 
 			g_utc = utc->getValue();
-
-			/*
-			// TODO: postpone or move sync to different task
-			if (this->_sync) {
-				syncNTP();
-			}
-
-			prepare();
-			invalidate();
-			*/
 		}
 
 		void getI2Ctime()
@@ -633,47 +560,20 @@ class DateTime: public ScrObj {
 			time_t time;
 			time = rtc.gettimeUnix();
 			struct tm *tmp = localtime(&time);
-			//xSemaphoreTake(xNTPmutex, (TickType_t) 0);
 			_timeinfo = *tmp;
-			//xSemaphoreGive(xNTPmutex);
 		}
-
-		/*
-		int getI2CgmtimeHours()
-		{
-			time_t time;
-			time = rtc.gettimeUnix();
-			struct tm *tmp = gmtime(&time);
-			//_timeinfo = *tmp;
-			return *tmp.tm_hour;
-		}
-		*/
 
 		void setI2Ctime()
 		{
-			//xSemaphoreTake(xNTPmutex, (TickType_t) 0);
 			rtc.settimeUnix(mktime(&_timeinfo));
-			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void syncNTP()
 		{
 			if (!g_ping_success) {
-				//setI2Ctime();
 				return;
 			}
 
-			/*
-			xTaskCreate(
-					vSyncNTPtask,
-					//std::bind(&DateTime::_vSyncNTPtask, this, std::placeholders::_1),
-					"syncNTPtask",
-					2000,
-					&_timeinfo,
-					1,
-					NULL
-					);
-					*/
 			configTime(3600*g_utc, 0, _nptServer);
 			if (!getLocalTime(&_timeinfo)) {
 				getI2Ctime();
@@ -694,17 +594,21 @@ class DateTime: public ScrObj {
 			}
 		}
 
+		int getDay()
+		{
+			//return
+		}
+
 		virtual void prepare() override
 		{
 
-			//xSemaphoreTake(xNTPmutex, ( TickType_t ) 0);
 			mktime(&_timeinfo);
 
 			_visible[HOUR].setValue(_timeinfo.tm_hour);
 			_visible[MIN].setValue(_timeinfo.tm_min);
 			_visible[DAY].setValue(_timeinfo.tm_mday);
 			_visible[MON].setValue(_timeinfo.tm_mon + 1);
-			_visible[YEAR].setValue(_timeinfo.tm_year + 1900); // +1900
+			_visible[YEAR].setValue(_timeinfo.tm_year + 1900);
 
 			for (auto& i:_visible) {
 				if (_sync) {
@@ -733,13 +637,11 @@ class DateTime: public ScrObj {
 			_fieldsTitle.prepare();
 
 			pages[TIME_PG]->restock();
-			//xSemaphoreGive(xNTPmutex);
 		}
 
 		void build()
 		{
 			_fieldsTitle.setXYpos(PG_LEFT_PADD, 150);
-
 
 			timePage.addItem(&_fieldsTitle);
 
@@ -785,6 +687,45 @@ class DateTime: public ScrObj {
 		}
 } datetime;
 
+class Rig {
+	public:
+		void update()
+		{
+			_updateLight();
+			_updateVent();
+			_updatePassVent();
+			_updateSolutions();
+		}
+	private:
+		void _updateLight()
+		{
+			if (!g_data.getInt(LIGHT_ON)) {
+				io.haltPWMout(PWR_PG_LIGHT);
+				return;
+			}
+
+			// check day (by tm_yday?)
+			//if (gCurrDay ==
+			// check time
+
+			// set led brightness
+			uint8_t brightness = g_data.getInt(ADD_LED_BRIGHT);
+			io.drivePWMout(PWR_PG_LIGHT, brightness);
+		}
+
+		void _updateVent()
+		{
+		}
+
+		void _updatePassVent()
+		{
+		}
+
+		void _updateSolutions()
+		{
+		}
+} g_rig;
+
 
 void resetCalibFlags()
 {
@@ -822,7 +763,7 @@ class App {
 	private:
 		unsigned long _digMils = 0;
 		unsigned long _adcMils = 0;
-		unsigned long _oldMils = 0;
+		unsigned long _blinkMils = 0;
 		unsigned long _dbMils = 0;
 		unsigned long _dimMils = 0;
 		unsigned long _sensMils = 0;
@@ -881,6 +822,7 @@ class App {
 
 			topBar.update();
 			datetime.update();
+			g_rig.update();
 
 			/* diag page analog inputs */
 
@@ -1043,7 +985,6 @@ class App {
 
 			draw();
 #ifdef TASKS
-			//yield();
 			sleep(10);
 #endif
 #ifdef APP_DEBUG
@@ -1066,68 +1007,20 @@ class App {
 #endif
 
 			// cursor blink
-			if (millis() - _oldMils > CURSOR_TIMER) {
+			if (millis() - _blinkMils > CURSOR_TIMER) {
 				_cursor.draw(_blink);
-				_oldMils = millis();
+				_blinkMils = millis();
 				_blink = !_blink;
 			}
 
-			/*
-			if (!io.update()) {
-				return;
-			}
-			*/
-
-			/*
-
-			// return if no interupts from expander
-			//pinMode(EXPANDER_INT, INPUT);
-			if (digitalRead(EXPANDER_INT) == HIGH) {
-				gInterrupt = false;
-				return;
-			}
-			else {
-				gInterrupt = true;
-			}
-			*/
-
-			/*
-#ifdef APP_DEBUG
-			Serial.println("Interrupt...");
-#endif
-*/
-
-			/*
-			// read buttons
-			uint8_t user_input = gpio[0].portRead(0);
-			*/
-
-			/*
-			// debounce
-			if ((uint8_t)~user_input) {
-				if (millis() - _dbMils > DEBOUNCE) {
-					user_input = gpio[0].portRead(0);
-					if ((uint8_t)~user_input){
-						_dbMils = millis();
-						_dbFlag = true;
-						_dimMils = millis();
-					}
-				}
-			}
-			*/
-
-			/*
-			// input proc
-			if (!_dbFlag)
-				return;
-				*/
-
+			// brightness back to original on key press
 			if (io.update() && _inactive) {
 				_inactive = false;
 				gBrightness.setValue(_prevBright);
 				gBrightness.onClick();
 			}
 
+			/* slow down user input */
 			if (io.update() && millis() - _dbMils > DEBOUNCE) {
 				_dbMils = millis();
 				_dbFlag = true;
@@ -1136,7 +1029,9 @@ class App {
 			if (!_dbFlag) {
 				return;
 			}
+			/***********************/
 
+			// user input
 			if (io.userBack()) {
 				_cursor.draw(false);
 				_iterator--;
@@ -1149,8 +1044,6 @@ class App {
 				}
 
 				_cursor.draw(true);
-				//_dbFlag = false;
-				//_oldMils = _dimMils = millis();
 			}
 			else if (io.userForw()) {
 				_cursor.draw(false);
@@ -1164,8 +1057,6 @@ class App {
 				}
 
 				_cursor.draw(true);
-				//_dbFlag = false;
-				//_oldMils = _dimMils = millis();
 			}
 			else if (io.userMinus()) {
 				if (currItem->hasInput()) {
@@ -1173,8 +1064,6 @@ class App {
 					currItem->onClick();
 				}
 				currItem->draw();
-				//_dbFlag = false;
-				//_oldMils =_dimMils = millis();
 			}
 			else if (io.userPlus()) {
 				if (currItem->hasInput()) {
@@ -1182,7 +1071,6 @@ class App {
 					currItem->onClick();
 				}
 				currItem->draw();
-				//_oldMils = _dimMils = millis();
 			}
 			else if (io.userOK()) {
 				_cursor.draw(false);
@@ -1190,8 +1078,6 @@ class App {
 				if (_iterator >= currPage->nItems())
 					_iterator = 0;
 				currItem = currPage->getCurrItemAt(_iterator);
-				//_oldMils = _dimMils = millis();
-				//_dbFlag = false;
 			}
 			else if (io.userHome()) {
 				_cursor.draw(false);
@@ -1200,8 +1086,9 @@ class App {
 			}
 
 			_dbFlag = false;
-			_oldMils = _dimMils = millis();
-			// don't blink if buttons were pressed...
+
+			// don't blink and don't dim if buttons were pressed...
+			_blinkMils = _dimMils = millis();
 		}
 };
 

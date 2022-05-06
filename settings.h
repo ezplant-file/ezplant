@@ -106,6 +106,9 @@ typedef enum {
 	DRIP_CYCL_MIN,
 	DRIP_CYCL_SEC,
 
+	// additional settings
+	ADD_LED_BRIGHT,
+
 	NSETTINGS
 } rig_settings_t;
 
@@ -151,6 +154,7 @@ class Data {
 			set(DRIP_CYCL, false);
 			set(SPRAY_CONS, true);
 			set(SPRAY_CYCL, false);
+			set(ADD_LED_BRIGHT, 127);
 		}
 
 		void print()
