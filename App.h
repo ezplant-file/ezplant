@@ -66,7 +66,6 @@ std::atomic<bool> g_tds_calib_1500_done;
 std::atomic<bool> g_ph_diag_wait_done;
 std::atomic<bool> g_tds_diag_wait_done;
 
-
 enum {
 	HOUR,
 	MIN,
@@ -410,15 +409,32 @@ class DateTime: public ScrObj {
 		const char* const _nptServer = NTP_SERVER;
 		unsigned long _userInputTimestamp = 0;
 		int _count = 0;
-		unsigned startday = 0;
+		int _startday = 0;
 	public:
+
+		int getHour()
+		{
+			return _timeinfo.tm_hour;
+		}
+
+		int getDays()
+		{
+			return _timeinfo.tm_yday - _startday;
+		}
 
 		void setStartDay()
 		{
+			_startday = _timeinfo.tm_yday;
 		}
 
-		unsigned getStartDay()
+		void loadStartDay()
 		{
+			_startday = g_data.getInt(START_DAY);
+		}
+
+		int getStartDay()
+		{
+			return _startday;
 		}
 
 		// TODO: redo.
@@ -446,6 +462,17 @@ class DateTime: public ScrObj {
 
 			if (millis() - _rtcMils > RTC_CHECK_INTERVAL) {
 				_rtcMils = millis();
+
+				/*****
+
+				Serial.print("now: ");
+				time_t now = time(0);
+				Serial.println(now);
+				struct tm* date = localtime(&now);
+				Serial.print("y day: ");
+				Serial.println(date->tm_yday);
+
+				*****/
 
 				if (_sync && _count == 0) {
 					syncNTP();
@@ -594,10 +621,6 @@ class DateTime: public ScrObj {
 			}
 		}
 
-		int getDay()
-		{
-			//return
-		}
 
 		virtual void prepare() override
 		{
@@ -689,14 +712,32 @@ class DateTime: public ScrObj {
 
 class Rig {
 	public:
+		Rig(): _paused(true){};
+
+		void start()
+		{
+			_paused = false;
+		}
+
+		void halt()
+		{
+			_paused = true;
+			io.haltAll();
+		}
+
 		void update()
 		{
+			if (_paused)
+				return;
+
 			_updateLight();
 			_updateVent();
 			_updatePassVent();
 			_updateSolutions();
 		}
 	private:
+		bool _paused;
+
 		void _updateLight()
 		{
 			if (!g_data.getInt(LIGHT_ON)) {
@@ -704,17 +745,48 @@ class Rig {
 				return;
 			}
 
-			// check day (by tm_yday?)
-			//if (gCurrDay ==
-			// check time
+			// check day
+			if (datetime.getDays() < g_data.getInt(LIGHT_DAY)) {
+				io.haltPWMout(PWR_PG_LIGHT);
+				return;
+			}
 
-			// set led brightness
-			uint8_t brightness = g_data.getInt(ADD_LED_BRIGHT);
-			io.drivePWMout(PWR_PG_LIGHT, brightness);
+			// check hour
+			int tmp = datetime.getHour();
+			if (g_data.getInt(LIGHT_FROM) <= tmp && tmp < g_data.getInt(LIGHT_TO)) {
+
+				// set led brightness
+				uint8_t brightness = g_data.getInt(ADD_LED_BRIGHT);
+				io.drivePWMout(PWR_PG_LIGHT, brightness);
+			}
+			else {
+				io.haltPWMout(PWR_PG_LIGHT);
+			}
 		}
 
 		void _updateVent()
 		{
+			if (!g_data.getInt(VENT_ON)) {
+				io.driveOut(PWR_PG_FAN, false);
+				return;
+			}
+
+			bool a = g_data.getInt(VENT_TIME_LIM);
+			bool b = g_data.getInt(VENT_TEMP_LIM);
+			bool c = g_data.getInt(VENT_HUM_LIM);
+			int tmp = datetime.getHour();
+			bool x = g_data.getInt(VENT_TIME_FROM) <= tmp && tmp < g_data.getInt(VENT_TIME_TO);
+			bool y = int(io.getTem()) > g_data.getInt(VENT_TEMP_THRES);
+			bool z = int(io.getHum()) > g_data.getInt(VENT_HUM_THRES);
+
+			// a enables x, b enables y, c enables z. if !a then x don't matter and so on...
+			// x and y and z then Q
+			bool Q = !(!(a && x) && !(b && y) && !(c && z));
+
+			if (Q)
+				io.driveOut(PWR_PG_FAN, true);
+			else
+				io.driveOut(PWR_PG_FAN, false);
 		}
 
 		void _updatePassVent()

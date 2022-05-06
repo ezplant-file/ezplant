@@ -395,6 +395,8 @@ void callPage(void* page_ptr)
 
 	if (currPage->lastStage()) {
 		g_first_launch = false;
+		// save rig setup day of the year
+		g_data.set(START_DAY, datetime.getStartDay());
 		g_data.save();
 		saveSettings();
 	}
@@ -2154,15 +2156,13 @@ void rigtypeForward(void* arg)
 			case RIG_DRIP: callPage(pages[STAGE84_PG]); break;
 		}
 	}
+	// 83 - RIG_AERO, 84 - RIG_DRIP
+	else if (currPage == pages[STAGE83_PG] || currPage == pages[STAGE84_PG]) {
+		callPage(pages[STAGE92_PG]);
+	}
+	// only for deepwater
 	else if (currPage == pages[STAGE8_PG]) {
-		switch (g_rig_type) {
-			default: break;
-			case RIG_DEEPWATER: callPage(pages[STAGE9_PG]); break;
-			case RIG_LAYER: callPage(pages[STAGE92_PG]); break;
-			case RIG_FLOOD: callPage(pages[MAIN_PG]); break;
-			case RIG_AERO: callPage(pages[STAGE92_PG]); break;
-			case RIG_DRIP: callPage(pages[STAGE92_PG]); break;
-		}
+		callPage(pages[STAGE9_PG]);
 	}
 }
 
@@ -3321,7 +3321,6 @@ Page* buildStage8_3()
 {
 	static Page stage8;
 	stage8.setTitle(S83_TITLE);
-	stage8.setLastStage();
 
 	static Text subTitle;
 	subTitle.setXYpos(PG_LEFT_PADD, 38);
@@ -3447,7 +3446,6 @@ Page* buildStage8_4()
 {
 	static Page stage8;
 	stage8.setTitle(S84_TITLE);
-	stage8.setLastStage();
 
 	static Text subTitle;
 	subTitle.setXYpos(PG_LEFT_PADD, 38);
@@ -3815,10 +3813,13 @@ void setup(void)
 	// backlight
 	gBrightness.onClick();
 
-	if (g_first_launch)
+	if (g_first_launch) {
 		currPage = pages[FIRST_PG];
-	else
+	}
+	else {
 		currPage = pages[MAIN_PG];
+		datetime.loadStartDay();
+	}
 
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();

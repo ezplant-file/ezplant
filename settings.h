@@ -108,6 +108,7 @@ typedef enum {
 
 	// additional settings
 	ADD_LED_BRIGHT,
+	START_DAY,
 
 	NSETTINGS
 } rig_settings_t;
@@ -285,6 +286,8 @@ class Data {
 				_data[DRIP_SEC] = load[STR(DRIP_SEC)].get<float>();
 				_data[DRIP_CYCL_MIN] = load[STR(DRIP_CYCL_MIN)].get<float>();
 				_data[DRIP_CYCL_SEC] = load[STR(DRIP_CYCL_SEC)].get<float>();
+				_data[ADD_LED_BRIGHT] = load[STR(ADD_LED_BRIGHT)].get<float>();
+				_data[START_DAY] = load[STR(START_DAY)].get<float>();
 
 				load.clear();
 
@@ -387,6 +390,8 @@ class Data {
 			d[STR(DRIP_SEC)] = (_data[DRIP_SEC]);
 			d[STR(DRIP_CYCL_MIN)] = (_data[DRIP_CYCL_MIN]);
 			d[STR(DRIP_CYCL_SEC)] = (_data[DRIP_CYCL_SEC]);
+			d[STR(ADD_LED_BRIGHT)] = (_data[ADD_LED_BRIGHT]);
+			d[STR(START_DAY)] = (_data[START_DAY]);
 
 			File file = SPIFFS.open(data_file, "w");
 			if (!file) {

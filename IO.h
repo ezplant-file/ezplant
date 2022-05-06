@@ -7,11 +7,13 @@
 #include <iarduino_RTC.h>
 #include <iarduino_I2C_pH.h>
 #include <iarduino_I2C_TDS.h>
+#include <iarduino_I2C_SHT.h>
 #include <iarduino_PCA9555.h>
 #include <FunctionalInterrupt.h>
 
 #define PH_METER_ADDRESS 0x0a
 #define TDS_METER_ADDRESS 0x0b
+#define SHT_METER_ADDRESS 0x0c
 #define RTC_CLOCK_MODEL RTC_RX8025
 
 // interrupt pin
@@ -23,6 +25,7 @@ iarduino_PCA9555 gpio[2]{0x20, 0x21};
 iarduino_RTC rtc(RTC_CLOCK_MODEL);
 iarduino_I2C_pH ph_meter(PH_METER_ADDRESS);
 iarduino_I2C_TDS tds_meter(TDS_METER_ADDRESS);
+iarduino_I2C_SHT sht_meter(SHT_METER_ADDRESS);
 
 // analog inputs
 #define N_ADC 4
@@ -161,6 +164,8 @@ class InputOutput {
 
 		void init()
 		{
+			// sht
+			sht_meter.begin();
 			// expander stuff
 			gpio[FIRST_EXPANDER].begin();
 			gpio[SECOND_EXPANDER].begin();
@@ -175,6 +180,15 @@ class InputOutput {
 			pinMode(PORT_H, OUTPUT);
 			pinMode(LED, OUTPUT);
 			pinMode(FAN, OUTPUT);
+		}
+
+		float getTem()
+		{
+			return sht_meter.getTem();
+		}
+
+		float getHum() {
+			return sht_meter.getHum();
 		}
 
 		void drivePWMout(int id, uint8_t pwm)
@@ -204,6 +218,13 @@ class InputOutput {
 				case PWR_PG_PORT_H: digitalWrite(PORT_H, LOW); break;
 				case PWR_PG_FAN: digitalWrite(FAN, LOW); break;
 				case PWR_PG_LIGHT: digitalWrite(LED, LOW); break;
+			}
+		}
+
+		void haltAll()
+		{
+			for (int i = 0; i < PWR_PG_NITEMS; i++) {
+				driveOut(i, LOW);
 			}
 		}
 
