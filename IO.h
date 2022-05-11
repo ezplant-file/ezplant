@@ -224,6 +224,7 @@ class InputOutput {
 		void haltAll()
 		{
 			for (int i = 0; i < PWR_PG_NITEMS; i++) {
+				haltPWMout(i);
 				driveOut(i, LOW);
 			}
 		}

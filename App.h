@@ -741,13 +741,15 @@ class Rig {
 		void _updateLight()
 		{
 			if (!g_data.getInt(LIGHT_ON)) {
-				io.haltPWMout(PWR_PG_LIGHT);
+				io.drivePWMout(PWR_PG_LIGHT, 0);
+				//io.haltPWMout(PWR_PG_LIGHT);
 				return;
 			}
 
 			// check day
 			if (datetime.getDays() < g_data.getInt(LIGHT_DAY)) {
-				io.haltPWMout(PWR_PG_LIGHT);
+				///io.haltPWMout(PWR_PG_LIGHT);
+				io.drivePWMout(PWR_PG_LIGHT, 0);
 				return;
 			}
 
@@ -760,7 +762,8 @@ class Rig {
 				io.drivePWMout(PWR_PG_LIGHT, brightness);
 			}
 			else {
-				io.haltPWMout(PWR_PG_LIGHT);
+				io.drivePWMout(PWR_PG_LIGHT, 0);
+				//io.haltPWMout(PWR_PG_LIGHT);
 			}
 		}
 
@@ -775,13 +778,18 @@ class Rig {
 			bool b = g_data.getInt(VENT_TEMP_LIM);
 			bool c = g_data.getInt(VENT_HUM_LIM);
 			int tmp = datetime.getHour();
-			bool x = g_data.getInt(VENT_TIME_FROM) <= tmp && tmp < g_data.getInt(VENT_TIME_TO);
+			bool x = (g_data.getInt(VENT_TIME_FROM) <= tmp) && (tmp < g_data.getInt(VENT_TIME_TO));
 			bool y = int(io.getTem()) > g_data.getInt(VENT_TEMP_THRES);
 			bool z = int(io.getHum()) > g_data.getInt(VENT_HUM_THRES);
 
-			// a enables x, b enables y, c enables z. if !a then x don't matter and so on...
-			// x and y and z then Q
-			bool Q = !(!(a && x) && !(b && y) && !(c && z));
+			if (!a)
+				x = true;
+			if (!b)
+				y = true;
+			if (!c)
+				z = true;
+
+			bool Q = x && y && z;
 
 			if (Q)
 				io.driveOut(PWR_PG_FAN, true);
@@ -839,13 +847,17 @@ class App {
 		unsigned long _dbMils = 0;
 		unsigned long _dimMils = 0;
 		unsigned long _sensMils = 0;
+		unsigned long _repMils = 0;
 		bool _blink = false;
 		bool _dbFlag = false;
+		bool _triggered = false;
+		bool _repeat = false;
 		Cursor _cursor;
 		int _iterator = 0;
 		int16_t _dimmed = 10;
 		int16_t _prevBright = g_init_brightness;
 		bool _inactive = false;
+		static constexpr unsigned long REPEAT_INT = 1000;
 
 	public:
 		void draw()
@@ -1059,7 +1071,7 @@ class App {
 #ifdef TASKS
 			sleep(10);
 #endif
-#ifdef APP_DEBUG
+#ifdef HEAP_DEBUG
 #define DEBUG_TIMER 2000
 			static unsigned long debugMils = 0;
 			if (millis() - debugMils > DEBUG_TIMER) {
@@ -1085,15 +1097,27 @@ class App {
 				_blink = !_blink;
 			}
 
+			bool pressed = io.update();
+
+			if (pressed) {
+				_blinkMils = millis();
+			}
+
+			if (!pressed) {
+				_repMils = millis();
+				_triggered = false;
+				_repeat = false;
+			}
+
 			// brightness back to original on key press
-			if (io.update() && _inactive) {
+			if (pressed && _inactive) {
 				_inactive = false;
 				gBrightness.setValue(_prevBright);
 				gBrightness.onClick();
 			}
 
 			/* slow down user input */
-			if (io.update() && millis() - _dbMils > DEBOUNCE) {
+			if (pressed && millis() - _dbMils > DEBOUNCE) {
 				_dbMils = millis();
 				_dbFlag = true;
 			}
@@ -1101,9 +1125,17 @@ class App {
 			if (!_dbFlag) {
 				return;
 			}
-			/***********************/
 
-			// user input
+			/******** repeat ********/
+			if (_triggered && pressed && (millis() - _repMils > REPEAT_INT)) {
+				_repeat = true;
+			}
+
+			if (!_repeat && _triggered) {
+				return;
+			}
+
+			/******* user input ******/
 			if (io.userBack()) {
 				_cursor.draw(false);
 				_iterator--;
@@ -1161,6 +1193,7 @@ class App {
 
 			// don't blink and don't dim if buttons were pressed...
 			_blinkMils = _dimMils = millis();
+			_triggered = true;
 		}
 };
 

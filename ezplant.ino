@@ -396,9 +396,11 @@ void callPage(void* page_ptr)
 	if (currPage->lastStage()) {
 		g_first_launch = false;
 		// save rig setup day of the year
+		datetime.setStartDay();
 		g_data.set(START_DAY, datetime.getStartDay());
 		g_data.save();
 		saveSettings();
+		g_rig.start();
 	}
 
 
@@ -3819,6 +3821,7 @@ void setup(void)
 	else {
 		currPage = pages[MAIN_PG];
 		datetime.loadStartDay();
+		g_rig.start();
 	}
 
 	currPage->setCurrItem(0);
@@ -3873,6 +3876,9 @@ void deleteDataFile()
 	}
 }
 
+unsigned long debMils = 0;
+#define DEBUG_INT 1000
+
 void loop()
 {
 	app.update();
@@ -3892,7 +3898,28 @@ void loop()
 		else if (cmd == "load") {
 			g_data.load();
 		}
+		else if (cmd == "start") {
+			g_rig.start();
+		}
+		else if (cmd == "stop") {
+			g_rig.halt();
+		}
 	}
+
+#ifdef APP_DEBUG
+	if (millis() - debMils > DEBUG_INT) {
+		Serial.print("Tem: ");
+		Serial.println(io.getTem());
+		Serial.print("Hum: ");
+		Serial.println(io.getHum());
+		Serial.println("********");
+		//Serial.print("Hour: ");
+		//Serial.println(datetime.getHour());
+		//Serial.print("Day: ");
+		//Serial.println(datetime.getDays());
+		debMils = millis();
+	}
+#endif
 	/*
 #ifdef APP_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
