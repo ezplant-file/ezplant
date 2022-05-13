@@ -737,19 +737,21 @@ class Rig {
 		}
 	private:
 		bool _paused;
+		bool _window_opened = false;
+		bool _window_energized = false;
+		unsigned long _window_timer = 0;
+		static constexpr unsigned long WINDOW_INT = 10000;
 
 		void _updateLight()
 		{
 			if (!g_data.getInt(LIGHT_ON)) {
-				io.drivePWMout(PWR_PG_LIGHT, 0);
-				//io.haltPWMout(PWR_PG_LIGHT);
+				io.haltPWMout(PWR_PG_LIGHT);
 				return;
 			}
 
 			// check day
 			if (datetime.getDays() < g_data.getInt(LIGHT_DAY)) {
-				///io.haltPWMout(PWR_PG_LIGHT);
-				io.drivePWMout(PWR_PG_LIGHT, 0);
+				io.haltPWMout(PWR_PG_LIGHT);
 				return;
 			}
 
@@ -762,8 +764,7 @@ class Rig {
 				io.drivePWMout(PWR_PG_LIGHT, brightness);
 			}
 			else {
-				io.drivePWMout(PWR_PG_LIGHT, 0);
-				//io.haltPWMout(PWR_PG_LIGHT);
+				io.haltPWMout(PWR_PG_LIGHT);
 			}
 		}
 
@@ -783,13 +784,13 @@ class Rig {
 			bool z = int(io.getHum()) > g_data.getInt(VENT_HUM_THRES);
 
 			if (!a)
-				x = true;
+				x = false;
 			if (!b)
-				y = true;
+				y = false;
 			if (!c)
-				z = true;
+				z = false;
 
-			bool Q = x && y && z;
+			bool Q = x || y || z;
 
 			if (Q)
 				io.driveOut(PWR_PG_FAN, true);
@@ -799,10 +800,63 @@ class Rig {
 
 		void _updatePassVent()
 		{
+			if (!g_data.getInt(PASSVENT)) {
+				return;
+			}
+
+			if (!_window_energized) {
+				io.driveOut(PWR_PG_UP, false);
+			}
+
+			if (_window_energized) {
+				if (millis() - _window_timer > WINDOW_INT) {
+					_window_energized = false;
+					_window_opened = !_window_opened;
+				}
+				return;
+			}
+
+			bool a = g_data.getInt(PASSVENT_TIME_LIM);
+			bool b = g_data.getInt(PASSVENT_TEMP_LIM);
+			bool c = g_data.getInt(PASSVENT_HUM_LIM);
+			int tmp = datetime.getHour();
+			bool x = (g_data.getInt(PASSVENT_TIME_FROM) <= tmp)
+				&& (tmp < g_data.getInt(PASSVENT_TIME_TO));
+			bool y = int(io.getTem()) > g_data.getInt(PASSVENT_TEMP_THRES);
+			bool z = int(io.getHum()) > g_data.getInt(PASSVENT_HUM_THRES);
+
+			if (!a)
+				x = false;
+			if (!b)
+				y = false;
+			if (!c)
+				z = false;
+
+			bool Q = x || y || z;
+
+			if (Q && !_window_opened) {
+				_openWindow();
+			}
+			else if (!Q && _window_opened)
+				_closeWindow();
 		}
 
 		void _updateSolutions()
 		{
+		}
+
+		void _openWindow()
+		{
+			io.driveOut(PWR_PG_UP, true);
+			_window_energized = true;
+			_window_timer = millis();
+		}
+
+		void _closeWindow()
+		{
+			io.driveOut(PWR_PG_DOWN, true);
+			_window_energized = true;
+			_window_timer = millis();
 		}
 } g_rig;
 

@@ -213,11 +213,11 @@ class InputOutput {
 
 			switch (id) {
 				default: break;
-				case PWR_PG_PORT_F: digitalWrite(PORT_F, LOW); break;
-				case PWR_PG_PORT_G: digitalWrite(PORT_G, LOW); break;
-				case PWR_PG_PORT_H: digitalWrite(PORT_H, LOW); break;
-				case PWR_PG_FAN: digitalWrite(FAN, LOW); break;
-				case PWR_PG_LIGHT: digitalWrite(LED, LOW); break;
+				case PWR_PG_PORT_F: analogWrite(PORT_F, 0); break;
+				case PWR_PG_PORT_G: analogWrite(PORT_G, 0); break;
+				case PWR_PG_PORT_H: analogWrite(PORT_H, 0); break;
+				case PWR_PG_FAN: analogWrite(FAN, 0); break;
+				case PWR_PG_LIGHT: analogWrite(LED, 0); break;
 			}
 		}
 
