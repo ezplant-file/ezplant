@@ -369,16 +369,33 @@ class Panel {
 // ezplant.ino:
 void callPage(void*);
 
-/*
 #include <thread>
 #include <chrono>
 #include <mutex>
 #include <condition_variable>
-*/
+
+typedef std::unique_lock<std::mutex> lock_t;
 
 // TODO: always get time from i2c, sync i2c once per hour...
 class DateTime: public ScrObj {
+	private:
+		static constexpr int UPDATE_TIMEOUT = 1;
+		std::thread timeThread;
+		std::mutex timeMutex;
+		std::condition_variable conditionVar;
 	public:
+		static void updateTime()
+		{
+			std::unique_lock<std::mutex> lck(timeMutex);
+			conditionVar.wait(lck);
+
+			for(;;) {
+				// sync time
+				syncNTP();
+				conditionVar.wait_for(lck, std::chrono::minutes(UPDATE_TIMEOUT));
+			}
+		}
+
 		DateTime()
 		{
 			_y = 174;
@@ -391,10 +408,11 @@ class DateTime: public ScrObj {
 
 		void init()
 		{
+			timeThread = std::thread(updateTime);
 			g_sync_succ = false;
 			getI2Ctime();
 			if (_sync) {
-				syncNTP();
+				conditionVar.notify_one();
 			}
 		}
 
@@ -447,9 +465,10 @@ class DateTime: public ScrObj {
 			}
 
 			if (_userInputSettled && _sync) {
-				syncNTP();
-				prepare();
-				invalidate();
+				//syncNTP();
+				conditionVar.notify_one();
+				//prepare();
+				//invalidate();
 				_userInputSettled = false;
 				_timeSynced = true;
 			}
@@ -462,28 +481,6 @@ class DateTime: public ScrObj {
 
 			if (millis() - _rtcMils > RTC_CHECK_INTERVAL) {
 				_rtcMils = millis();
-
-				/*****
-
-				Serial.print("now: ");
-				time_t now = time(0);
-				Serial.println(now);
-				struct tm* date = localtime(&now);
-				Serial.print("y day: ");
-				Serial.println(date->tm_yday);
-
-				*****/
-
-				if (_sync && _count == 0) {
-					syncNTP();
-					setI2Ctime();
-				}
-
-				_count++;
-				if (_count == 60) {
-					_count = 0;
-				}
-
 
 				getI2Ctime();
 
@@ -506,32 +503,42 @@ class DateTime: public ScrObj {
 		// GUI functions
 		void setHours(void* obj)
 		{
+			lock_t lck(timeMutex);
 			_timeinfo.tm_hour = _visible[HOUR].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
+			lck.unlock();
 		}
 
 		void setMinutes(void* obj)
 		{
+			lock_t lck(timeMutex);
 			_timeinfo.tm_min = _visible[MIN].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
+			lck.unlock();
 		}
 
 		void setDay(void* obj)
 		{
+			lock_t lck(timeMutex);
 			_timeinfo.tm_mday = _visible[DAY].getValue();
 			rtc.settimeUnix(mktime(&_timeinfo));
+			lck.unlock();
 		}
 
 		void setMon(void* obj)
 		{
+			lock_t lck(timeMutex);
 			_timeinfo.tm_mon = _visible[MON].getValue() - 1;
 			rtc.settimeUnix(mktime(&_timeinfo));
+			lck.unlock();
 		}
 
 		void setYear(void* obj)
 		{
+			lock_t lck(timeMutex);
 			_timeinfo.tm_year = _visible[YEAR].getValue() - 1900;
 			rtc.settimeUnix(mktime(&_timeinfo));
+			lck.unlock();
 		}
 
 		bool getSync()
@@ -550,7 +557,8 @@ class DateTime: public ScrObj {
 
 			if (_sync) {
 				// TODO: add wait animation
-				syncNTP();
+				//syncNTP();
+				conditionVar.notify_one();
 			}
 			else {
 				getI2Ctime();
@@ -584,15 +592,19 @@ class DateTime: public ScrObj {
 
 		void getI2Ctime()
 		{
+			lock_t lck(timeMutex);
 			time_t time;
 			time = rtc.gettimeUnix();
 			struct tm *tmp = localtime(&time);
 			_timeinfo = *tmp;
+			lck.unlock();
 		}
 
 		void setI2Ctime()
 		{
+			lock_t lck(timeMutex);
 			rtc.settimeUnix(mktime(&_timeinfo));
+			lck.unlock();
 		}
 
 		void syncNTP()
@@ -740,7 +752,7 @@ class Rig {
 		bool _window_opened = false;
 		bool _window_energized = false;
 		unsigned long _window_timer = 0;
-		static constexpr unsigned long WINDOW_INT = 10000;
+		static constexpr unsigned long WINDOW_INT = 60000;
 
 		void _updateLight()
 		{
