@@ -164,8 +164,11 @@ class InputOutput {
 
 		void init()
 		{
-			// sht
+			// sensors
 			sht_meter.begin();
+			tds_meter.begin();
+			ph_meter.begin();
+
 			// expander stuff
 			gpio[FIRST_EXPANDER].begin();
 			gpio[SECOND_EXPANDER].begin();
@@ -173,6 +176,8 @@ class InputOutput {
 			gpio[SECOND_EXPANDER].portMode(SECOND_PORT, pinsAll(INPUT));
 			gpio[SECOND_EXPANDER].portMode(FIRST_PORT, pinsAll(OUTPUT));
 			gpio[SECOND_EXPANDER].portWrite(FIRST_PORT, pinsAll(LOW));
+
+			// native esp32
 			pinMode(EXPANDER_INT, INPUT_PULLUP);
 			attachInterrupt(EXPANDER_INT, std::bind(&InputOutput::isr, this), FALLING);
 			pinMode(PORT_F, OUTPUT);
@@ -180,6 +185,16 @@ class InputOutput {
 			pinMode(PORT_H, OUTPUT);
 			pinMode(LED, OUTPUT);
 			pinMode(FAN, OUTPUT);
+		}
+
+		float getEC()
+		{
+			return tds_meter.getEC();
+		}
+
+		float getPH()
+		{
+			return ph_meter.getPH();
 		}
 
 		float getTem()

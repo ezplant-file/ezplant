@@ -78,11 +78,13 @@
 //cursor color
 #define CURCOL 0x70
 
+#define COL_GREY_DC 0xDC
 /* calculated colors to 565 */
 // default font color precalculated from 0x70
 #define FONT_COL_565 0x738E
 #define COL_GREY_70_565 0x738E
 #define COL_GREY_E3_565 0xE71C
+#define COL_GREY_DC_565 0xDEFB
 
 // checkbox
 #define CHK_BOX_COL 0xDC
@@ -1192,6 +1194,11 @@ class InputField: public ScrObj {
 			_text.adjustY(y);
 		}
 
+		void trim()
+		{
+			_w -= 4;
+		}
+
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
@@ -1201,15 +1208,6 @@ class InputField: public ScrObj {
 
 		virtual void prepare() override
 		{
-
-
-			/*
-			_text.setColors(
-					greyscaleColor(FONT_COLOR),
-					greyscaleColor(BACKGROUND)
-					);
-					*/
-
 			_text.invalidate();
 			_text.prepare();
 		}
@@ -1312,6 +1310,7 @@ class InputField: public ScrObj {
 		{
 			_bg = bg;
 			_fg = fg;
+			_text.setColors(fg, bg);
 			_invalid = true;
 		}
 
@@ -1334,10 +1333,12 @@ class InputField: public ScrObj {
 
 		void setValue(float value)
 		{
-			if (value > _fupper)
-				value = _flower;
-			if (value < _flower)
-				value = _fupper;
+			if (!_ignoreLimits) {
+				if (value > _fupper)
+					value = _flower;
+				if (value < _flower)
+					value = _fupper;
+			}
 
 			_fvalue = value;
 			_isFloat = true;
@@ -1402,7 +1403,7 @@ class InputField: public ScrObj {
 			setfLimits(0.1, 10.0);
 		}
 
-	private:
+	protected:
 		union {
 			int i = 1;
 			float f;
@@ -1418,7 +1419,8 @@ class InputField: public ScrObj {
 		bool _showLead = false;
 		bool _showPlus = false;
 		uint16_t _fg = FONT_COL_565;
-		uint16_t _bg = COL_GREY_E3_565;
+		//uint16_t _bg = COL_GREY_E3_565;
+		uint16_t _bg = greyscaleColor(0xDC);
 		int8_t _dy = 0;
 		int8_t _dx = 0;
 		int8_t _dw = 0;
@@ -1438,6 +1440,66 @@ class OutputField: public InputField {
 		OutputField(): InputField(0, INPUT_H)
 		{
 			ignoreLimits();
+		}
+
+};
+
+class OutputFieldMain: public InputField {
+	public:
+		OutputFieldMain(): InputField(0, 13)
+		{
+			ignoreLimits();
+		}
+
+		virtual void draw() override
+		{
+			if (!_invalid || !_isVisible)
+				return;
+
+			tft.setTextColor(_fg, _bg);
+			tft.loadFont(FONTS[_fontIndex]);
+			tft.fillRect(_x+_dx, _y, _w, _h, _bg);
+
+			tft.setCursor(_x+_dx, _y);
+
+			String tmp = "";
+			if (_isFloat) {
+				tmp = String(_fvalue, 1);
+			}
+			else {
+				tmp = String(_value);
+			}
+
+			// leading zeros
+			if (_showLead && _value < 10) {
+				tmp = "0" + tmp;
+			}
+
+			// draw positive
+			if (_showPlus && _value >= 0) {
+				tmp = "+" + tmp;
+			}
+
+			if (_isHours) {
+				tmp+=":00";
+			}
+
+			tmp += _str;
+
+			tft.print(tmp);
+			tft.unloadFont();
+
+			_invalid = false;
+		}
+
+		virtual void erase() override
+		{
+			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
+			freeRes();
+		}
+
+		virtual void freeRes() override
+		{
 		}
 };
 
@@ -1910,7 +1972,9 @@ skip:
 		bool _textHardX = false;
 };
 
-#define RAD_BG_COL 0xE3
+//#define RAD_BG_COL 0xE3
+#define RAD_BG_COL 0xDC
+
 
 // TODO: replace with antialiased image
 class CircRadBtn: public ScrObj {
@@ -2262,6 +2326,196 @@ class Wait: public ScrObj {
 		unsigned long _timestamp = 0;
 		unsigned long _interval = DRAW_INTERVAL;
 };
+
+class CompositeBox: public ScrObj {
+	public:
+		virtual void draw() override
+		{
+			if (!_invalid || !_isVisible) {
+				return;
+			}
+
+			tft.fillRect(_x, _y, _w, _h, _bg);
+
+			for (auto& obj:_items) {
+				if (obj->isVisible()) {
+					obj->draw();
+				}
+				else {
+					obj->erase();
+				}
+			}
+
+			_invalid = false;
+		}
+
+		virtual void prepare() override
+		{
+			for (auto& obj:_items) {
+				obj->prepare();
+			}
+		}
+
+		virtual void invalidate() override
+		{
+			_invalid = true;
+			for (auto& obj:_items) {
+				obj->invalidate();
+			}
+		}
+
+		virtual void freeRes() override
+		{
+		}
+
+		// adjust first item XY if it is text
+		void adjust()
+		{
+			if (!_items.size())
+				return;
+
+			_items[0]->setXYpos(_x+2, _y+6);
+
+			if (_items.size() == 1)
+				return;
+
+			//TODO:
+			//_items[1]->setXYpos
+		}
+
+		void addItem(ScrObj* item)
+		{
+			if (!_items.size())
+				//item->setXYpos((_x+_w/4) - item->getW()/2, (_y+_h/2) - item->getH()/2);
+				item->setXYpos(_x,_y);
+			else if (_items.size() == 1) {
+				item->setXYpos(((_x+_w)-_w/4) - item->getW()/2, (_y+_h/2) - item->getH()/2);
+			}
+			else if (_items.size() == 2) {
+				ScrObj* prevItem = _items.at(_items.size() - 1);
+				prevItem->setXYpos(prevItem->getX(), (_y+_h/3) + 2 - prevItem->getH()/2);
+				item->setXYpos(((_x+_w)-_w/4) - item->getW()/2, (_y+_h-_h/3) + 2 - item->getH()/2);
+			}
+
+
+			_items.push_back(item);
+		}
+
+	private:
+
+		obj_list _items;
+		//uint16_t _bg = COL_GREY_E3_565;
+		uint16_t _bg = greyscaleColor(0xDC);
+
+};
+
+typedef enum {
+	T_EMPTY,
+	T_ONETHIRD,
+	T_TWOTHIRDS,
+	T_FULL
+} tank_state_t;
+
+class Tank: public ScrObj {
+	public:
+		Tank(): ScrObj(19, 65)
+		{
+			invalidate();
+		}
+
+		virtual void draw() override
+		{
+			if (!_invalid || !_isVisible)
+				return;
+
+			_drawEmpty();
+
+			if (_state == T_EMPTY) {
+				// draw only lines
+				_drawLines();
+			}
+			else if (_state == T_ONETHIRD) {
+				// draw bottom fill and lines
+				_drawBottom();
+				_drawLines();
+			}
+			else if (_state == T_TWOTHIRDS) {
+				// draw middle fill lines
+				_drawMiddle();
+				_drawLines();
+			}
+			else if (_state == T_FULL) {
+				_drawFull();
+				_drawLines();
+				// draw full and lines
+			}
+			_invalid = false;
+		}
+
+		virtual void freeRes() override
+		{
+		}
+
+		void setState(tank_state_t state)
+		{
+			_state = state;
+			invalidate();
+		}
+
+		Tank& operator++(int)
+		{
+			invalidate();
+			switch (_state) {
+				default: _state = T_EMPTY; break;
+				case T_FULL: _state = T_EMPTY; break;
+				case T_EMPTY: _state = T_ONETHIRD; break;
+				case T_ONETHIRD: _state = T_TWOTHIRDS; break;
+				case T_TWOTHIRDS: _state = T_FULL; break;
+			}
+			return *this;
+		}
+
+	private:
+		void _drawLines()
+		{
+			tft.drawFastHLine(_x, _y+50, _w, _fg);
+			tft.drawFastHLine(_x, _y+19, _w, _fg);
+		}
+
+		void _drawEmpty()
+		{
+			tft.fillSmoothRoundRect(_x, _y, _w, _h, 7, _fg);
+			tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, _h-2, 5, _bg);
+		}
+
+		void _drawBottom()
+		{
+			int subrectH = 6;
+			int botRectH = 20;
+			tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, _water);
+			tft.fillRect(_x+1, _y+_h-botRectH-1, _w-2, subrectH, _bg);
+		}
+
+		void _drawMiddle()
+		{
+			int subrectH = 6;
+			int botRectH = 52;
+			tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, _water);
+			tft.fillRect(_x+1, _y+_h-botRectH-1, _w-2, subrectH, _bg);
+		}
+
+		void _drawFull()
+		{
+			tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, _h-2, 5, _water);
+		}
+
+		tank_state_t _state = T_EMPTY;
+		uint16_t _bg = 0xFFFF;
+		uint16_t _fg = COL_GREY_70_565;
+		uint16_t _water = tft.color565(0xaa, 0xe5, 0xe9);
+} g_tankBig;
+
+Tank g_tankSmall;
 
 class Cursor {
 	public:

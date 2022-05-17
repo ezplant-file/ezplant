@@ -1342,7 +1342,7 @@ Page* buildTestPage()
 	testRad.setText(RADIO_TEXT);
 	//testRad.prepare();
 	testRad.on(false);
-	testRad.setBgColor(0xDC);
+	testRad.setBgColor(COL_GREY_DC);
 	testRad.setCallback(radCallback);
 
 	testInput.setFont(SMALLFONT);
@@ -1748,6 +1748,12 @@ enum diagPageItems {
 	DP_NITEMS
 };
 
+void diagPageCaller(void*)
+{
+	g_rig.halt();
+	callPage(pages[PWR_DIAG_PG]);
+}
+
 Page* buildDiagPage()
 {
 	static Page diagPage;
@@ -1775,7 +1781,7 @@ Page* buildDiagPage()
 	diag_items[DP_SENSD].setCallback(callPage, pages[SENS_DIAG_PG]);
 	diag_items[DP_ADCIN].setCallback(callPage, pages[ADC_DIAG_PG]);
 	diag_items[DP_DIGIN].setCallback(callPage, pages[DIG_DIAG_PG]);
-	diag_items[DP_PWROUT].setCallback(callPage, pages[PWR_DIAG_PG]);
+	diag_items[DP_PWROUT].setCallback(diagPageCaller);
 
 	diagPage.setTitle(DIAG);
 	diagPage.addItem(&back);
@@ -2031,7 +2037,6 @@ Page* buildPwrDiag()
 }
 
 /* settings input fields callback */
-
 enum {
 	SECOND_OUT,
 	THIRD_OUT,
@@ -3553,6 +3558,10 @@ Page* buildStage8_4()
 	return &stage8;
 }
 
+void mainPageUpdater()
+{
+}
+
 #define FP_LEFT_PADDING 7
 Page* buildMainPage()
 {
@@ -3564,7 +3573,211 @@ Page* buildMainPage()
 	menu.setText(MENU);
 	menu.setCallback(callPage, pages[MENU_PG]);
 
+	static BlueTextButton pause;
+	pause.setXYpos(180, 289);
+	pause.setText(TXT_PAUSE);
+	pause.setCallback(std::bind(&Rig::halt, &g_rig));
+
+	static Image drop;
+	drop.setXYpos(17, 40);
+	drop.loadRes(images[IMG_DROP]);
+	mainPage.addItem(&drop);
+
+	static OutputField ph;
+	ph.setXYpos(110, 47);
+	ph.setWH(52, INPUT_H);
+	ph.setFont(BOLDFONT);
+	ph.setColors(0, greyscaleColor(BACKGROUND));
+	ph.setAlign(LEFT);
+	ph.setText(TXT_PH_BIG);
+	ph.adjustTextX(9);
+	g_ph = &ph;
+	mainPage.addItem(&ph);
+
+	static OutputField tds;
+	tds.setXYpos(110, 71);
+	tds.setWH(52, INPUT_H);
+	tds.setFont(BOLDFONT);
+	tds.setColors(0, greyscaleColor(BACKGROUND));
+	tds.setAlign(LEFT);
+	tds.setText(TXT_EC_BIG);
+	tds.adjustTextX(5);
+	g_tds = &tds;
+	mainPage.addItem(&tds);
+
+	enum {
+		B_BULB,
+		B_DOOR,
+		B_FAN,
+		B_HUM,
+		B_TEM,
+		B_PUMP,
+		NBOXES
+	};
+
+	static CompositeBox boxes[NBOXES];
+
+	int j = 0;
+	int gap = 5;
+	int grid_start = 155;
+	int box_width = 72;
+	int box_height = 44;
+
+	for (auto& i:boxes) {
+		if (j < 3)
+			i.setXYpos(FP_LEFT_PADDING+(box_width+gap)*j, grid_start);
+		else
+			i.setXYpos(FP_LEFT_PADDING+(box_width+gap)*(j%3), grid_start+gap+box_height);
+		i.setWH(box_width, box_height);
+		j++;
+		i.invalidate();
+		mainPage.addItem(&i);
+	}
+
+
+	static Image smallbulb;
+	smallbulb.loadRes(images[IMG_BULB_S]);
+
+	static CircIndicator ledInd;
+	ledInd.setText(EMPTY_STR);
+	g_light = &ledInd;
+
+	boxes[B_BULB].addItem(&smallbulb);
+	boxes[B_BULB].addItem(&ledInd);
+
+	static Image smalldoor;
+	smalldoor.loadRes(images[IMG_DOOR_S]);
+
+	static CircIndicator doorInd;
+	doorInd.setText(EMPTY_STR);
+	g_passvent = &doorInd;
+
+	boxes[B_DOOR].addItem(&smalldoor);
+	boxes[B_DOOR].addItem(&doorInd);
+
+	static Image smallfan;
+	smallfan.loadRes(images[IMG_COOLER_S]);
+
+	static CircIndicator fanInd;
+	fanInd.setText(EMPTY_STR);
+	g_vent = &fanInd;
+
+	boxes[B_FAN].addItem(&smallfan);
+	boxes[B_FAN].addItem(&fanInd);
+
+	static Image hum;
+	hum.loadRes(images[IMG_HUM]);
+
+	static OutputFieldMain humInd;
+	humInd.setFont(BOLDFONT);
+	humInd.setColors(0, COL_GREY_DC_565);
+	humInd.setText(EMPTY_STR);
+	humInd.setWidth(TWO_CHR);
+	//humInd.trim();
+	humInd.setWH(22, 13);
+	g_hum = &humInd;
+
+	static Text percent;
+	percent.setFont(BOLDFONT);
+	percent.setColors(0, COL_GREY_DC_565);
+	percent.setText(PERCENT);
+
+	boxes[B_HUM].addItem(&hum);
+	boxes[B_HUM].addItem(&humInd);
+	boxes[B_HUM].addItem(&percent);
+	//humInd.adjustX(13);
+
+	static Image tem;
+	tem.loadRes(images[IMG_TEMP]);
+
+	static OutputFieldMain temInd;
+	temInd.setText(EMPTY_STR);
+	temInd.adjustX(-6);
+	//temInd.trim();
+	temInd.setFloat();
+	temInd.setWH(33, 13);
+	g_tem = &temInd;
+
+	static Text degree;
+	degree.setText(TXT_C);
+
+	boxes[B_TEM].addItem(&tem);
+	boxes[B_TEM].addItem(&temInd);
+	boxes[B_TEM].addItem(&degree);
+	//temInd.adjustX(7);
+
+	static Image pump;
+	pump.loadRes(images[IMG_PUMP]);
+
+	static CircIndicator pumpInd;
+	pumpInd.setText(EMPTY_STR);
+
+	static SimpleBox placeh;
+	placeh.setWH(0, 0);
+
+	boxes[B_PUMP].addItem(&pump);
+	boxes[B_PUMP].addItem(&pumpInd);
+	boxes[B_PUMP].addItem(&placeh);
+
+	enum {
+		TAP,
+		A, B, C,
+		PH,
+		NBTBOXES
+	};
+
+	int btboxes_height = 24;
+
+	static CompositeBox bottomBoxes[NBTBOXES];
+
+	bottomBoxes[TAP].setWH(41, btboxes_height);
+	bottomBoxes[A].setWH(31, btboxes_height);
+	bottomBoxes[B].setWH(31, btboxes_height);
+	bottomBoxes[C].setWH(31, btboxes_height);
+	bottomBoxes[PH].setWH(72, btboxes_height);
+
+	j = 0;
+	int x = 0;
+
+	for (auto& i:bottomBoxes) {
+		//i.setSelectable(true);
+		//i.setColor(COL_GREY_E3_565);
+		x += bottomBoxes[j?j-1:0].getW()*(j?1:0);
+		i.setXYpos(FP_LEFT_PADDING+x+gap*j, grid_start+(boxes[0].getH()+gap)*2);
+		i.invalidate();
+		mainPage.addItem(&i);
+		j++;
+	}
+
+	static Image tapImg;
+	tapImg.loadRes(images[IMG_TAP]);
+
+	static CircIndicator tapInd;
+	tapInd.setText(EMPTY_STR);
+
+	bottomBoxes[TAP].addItem(&tapImg);
+	bottomBoxes[TAP].addItem(&tapInd);
+
+	static Text aTxt;
+	aTxt.setFont(BOLDFONT);
+	aTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
+	aTxt.setText(TXT_A);
+
+	static CircIndicator aInd;
+	aInd.setText(EMPTY_STR);
+
+	bottomBoxes[A].addItem(&aTxt);
+	bottomBoxes[A].addItem(&aInd);
+
+	// time in topBar
+
+	// tank
+	g_tankBig.setXYpos(201, 45);
+	mainPage.addItem(&g_tankBig);
+
+	// bottom buttons
 	mainPage.addItem(&menu);
+	mainPage.addItem(&pause);
 
 	return &mainPage;
 }
@@ -3904,6 +4117,9 @@ void loop()
 		else if (cmd == "stop") {
 			g_rig.halt();
 		}
+		else if (cmd == "next") {
+			g_tankBig++;
+		}
 	}
 
 #ifdef APP_DEBUG
@@ -3912,6 +4128,10 @@ void loop()
 		Serial.println(io.getTem());
 		Serial.print("Hum: ");
 		Serial.println(io.getHum());
+		Serial.print("PH: ");
+		Serial.println(io.getPH(), 1);
+		Serial.print("EC: ");
+		Serial.println(io.getEC(), 1);
 		Serial.println("********");
 		//Serial.print("Hour: ");
 		//Serial.println(datetime.getHour());

@@ -722,7 +722,11 @@ class Rig {
 		void halt()
 		{
 			_paused = true;
+			_led = false;
+			_passvent = false;
+			_vent = false;
 			io.haltAll();
+			Serial.println("halted...");
 		}
 
 		void update()
@@ -735,15 +739,36 @@ class Rig {
 			_updatePassVent();
 			_updateSolutions();
 		}
+
+		bool getLed()
+		{
+			return _led;
+		}
+
+		bool getVent()
+		{
+			return _vent;
+		}
+
+		bool getPassVent()
+		{
+			return _passvent;
+		}
+
 	private:
 		bool _paused;
 		bool _window_opened = false;
 		bool _window_energized = false;
 		unsigned long _window_timer = 0;
-		static constexpr unsigned long WINDOW_INT = 10000;
+		static constexpr unsigned long WINDOW_INT = 60000;
+		bool _led = false;
+		bool _vent = false;
+		bool _passvent = false;
 
 		void _updateLight()
 		{
+			_led = false;
+
 			if (!g_data.getInt(LIGHT_ON)) {
 				io.haltPWMout(PWR_PG_LIGHT);
 				return;
@@ -762,6 +787,7 @@ class Rig {
 				// set led brightness
 				uint8_t brightness = g_data.getInt(ADD_LED_BRIGHT);
 				io.drivePWMout(PWR_PG_LIGHT, brightness);
+				_led = true;
 			}
 			else {
 				io.haltPWMout(PWR_PG_LIGHT);
@@ -770,6 +796,7 @@ class Rig {
 
 		void _updateVent()
 		{
+			_vent = false;
 			if (!g_data.getInt(VENT_ON)) {
 				io.driveOut(PWR_PG_FAN, false);
 				return;
@@ -792,14 +819,23 @@ class Rig {
 
 			bool Q = x || y || z;
 
-			if (Q)
+			if (Q) {
 				io.driveOut(PWR_PG_FAN, true);
+				_vent = true;
+			}
 			else
 				io.driveOut(PWR_PG_FAN, false);
 		}
 
 		void _updatePassVent()
 		{
+			if (_window_energized || _window_opened) {
+				_passvent = true;
+			}
+			else {
+				_passvent = false;
+			}
+
 			if (!g_data.getInt(PASSVENT)) {
 				return;
 			}
@@ -881,6 +917,7 @@ void resetDiagFlags()
 OutputField* gADC[N_ADC];
 #define ADC_READ_INTERVAL 500
 #define DIG_READ_INTERVAL 200
+#define MAIN_P_UPDATE 1000
 
 // pointers to DIG diag indicators
 CircIndicator* gKEYS[DIG_NKEYS];
@@ -893,6 +930,15 @@ enum {
 
 Toggle* exlMotorTgl[MOTOR_NITEMS];
 
+// main page indicators
+OutputFieldMain* g_tem;
+OutputFieldMain* g_hum;
+OutputField* g_ph;
+OutputField* g_tds;
+CircIndicator* g_light;
+CircIndicator* g_passvent;
+CircIndicator* g_vent;
+
 class App {
 	private:
 		unsigned long _digMils = 0;
@@ -902,6 +948,7 @@ class App {
 		unsigned long _dimMils = 0;
 		unsigned long _sensMils = 0;
 		unsigned long _repMils = 0;
+		unsigned long _mainMils = 0;
 		bool _blink = false;
 		bool _dbFlag = false;
 		bool _triggered = false;
@@ -962,8 +1009,27 @@ class App {
 			datetime.update();
 			g_rig.update();
 
-			/* diag page analog inputs */
+			/* main page updates */
+			if (currPage == pages[MAIN_PG] && millis() - _mainMils > MAIN_P_UPDATE) {
+				//Serial.println("update main page");
+				g_ph->setValue(io.getPH());
+				g_tds->setValue(io.getEC());
 
+				g_tem->setValue(io.getTem());
+				g_tem->draw();
+				g_hum->setValue(int(io.getHum()));
+				g_hum->draw();
+				g_vent->on(g_rig.getVent());
+				g_vent->draw();
+				g_passvent->on(g_rig.getPassVent());
+				g_passvent->draw();
+				g_light->on(g_rig.getLed());
+				g_light->draw();
+
+				_mainMils = millis();
+			}
+
+			/* diag page analog inputs */
 			if (currPage == pages[ADC_DIAG_PG] && millis() - _adcMils > ADC_READ_INTERVAL) {
 				io.readADC();
 

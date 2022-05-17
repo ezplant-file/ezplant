@@ -14,8 +14,11 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"3.",
 	"EC",
 	"pH",
+	"PH:",
+	"EC:",
 	"минут",
 	"секунд",
+	"Пауза",
 	// main menu strings
 	"Меню",
 	"Новая посадка",

@@ -14,8 +14,11 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"3.",
 	"EC",
 	"pH",
+	"PH:",
+	"EC:",
 	"minutes",
 	"seconds",
+	"Pause",
 	// main menu strings
 	"Menu",
 	"New planting",

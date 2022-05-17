@@ -14,8 +14,11 @@ typedef enum {
 	BULL_3,
 	TXT_EC,
 	TXT_PH,
+	TXT_PH_BIG,
+	TXT_EC_BIG,
 	TXT_MINUTES,
 	TXT_SECONDS,
+	TXT_PAUSE,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
