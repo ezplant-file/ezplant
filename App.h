@@ -194,178 +194,6 @@ OutputField g_tds_read;
 #include "settings.h" // rig_settings_t, rig_type, g_data
 
 
-
-class Panel {
-	public:
-		void setText(dispStrings_t index)
-		{
-			_menuText.setText(index);
-			_menuText.prepare();
-		}
-
-		void invalidateAll()
-		{
-			_topBox.invalidate();
-			_menuText.invalidate();
-			_statusWIFI.invalidate();
-			_statusInternet.invalidate();
-		}
-
-		void prepare()
-		{
-		}
-
-		void erase()
-		{
-			_menuText.erase();
-		}
-
-		void hideIcons()
-		{
-			_statusWIFI.setInvisible();
-			_statusInternet.setInvisible();
-		}
-
-		void showIcons()
-		{
-			_statusWIFI.setVisible();
-			_statusInternet.setVisible();
-		}
-
-		void draw()
-		{
-			_topBox.draw();
-			_menuText.draw();
-
-			_statusWIFI.reload();
-			_statusWIFI.draw();
-			_statusWIFI.freeRes();
-
-			_statusInternet.reload();
-			_statusInternet.draw();
-			_statusInternet.freeRes();
-		}
-
-		void update()
-		{
-			if (!g_wifi_set) {
-				server.handleClient();
-			}
-
-			if (millis() - _timestamp < _interval) {
-				return;
-			}
-
-			_timestamp = millis();
-
-			int dBm = WiFi.RSSI();
-			uint8_t strength = map(dBm, -95, -45, 0, 4);
-
-			/*
-#ifdef APP_DEBUG
-			Serial.print("WiFi strength: ");
-			Serial.println(dBm);
-			Serial.print("Wifi status: ");
-			Serial.println(WiFi.status());
-#endif
-*/
-
-			strength = clamp(strength, 0, 4);
-
-			if (WiFi.status() != WL_CONNECTED) {
-				_curWiFiImage = IMG_NO_WIFI;
-				_curNetImage = IMG_NET_NO;
-				g_ping_success = false;
-
-				if (gwsWifiChBox.isOn()) {
-					WiFi.reconnect();
-				}
-			}
-			else {
-				if (g_ping_success) {
-					_curNetImage = IMG_NET_OK;
-				}
-				else {
-					_curNetImage = IMG_NET_NO;
-				}
-
-				switch (strength) {
-					case 0: _curWiFiImage = IMG_NO_WIFI; break;
-					case 1: _curWiFiImage = IMG_WIFI1; break;
-					case 2: _curWiFiImage = IMG_WIFI2; break;
-					case 3: _curWiFiImage = IMG_WIFI3; break;
-					case 4: _curWiFiImage = IMG_WIFI4; break;
-					default: _curWiFiImage = IMG_NO_WIFI; break;
-				}
-			}
-
-			// if connection status changed
-			if (_curNetImage != _prevNetImage) {
-				_statusInternet.loadRes(images[_curNetImage]);
-				_statusInternet.draw();
-				_statusInternet.freeRes();
-				_prevNetImage = _curNetImage;
-				_changed = true;
-
-			}
-
-			// if wifi status changed
-			if (_curWiFiImage != _prevWiFiImage) {
-				_statusWIFI.loadRes(images[_curWiFiImage]);
-				_statusWIFI.draw();
-				_statusWIFI.freeRes();
-				_prevWiFiImage = _curWiFiImage;
-			}
-		}
-
-		bool netChanged()
-		{
-			return _changed;
-		}
-
-		void resetChange()
-		{
-			_changed = false;
-		}
-
-		void build()
-		{
-			_topBox.setColor(greyscaleColor(TOP_BAR_BG_COL));
-			_topBox.setWH(SCR_WIDTH, TOP_BAR_HEIGHT);
-			_topBox.invalidate();
-			_menuText.setFont(MIDFONT);
-			_menuText.setXYpos(LEFTMOST, TOPMOST);
-			_menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
-			_menuText.setText(MENU);
-
-			_time.setFont(MIDFONT);
-			_time.setXYpos(LEFTMOST, TOPMOST);
-			_time.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
-			_time.setText(MENU); // special case
-			_statusWIFI.loadRes(images[_curWiFiImage]);
-			_statusWIFI.setXYpos(WIFI_IMG_X, 0);
-
-			_statusInternet.loadRes(images[_curNetImage]);
-			_statusInternet.setXYpos(NET_IMG_X, 0);
-		}
-	private:
-		SimpleBox _topBox;
-		Image _statusWIFI;
-		Image _statusInternet;
-		Text _menuText;
-		Text _time;
-		bool _changed = false;
-		bool _wifiIsON = false;
-	private:
-		//bool _connected = false;
-		unsigned long _timestamp = 0;
-		unsigned long _interval = WIFI_UPDATE_INTERVAL;
-		images_t _curWiFiImage = IMG_NO_WIFI;
-		images_t _curNetImage = IMG_NET_NO;
-		images_t _prevWiFiImage = IMG_NO_WIFI;
-		images_t _prevNetImage = IMG_NET_NO;
-} topBar;
-
 // ezplant.ino:
 void callPage(void*);
 
@@ -415,6 +243,11 @@ class DateTime: public ScrObj {
 		int getHour()
 		{
 			return _timeinfo.tm_hour;
+		}
+
+		int getMinute()
+		{
+			return _timeinfo.tm_min;
 		}
 
 		int getDays()
@@ -686,7 +519,7 @@ class DateTime: public ScrObj {
 			_visible[MON].setLimits(1, 12);
 			_visible[YEAR].setLimits(1900, 2100);
 
-			_visible[HOUR].setText(DT_SEMI);
+			_visible[HOUR].setText(DT_COLON);
 			_visible[DAY].setText(DT_DOT);
 			_visible[MON].setText(DT_DOT);
 
@@ -709,6 +542,230 @@ class DateTime: public ScrObj {
 			_visible[YEAR].adjustWidth(4);
 		}
 } datetime;
+
+class Panel {
+	public:
+		void setText(dispStrings_t index)
+		{
+			_menuText.setText(index);
+			_menuText.prepare();
+		}
+
+		void invalidateAll()
+		{
+			_topBox.invalidate();
+			_menuText.invalidate();
+			_statusWIFI.invalidate();
+			_statusInternet.invalidate();
+			_hours.invalidate();
+			_minutes.invalidate();
+		}
+
+		void prepare()
+		{
+		}
+
+		void erase()
+		{
+			_menuText.erase();
+		}
+
+		void hideIcons()
+		{
+			_statusWIFI.setInvisible();
+			_statusInternet.setInvisible();
+		}
+
+		void showIcons()
+		{
+			_statusWIFI.setVisible();
+			_statusInternet.setVisible();
+		}
+
+		void draw()
+		{
+			_topBox.draw();
+			_menuText.draw();
+
+			if (currPage == pages[MAIN_PG]) {
+				_showTime();
+				_hours.prepare();
+				_hours.draw();
+				_minutes.draw();
+			}
+			else {
+				_hideTime();
+			}
+
+			_statusWIFI.reload();
+			_statusWIFI.draw();
+			_statusWIFI.freeRes();
+
+			_statusInternet.reload();
+			_statusInternet.draw();
+			_statusInternet.freeRes();
+
+		}
+
+		void update()
+		{
+			if (!g_wifi_set) {
+				server.handleClient();
+			}
+
+			if (millis() - _timestamp < _interval) {
+				return;
+			}
+
+			_hours.invalidate();
+			_minutes.invalidate();
+			_hours.prepare();
+			_hours.draw();
+			_minutes.draw();
+
+			_timestamp = millis();
+
+			int dBm = WiFi.RSSI();
+			uint8_t strength = map(dBm, -95, -45, 0, 4);
+
+			/*
+#ifdef APP_DEBUG
+			Serial.print("WiFi strength: ");
+			Serial.println(dBm);
+			Serial.print("Wifi status: ");
+			Serial.println(WiFi.status());
+#endif
+*/
+
+			strength = clamp(strength, 0, 4);
+
+			if (WiFi.status() != WL_CONNECTED) {
+				_curWiFiImage = IMG_NO_WIFI;
+				_curNetImage = IMG_NET_NO;
+				g_ping_success = false;
+
+				if (gwsWifiChBox.isOn()) {
+					WiFi.reconnect();
+				}
+			}
+			else {
+				if (g_ping_success) {
+					_curNetImage = IMG_NET_OK;
+				}
+				else {
+					_curNetImage = IMG_NET_NO;
+				}
+
+				switch (strength) {
+					case 0: _curWiFiImage = IMG_NO_WIFI; break;
+					case 1: _curWiFiImage = IMG_WIFI1; break;
+					case 2: _curWiFiImage = IMG_WIFI2; break;
+					case 3: _curWiFiImage = IMG_WIFI3; break;
+					case 4: _curWiFiImage = IMG_WIFI4; break;
+					default: _curWiFiImage = IMG_NO_WIFI; break;
+				}
+			}
+
+			// if connection status changed
+			if (_curNetImage != _prevNetImage) {
+				_statusInternet.loadRes(images[_curNetImage]);
+				_statusInternet.draw();
+				_statusInternet.freeRes();
+				_prevNetImage = _curNetImage;
+				_changed = true;
+
+			}
+
+			// if wifi status changed
+			if (_curWiFiImage != _prevWiFiImage) {
+				_statusWIFI.loadRes(images[_curWiFiImage]);
+				_statusWIFI.draw();
+				_statusWIFI.freeRes();
+				_prevWiFiImage = _curWiFiImage;
+			}
+		}
+
+		bool netChanged()
+		{
+			return _changed;
+		}
+
+		void resetChange()
+		{
+			_changed = false;
+		}
+
+		void build()
+		{
+			_topBox.setColor(greyscaleColor(TOP_BAR_BG_COL));
+			_topBox.setWH(SCR_WIDTH, TOP_BAR_HEIGHT);
+			_topBox.invalidate();
+			_menuText.setFont(MIDFONT);
+			_menuText.setXYpos(LEFTMOST, TOPMOST);
+			_menuText.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
+			_menuText.setText(MENU);
+
+			/*
+			_time.setFont(MIDFONT);
+			_time.setXYpos(LEFTMOST, TOPMOST);
+			_time.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(TOP_BAR_BG_COL));
+			_time.setText(MENU); // special case
+			*/
+			_statusWIFI.loadRes(images[_curWiFiImage]);
+			_statusWIFI.setXYpos(WIFI_IMG_X, 0);
+
+			_statusInternet.loadRes(images[_curNetImage]);
+			_statusInternet.setXYpos(NET_IMG_X, 0);
+
+			_hours.setXYpos(140, 5);
+			_hours.noBg();
+			_hours.setText(DT_COLON);
+			_hours.adjustTextX(-21);
+			_hours.setColors(COL_GREY_70_565, COL_GREY_E3_565);
+			_hours.showLeadZero();
+
+			_minutes.setXYpos(161, 5);
+			_minutes.noBg();
+			_minutes.noText();
+			_minutes.setColors(COL_GREY_70_565, COL_GREY_E3_565);
+			_minutes.showLeadZero();
+		}
+	private:
+
+		void _showTime()
+		{
+			_showtime = true;
+			_hours.setValue(datetime.getHour());
+			_minutes.setValue(datetime.getMinute());
+			_hours.invalidate();
+			_minutes.invalidate();
+			_hours.setVisible();
+			_minutes.setVisible();
+		}
+
+		void _hideTime()
+		{
+			_showtime = false;
+			_hours.setInvisible();
+			_minutes.setInvisible();
+		}
+
+		SimpleBox _topBox;
+		Image _statusWIFI;
+		Image _statusInternet;
+		Text _menuText;
+		//Text _time;
+		bool _changed = false;
+		bool _wifiIsON = false;
+		bool _showtime = false;
+		unsigned long _timestamp = 0;
+		unsigned long _interval = WIFI_UPDATE_INTERVAL;
+		images_t _curWiFiImage = IMG_NO_WIFI;
+		images_t _curNetImage = IMG_NET_NO;
+		images_t _prevWiFiImage = IMG_NO_WIFI;
+		images_t _prevNetImage = IMG_NET_NO;
+		OutputField _hours, _minutes;
+} topBar;
 
 class Rig {
 	public:
@@ -938,6 +995,9 @@ OutputField* g_tds;
 CircIndicator* g_light;
 CircIndicator* g_passvent;
 CircIndicator* g_vent;
+CompositeBox* g_A;
+CompositeBox* g_B;
+CompositeBox* g_C;
 
 class App {
 	private:

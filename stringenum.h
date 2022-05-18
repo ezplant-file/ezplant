@@ -91,7 +91,7 @@ typedef enum {
 	DT_UTC,
 	DT_CURR,
 	DT_MANUAL,
-	DT_SEMI,
+	DT_COLON,
 	DT_DOT,
 
 	// utility

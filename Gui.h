@@ -59,6 +59,9 @@
 #define LEFTMOST 17
 #define TOPMOST 11
 
+// test
+#define TEXT_HEIGHT 15
+
 // input field
 #define IN_FLD_X_PADDING 8
 #define IN_FLD_Y_PADDING 7
@@ -85,6 +88,9 @@
 #define COL_GREY_70_565 0x738E
 #define COL_GREY_E3_565 0xE71C
 #define COL_GREY_DC_565 0xDEFB
+
+// tank red
+#define COL_RED_TANK 0xE3CF
 
 // checkbox
 #define CHK_BOX_COL 0xDC
@@ -492,7 +498,7 @@ class GreyTextButton: public ScrObj {
 		{
 			//_w = GREY_BUTTON_WIDTH;
 			//_h = GREY_BUTTON_HEIGHT;
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 			_btnSpr = new TFT_eSprite(&tft);
 
@@ -556,7 +562,7 @@ class GreyTextButton: public ScrObj {
 class Text: public ScrObj {
 	public:
 		//TODO: calculate height based on font
-		Text(): ScrObj(0, TOP_BAR_HEIGHT - 12, false)
+		Text(): ScrObj(0, TEXT_HEIGHT, false)
 		{
 		}
 
@@ -603,7 +609,7 @@ class Text: public ScrObj {
 			if (_index == EMPTY_STR)
 				return;
 
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			//_txtSp = new TFT_eSprite(&tft);
@@ -717,6 +723,20 @@ class Text: public ScrObj {
 			_h *= mult;
 		}
 
+		/*
+		virtual void setFont(fonts_t fontIndex) override
+		{
+			_fontIndex = fontIndex;
+			switch (_fontIndex) {
+				default: break;
+				case SMALLFONT: _h = TEXT_HEIGHT; break;
+				case BOLDFONT: _h = TEXT_HEIGHT+3; break;
+			}
+			_invalid = true;
+		}
+		*/
+
+
 		dispStrings_t getStrIndex()
 		{
 			return _index;
@@ -805,7 +825,7 @@ class StringText: public Text {
 
 		virtual void prepare() override
 		{
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			this->createSpriteObj();
@@ -864,7 +884,7 @@ class StringText: public Text {
 class BodyText: public ScrObj {
 
 	public:
-		BodyText(): ScrObj(0, TOP_BAR_HEIGHT - 12)
+		BodyText(): ScrObj(0, TEXT_HEIGHT)
 		{
 		}
 
@@ -892,7 +912,7 @@ class BodyText: public ScrObj {
 		virtual void prepare() override
 		{
 			//_h = TOP_BAR_HEIGHT - 12;
-			if (!_invalid)
+			if (!_invalid || !_isVisible)
 				return;
 
 			_txtSp = new TFT_eSprite(&tft);
@@ -1091,12 +1111,14 @@ class InputField: public ScrObj {
 			if (!_invalid || !_isVisible)
 				return;
 
-			_text.draw();
+			if (!_notext)
+				_text.draw();
 
 			tft.setTextColor(_fg, _bg);
 			tft.loadFont(FONTS[_fontIndex]);
 			//_w = tft.textWidth(String(_value)) + _paddingX*2;
-			tft.fillRect(_x, _y, _w, _h, _bg);
+			if (_background)
+				tft.fillRect(_x, _y, _w, _h, _bg);
 
 			if (_showPlus) {
 				tft.setCursor(_x + _dx, _y+_paddingY);
@@ -1164,6 +1186,8 @@ class InputField: public ScrObj {
 
 		virtual void freeRes() override
 		{
+			if (_notext)
+				return;
 			_text.freeRes();
 		}
 
@@ -1202,19 +1226,22 @@ class InputField: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
-			_text.erase();
+			if (!_notext)
+				_text.erase();
 			freeRes();
 		}
 
 		virtual void prepare() override
 		{
+			if (_notext)
+				return;
 			_text.invalidate();
 			_text.prepare();
 		}
 
 		virtual void setText(dispStrings_t index) override
 		{
-			if (index > END_OF_STRINGS)
+			if (index > END_OF_STRINGS || _notext)
 				return;
 
 			// get length in current font
@@ -1403,6 +1430,21 @@ class InputField: public ScrObj {
 			setfLimits(0.1, 10.0);
 		}
 
+		void noXpadding()
+		{
+			_paddingX = 0;
+		}
+
+		void noBg()
+		{
+			_background = false;
+		}
+
+		void noText()
+		{
+			_notext = true;
+		}
+
 	protected:
 		union {
 			int i = 1;
@@ -1432,6 +1474,8 @@ class InputField: public ScrObj {
 		uint8_t _paddingX = IN_FLD_X_PADDING;
 		uint8_t _paddingY = IN_FLD_Y_PADDING;
 		const char* _str = "";
+		bool _background = true;
+		bool _notext = false;
 		placeholder_t _width = THREE_CHR;
 };
 
@@ -1700,6 +1744,8 @@ class CheckBox: public ScrObj {
 
 		virtual void prepare() override
 		{
+			if (!_invalid || !_isVisible)
+				return;
 			// get length in current font
 			tft.loadFont(FONTS[_text.getFontIndex()]);
 
@@ -1892,6 +1938,9 @@ class Toggle: public ScrObj {
 		virtual void prepare() override
 		{
 
+			if (!_invalid || !_isVisible)
+				return;
+
 			if (_textHardX)
 				goto skip;
 
@@ -2074,12 +2123,18 @@ class RadioButton: public ScrObj {
 		{
 		}
 
+		void adjustCircleY(int dy)
+		{
+			_dy = dy;
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid || !_isVisible)
 				return;
 
-			tft.fillRect(_x, _y, _w, _h, greyscaleColor(_bgcol));
+			if (_background)
+				tft.fillRect(_x, _y, _w, _h, _bgcol);
 
 			_text.draw();
 
@@ -2090,7 +2145,7 @@ class RadioButton: public ScrObj {
 				_col = 0xFFFF;
 
 			int x = _x + _w/2 - 1;
-			int y = _y + _h/2 - 1;
+			int y = _y + _h/2 - 1 + _dy;
 			tft.fillSmoothCircle(x, y, _r, _col, greyscaleColor(_bgcol));
 			//tft.fillCircle(x, y, _r, _col);
 			_invalid = false;
@@ -2118,6 +2173,8 @@ class RadioButton: public ScrObj {
 
 		virtual void prepare() override
 		{
+			if (!_invalid || !_isVisible)
+				return;
 			_text.setXYpos(_x + _w + _text.getXpadding(), _y + _text.getYpadding()/2);
 			_text.setColors(
 					greyscaleColor(FONT_COLOR),
@@ -2162,7 +2219,7 @@ class RadioButton: public ScrObj {
 			return greyscaleColor(GR_BTN_BG_COLOR);
 		}
 		*/
-		void setBgColor(uint8_t bgcol)
+		void setBgColor(uint16_t bgcol)
 		{
 			_bgcol = bgcol;
 		}
@@ -2173,6 +2230,11 @@ class RadioButton: public ScrObj {
 			_invalid = true;
 		}
 
+		void noBg()
+		{
+			_background = false;
+		}
+
 	private:
 		Text _text;
 		bool _isOn = false;
@@ -2180,7 +2242,8 @@ class RadioButton: public ScrObj {
 		int _dy = 0;
 		int _dx = 0;
 		uint16_t _col = 0xffff;
-		uint8_t _bgcol = RAD_BG_COL;
+		uint16_t _bgcol = greyscaleColor(RAD_BG_COL);
+		bool _background = true;
 };
 
 #include "settings.h" // rig_typ
@@ -2294,6 +2357,9 @@ class Wait: public ScrObj {
 
 		virtual void prepare() override
 		{
+			if (!_invalid || !_isVisible)
+				return;
+
 			_waitText.setXYpos(_x + _waitText.getXpadding(), _y - _waitText.getYpadding()*2);
 			_waitText.invalidate();
 			_waitText.prepare();
@@ -2335,7 +2401,7 @@ class CompositeBox: public ScrObj {
 				return;
 			}
 
-			tft.fillRect(_x, _y, _w, _h, _bg);
+			tft.fillRect(_x, _y, _w, _h, _empty ? _red : _bg);
 
 			for (auto& obj:_items) {
 				if (obj->isVisible()) {
@@ -2368,7 +2434,7 @@ class CompositeBox: public ScrObj {
 		{
 		}
 
-		// adjust first item XY if it is text
+		// adjust first item XY if it is text (it's magical!)
 		void adjust()
 		{
 			if (!_items.size())
@@ -2379,14 +2445,18 @@ class CompositeBox: public ScrObj {
 			if (_items.size() == 1)
 				return;
 
-			//TODO:
-			//_items[1]->setXYpos
+			_items[1]->setXYpos(((_x+_w)-_w/3) - _items[1]->getW()/2, (_y+_h/2) - _items[1]->getH()/2);
+
+			if (_items.size() == 2)
+				return;
+
+			_items[1]->setXYpos(_x+_w-2*_w/3, (_y+_h/2) - _items[1]->getH()/2);
+			_items[2]->setXYpos(_x+_w-_w/3, (_y+_h/2) - _items[2]->getH()/2);
 		}
 
 		void addItem(ScrObj* item)
 		{
 			if (!_items.size())
-				//item->setXYpos((_x+_w/4) - item->getW()/2, (_y+_h/2) - item->getH()/2);
 				item->setXYpos(_x,_y);
 			else if (_items.size() == 1) {
 				item->setXYpos(((_x+_w)-_w/4) - item->getW()/2, (_y+_h/2) - item->getH()/2);
@@ -2401,17 +2471,27 @@ class CompositeBox: public ScrObj {
 			_items.push_back(item);
 		}
 
+		void setEmpty(bool empty)
+		{
+			_empty = empty;
+			invalidate();
+			prepare();
+		}
+
 	private:
-
 		obj_list _items;
-		//uint16_t _bg = COL_GREY_E3_565;
-		uint16_t _bg = greyscaleColor(0xDC);
+		uint16_t _bg = COL_GREY_DC_565;
+		uint16_t _red = COL_RED_TANK;
+		bool _empty = false;
+		//uint16_t _bg = 0xFFFF;
+};
 
+class PhBox: public ScrObj {
 };
 
 typedef enum {
 	T_EMPTY,
-	T_ONETHIRD,
+	T_HALF,
 	T_TWOTHIRDS,
 	T_FULL
 } tank_state_t;
@@ -2432,16 +2512,17 @@ class Tank: public ScrObj {
 
 			if (_state == T_EMPTY) {
 				// draw only lines
+				_drawBottom();
 				_drawLines();
 			}
-			else if (_state == T_ONETHIRD) {
+			else if (_state == T_HALF) {
 				// draw bottom fill and lines
-				_drawBottom();
+				_drawMiddleBottom();
 				_drawLines();
 			}
 			else if (_state == T_TWOTHIRDS) {
 				// draw middle fill lines
-				_drawMiddle();
+				_drawMiddleTop();
 				_drawLines();
 			}
 			else if (_state == T_FULL) {
@@ -2468,8 +2549,8 @@ class Tank: public ScrObj {
 			switch (_state) {
 				default: _state = T_EMPTY; break;
 				case T_FULL: _state = T_EMPTY; break;
-				case T_EMPTY: _state = T_ONETHIRD; break;
-				case T_ONETHIRD: _state = T_TWOTHIRDS; break;
+				case T_EMPTY: _state = T_HALF; break;
+				case T_HALF: _state = T_TWOTHIRDS; break;
 				case T_TWOTHIRDS: _state = T_FULL; break;
 			}
 			return *this;
@@ -2492,11 +2573,19 @@ class Tank: public ScrObj {
 		{
 			int subrectH = 6;
 			int botRectH = 20;
+			tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, COL_RED_TANK);
+			tft.fillRect(_x+1, _y+_h-botRectH-1, _w-2, subrectH, _bg);
+		}
+
+		void _drawMiddleBottom()
+		{
+			int subrectH = 6;
+			int botRectH = 34;
 			tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, _water);
 			tft.fillRect(_x+1, _y+_h-botRectH-1, _w-2, subrectH, _bg);
 		}
 
-		void _drawMiddle()
+		void _drawMiddleTop()
 		{
 			int subrectH = 6;
 			int botRectH = 52;
@@ -2507,6 +2596,11 @@ class Tank: public ScrObj {
 		void _drawFull()
 		{
 			tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, _h-2, 5, _water);
+
+			int subrectH = 6;
+			int botRectH = 23;
+			tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, botRectH, 5, COL_RED_TANK);
+			tft.fillRect(_x+1, _y-subrectH+botRectH+1, _w-2, subrectH, _water);
 		}
 
 		tank_state_t _state = T_EMPTY;

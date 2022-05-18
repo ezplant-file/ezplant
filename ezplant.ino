@@ -1342,17 +1342,13 @@ Page* buildTestPage()
 	testRad.setText(RADIO_TEXT);
 	//testRad.prepare();
 	testRad.on(false);
-	testRad.setBgColor(COL_GREY_DC);
+	testRad.setBgColor(COL_GREY_DC_565);
 	testRad.setCallback(radCallback);
 
 	testInput.setFont(SMALLFONT);
 	testInput.setXYpos(17, 115);
 	testInput.setValue(100);
 	testInput.setText(INPUT_TEXT);
-	testInput.setColors(
-			greyscaleColor(FONT_COLOR),
-			greyscaleColor(GR_BTN_BG_COLOR)
-			);
 
 	testGreyButton.setXYpos(17, 150);
 	testGreyButton.setText(GREY_BUTTON);
@@ -3583,6 +3579,7 @@ Page* buildMainPage()
 	drop.loadRes(images[IMG_DROP]);
 	mainPage.addItem(&drop);
 
+	/* big letters */
 	static OutputField ph;
 	ph.setXYpos(110, 47);
 	ph.setWH(52, INPUT_H);
@@ -3596,7 +3593,7 @@ Page* buildMainPage()
 
 	static OutputField tds;
 	tds.setXYpos(110, 71);
-	tds.setWH(52, INPUT_H);
+	tds.setWH(62, INPUT_H);
 	tds.setFont(BOLDFONT);
 	tds.setColors(0, greyscaleColor(BACKGROUND));
 	tds.setAlign(LEFT);
@@ -3605,6 +3602,7 @@ Page* buildMainPage()
 	g_tds = &tds;
 	mainPage.addItem(&tds);
 
+	/* big boxes */
 	enum {
 		B_BULB,
 		B_DOOR,
@@ -3635,51 +3633,61 @@ Page* buildMainPage()
 	}
 
 
+	/* bulb box */
 	static Image smallbulb;
 	smallbulb.loadRes(images[IMG_BULB_S]);
 
 	static CircIndicator ledInd;
 	ledInd.setText(EMPTY_STR);
+	ledInd.noBg();
 	g_light = &ledInd;
 
 	boxes[B_BULB].addItem(&smallbulb);
 	boxes[B_BULB].addItem(&ledInd);
 
+	/* door box */
 	static Image smalldoor;
 	smalldoor.loadRes(images[IMG_DOOR_S]);
 
 	static CircIndicator doorInd;
 	doorInd.setText(EMPTY_STR);
+	doorInd.noBg();
 	g_passvent = &doorInd;
 
 	boxes[B_DOOR].addItem(&smalldoor);
 	boxes[B_DOOR].addItem(&doorInd);
 
+	/* fan box */
 	static Image smallfan;
 	smallfan.loadRes(images[IMG_COOLER_S]);
 
 	static CircIndicator fanInd;
 	fanInd.setText(EMPTY_STR);
+	fanInd.noBg();
 	g_vent = &fanInd;
 
 	boxes[B_FAN].addItem(&smallfan);
 	boxes[B_FAN].addItem(&fanInd);
 
+	/* humidity box */
 	static Image hum;
 	hum.loadRes(images[IMG_HUM]);
 
 	static OutputFieldMain humInd;
 	humInd.setFont(BOLDFONT);
+	humInd.noXpadding();
 	humInd.setColors(0, COL_GREY_DC_565);
 	humInd.setText(EMPTY_STR);
 	humInd.setWidth(TWO_CHR);
 	//humInd.trim();
 	humInd.setWH(22, 13);
+	humInd.adjustX(3);
 	g_hum = &humInd;
 
 	static Text percent;
 	percent.setFont(BOLDFONT);
 	percent.setColors(0, COL_GREY_DC_565);
+	percent.adjustX(-7);
 	percent.setText(PERCENT);
 
 	boxes[B_HUM].addItem(&hum);
@@ -3687,11 +3695,15 @@ Page* buildMainPage()
 	boxes[B_HUM].addItem(&percent);
 	//humInd.adjustX(13);
 
+	/* temperature box */
 	static Image tem;
 	tem.loadRes(images[IMG_TEMP]);
 
 	static OutputFieldMain temInd;
+	temInd.setFont(BOLDFONT);
+	temInd.setColors(0, COL_GREY_DC_565);
 	temInd.setText(EMPTY_STR);
+	temInd.noBg();
 	temInd.adjustX(-6);
 	//temInd.trim();
 	temInd.setFloat();
@@ -3699,6 +3711,8 @@ Page* buildMainPage()
 	g_tem = &temInd;
 
 	static Text degree;
+	degree.setFont(BOLDFONT);
+	degree.setColors(0, COL_GREY_DC_565);
 	degree.setText(TXT_C);
 
 	boxes[B_TEM].addItem(&tem);
@@ -3706,6 +3720,7 @@ Page* buildMainPage()
 	boxes[B_TEM].addItem(&degree);
 	//temInd.adjustX(7);
 
+	/* pump box */
 	static Image pump;
 	pump.loadRes(images[IMG_PUMP]);
 
@@ -3719,6 +3734,7 @@ Page* buildMainPage()
 	boxes[B_PUMP].addItem(&pumpInd);
 	boxes[B_PUMP].addItem(&placeh);
 
+	/* small boxes */
 	enum {
 		TAP,
 		A, B, C,
@@ -3749,15 +3765,18 @@ Page* buildMainPage()
 		j++;
 	}
 
+	/* tap box */
 	static Image tapImg;
 	tapImg.loadRes(images[IMG_TAP]);
 
 	static CircIndicator tapInd;
+	tapInd.noBg();
 	tapInd.setText(EMPTY_STR);
 
 	bottomBoxes[TAP].addItem(&tapImg);
 	bottomBoxes[TAP].addItem(&tapInd);
 
+	/* A box */
 	static Text aTxt;
 	aTxt.setFont(BOLDFONT);
 	aTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
@@ -3765,11 +3784,63 @@ Page* buildMainPage()
 
 	static CircIndicator aInd;
 	aInd.setText(EMPTY_STR);
+	aInd.on(true);
+	aInd.noBg();
 
 	bottomBoxes[A].addItem(&aTxt);
 	bottomBoxes[A].addItem(&aInd);
+	bottomBoxes[A].adjust();
+	g_A = &bottomBoxes[A];
 
-	// time in topBar
+	/* B box */
+	static Text bTxt;
+	bTxt.setFont(BOLDFONT);
+	//bTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
+	bTxt.setColors(TFT_BLACK, COL_RED_TANK);
+	bTxt.setText(TXT_B);
+
+	static CircIndicator bInd;
+	bInd.setText(EMPTY_STR);
+	bInd.setBgColor(COL_RED_TANK);
+	bInd.noBg();
+
+	bottomBoxes[B].addItem(&bTxt);
+	bottomBoxes[B].addItem(&bInd);
+	bottomBoxes[B].adjust();
+	g_B = &bottomBoxes[B];
+
+	/* C box */
+	static Text cTxt;
+	cTxt.setFont(BOLDFONT);
+	cTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
+	cTxt.setText(TXT_C);
+
+	static CircIndicator cInd;
+	cInd.setText(EMPTY_STR);
+	cInd.noBg();
+
+	bottomBoxes[C].addItem(&cTxt);
+	bottomBoxes[C].addItem(&cInd);
+	bottomBoxes[C].adjust();
+
+	/* pH box */
+	static Text phTxt;
+	phTxt.setFont(BOLDFONT);
+	phTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
+	phTxt.setText(TXT_PH);
+
+	static CircIndicator phUpInd;
+	phUpInd.setText(EMPTY_STR);
+	phUpInd.adjustCircleY(3);
+
+	static CircIndicator phDwnInd;
+	phDwnInd.setText(EMPTY_STR);
+	phDwnInd.adjustCircleY(3);
+
+	bottomBoxes[PH].addItem(&phTxt);
+	bottomBoxes[PH].addItem(&phUpInd);
+	bottomBoxes[PH].addItem(&phDwnInd);
+	bottomBoxes[PH].adjust();
 
 	// tank
 	g_tankBig.setXYpos(201, 45);
@@ -4092,6 +4163,8 @@ void deleteDataFile()
 unsigned long debMils = 0;
 #define DEBUG_INT 1000
 
+bool testFlag = false;
+
 void loop()
 {
 	app.update();
@@ -4119,6 +4192,10 @@ void loop()
 		}
 		else if (cmd == "next") {
 			g_tankBig++;
+		}
+		else if (cmd == "toggle") {
+			testFlag = !testFlag;
+			g_B->setEmpty(testFlag);
 		}
 	}
 
