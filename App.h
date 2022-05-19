@@ -995,9 +995,13 @@ OutputField* g_tds;
 CircIndicator* g_light;
 CircIndicator* g_passvent;
 CircIndicator* g_vent;
-CompositeBox* g_A;
-CompositeBox* g_B;
-CompositeBox* g_C;
+
+// small boxes
+SmallBox* g_Tap;
+SmallBox* g_A;
+SmallBox* g_B;
+SmallBox* g_C;
+SmallBox* g_ph_up;
 
 class App {
 	private:
@@ -1085,6 +1089,45 @@ class App {
 				g_passvent->draw();
 				g_light->on(g_rig.getLed());
 				g_light->draw();
+
+				// bottom boxes
+				/* inputs */
+				bool* dig = io.getDigitalValues();
+				if (dig[DIG_KEY10] != g_A->getEmpty()) {
+					g_A->setEmpty(dig[DIG_KEY10]);
+				}
+
+				if (dig[DIG_KEY9] != g_B->getEmpty()) {
+					g_B->setEmpty(dig[DIG_KEY9]);
+				}
+
+				if (dig[DIG_KEY8] != g_C->getEmpty()) {
+					g_C->setEmpty(dig[DIG_KEY8]);
+				}
+
+				if (dig[DIG_KEY7] != g_ph_up->getEmpty()) {
+					g_ph_up->setEmpty(dig[DIG_KEY7]);
+					Serial.println("Bang!");
+					Serial.println(dig[DIG_KEY7]);
+				}
+
+				if (dig[DIG_KEY5] != g_Tap->getEmpty()) {
+					g_Tap->setEmpty(dig[DIG_KEY5]);
+				}
+
+				/* outputs */
+				if (io.getOut(PWR_PG_PORT_A) != g_A->isOn()) {
+					g_A->on(io.getOut(PWR_PG_PORT_A));
+				}
+
+				if (io.getOut(PWR_PG_PORT_B) != g_B->isOn()) {
+					g_B->on(io.getOut(PWR_PG_PORT_B));
+				}
+
+				if (io.getOut(PWR_PG_PORT_C) != g_C->isOn()) {
+					g_C->on(io.getOut(PWR_PG_PORT_C));
+				}
+
 
 				_mainMils = millis();
 			}

@@ -3744,7 +3744,8 @@ Page* buildMainPage()
 
 	int btboxes_height = 24;
 
-	static CompositeBox bottomBoxes[NBTBOXES];
+	//static CompositeBox bottomBoxes[NBTBOXES];
+	static SmallBox bottomBoxes[NBTBOXES];
 
 	bottomBoxes[TAP].setWH(41, btboxes_height);
 	bottomBoxes[A].setWH(31, btboxes_height);
@@ -3756,8 +3757,6 @@ Page* buildMainPage()
 	int x = 0;
 
 	for (auto& i:bottomBoxes) {
-		//i.setSelectable(true);
-		//i.setColor(COL_GREY_E3_565);
 		x += bottomBoxes[j?j-1:0].getW()*(j?1:0);
 		i.setXYpos(FP_LEFT_PADDING+x+gap*j, grid_start+(boxes[0].getH()+gap)*2);
 		i.invalidate();
@@ -3770,11 +3769,13 @@ Page* buildMainPage()
 	tapImg.loadRes(images[IMG_TAP]);
 
 	static CircIndicator tapInd;
-	tapInd.noBg();
 	tapInd.setText(EMPTY_STR);
+	tapInd.noBg();
 
-	bottomBoxes[TAP].addItem(&tapImg);
-	bottomBoxes[TAP].addItem(&tapInd);
+	bottomBoxes[TAP].setImages(&tapImg, &tapImg);
+	bottomBoxes[TAP].setCheck(&tapInd);
+	bottomBoxes[TAP].invalidate();
+	g_Tap = &bottomBoxes[TAP];
 
 	/* A box */
 	static Text aTxt;
@@ -3784,29 +3785,26 @@ Page* buildMainPage()
 
 	static CircIndicator aInd;
 	aInd.setText(EMPTY_STR);
-	aInd.on(true);
 	aInd.noBg();
 
-	bottomBoxes[A].addItem(&aTxt);
-	bottomBoxes[A].addItem(&aInd);
-	bottomBoxes[A].adjust();
+	bottomBoxes[A].setText(&aTxt);
+	bottomBoxes[A].setCheck(&aInd);
+	//bottomBoxes[A].adjust();
 	g_A = &bottomBoxes[A];
 
 	/* B box */
 	static Text bTxt;
 	bTxt.setFont(BOLDFONT);
-	//bTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
-	bTxt.setColors(TFT_BLACK, COL_RED_TANK);
+	bTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	bTxt.setText(TXT_B);
 
 	static CircIndicator bInd;
 	bInd.setText(EMPTY_STR);
-	bInd.setBgColor(COL_RED_TANK);
 	bInd.noBg();
 
-	bottomBoxes[B].addItem(&bTxt);
-	bottomBoxes[B].addItem(&bInd);
-	bottomBoxes[B].adjust();
+	bottomBoxes[B].setText(&bTxt);
+	bottomBoxes[B].setCheck(&bInd);
+	//bottomBoxes[B].adjust();
 	g_B = &bottomBoxes[B];
 
 	/* C box */
@@ -3819,9 +3817,10 @@ Page* buildMainPage()
 	cInd.setText(EMPTY_STR);
 	cInd.noBg();
 
-	bottomBoxes[C].addItem(&cTxt);
-	bottomBoxes[C].addItem(&cInd);
-	bottomBoxes[C].adjust();
+	bottomBoxes[C].setText(&cTxt);
+	bottomBoxes[C].setCheck(&cInd);
+	//bottomBoxes[C].adjust();
+	g_C = &bottomBoxes[C];
 
 	/* pH box */
 	static Text phTxt;
@@ -3829,18 +3828,32 @@ Page* buildMainPage()
 	phTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	phTxt.setText(TXT_PH);
 
+	bottomBoxes[PH].setText(&phTxt);
+
 	static CircIndicator phUpInd;
 	phUpInd.setText(EMPTY_STR);
+	phUpInd.noBg();
 	phUpInd.adjustCircleY(3);
+
+	static Image phUpImg;
+	phUpImg.loadRes(images[IMG_PH_UP]);
+
+	static Image phUpImgEmp;
+	phUpImgEmp.loadRes(images[IMG_PH_UP_EMP]);
+
+	static SmallBox phUp;
+	phUp.setXYpos(bottomBoxes[PH].getX() + 28, grid_start+(boxes[0].getH()+gap)*2);
+	phUp.setWH(22, btboxes_height);
+	phUp.setCheck(&phUpInd);
+	phUp.setImages(&phUpImg, &phUpImgEmp);
+	g_ph_up = &phUp;
 
 	static CircIndicator phDwnInd;
 	phDwnInd.setText(EMPTY_STR);
+	phDwnInd.noBg();
 	phDwnInd.adjustCircleY(3);
 
-	bottomBoxes[PH].addItem(&phTxt);
-	bottomBoxes[PH].addItem(&phUpInd);
-	bottomBoxes[PH].addItem(&phDwnInd);
-	bottomBoxes[PH].adjust();
+	mainPage.addItem(&phUp);
 
 	// tank
 	g_tankBig.setXYpos(201, 45);
@@ -3860,53 +3873,6 @@ enum {
 	BTN_84,
 	LP_NBTNS
 };
-
-/*
-Page* lastPagesList()
-{
-	static Page menuPage;
-
-	static GreyTextButton menu_items[LP_NBTNS];
-
-	// gap between items
-	int gap = MENU_GAP;
-
-	dispStrings_t menu1[LP_NBTNS];
-	menu1[BTN_92] = S92_TITLE;
-	menu1[BTN_82] = S82_TITLE;
-	menu1[BTN_83] = S83_TITLE;
-	menu1[BTN_84] = S84_TITLE;
-
-	int j = 0;
-
-	for (auto& i:menu_items) {
-		i.setCallback(nop);
-		i.setColors(greyscaleColor(FONT_COLOR), greyscaleColor(GR_BTN_BG_COLOR));
-		i.setFont(SMALLFONT);
-		i.setXYpos(PG_LEFT_PADD, MB_Y_START+(GREY_BUTTON_HEIGHT+gap)*j);
-		i.setText(menu1[j]);
-		j++;
-	}
-
-	// set callBacks
-	menu_items[BTN_92].setCallback(callPage, pages[STAGE92_PG]);
-	menu_items[BTN_82].setCallback(callPage, pages[STAGE82_PG]);
-	menu_items[BTN_83].setCallback(callPage, pages[STAGE83_PG]);
-	menu_items[BTN_84].setCallback(callPage, pages[STAGE84_PG]);
-
-	// add all to page
-	for (int i = 0; i < LP_NBTNS; i++) {
-		menuPage.addItem(&menu_items[i]);
-	}
-
-
-	menuPage.setTitle(MENU);
-	menuPage.addItem(&back);
-
-	return &menuPage;
-}
-*/
-
 
 void gSetBacklight(void* arg)
 {
@@ -4193,9 +4159,18 @@ void loop()
 		else if (cmd == "next") {
 			g_tankBig++;
 		}
+		/*
 		else if (cmd == "toggle") {
 			testFlag = !testFlag;
 			g_B->setEmpty(testFlag);
+		}
+		else if (cmd == "check") {
+			g_B->on(!g_B->isOn());
+		}
+		*/
+		else if (cmd == "port_a") {
+			testFlag = !testFlag;
+			io.driveOut(PWR_PG_PORT_A, testFlag);
 		}
 	}
 

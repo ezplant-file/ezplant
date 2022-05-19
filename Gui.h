@@ -90,7 +90,7 @@
 #define COL_GREY_DC_565 0xDEFB
 
 // tank red
-#define COL_RED_TANK 0xE3CF
+#define COL_RED_TANK_565 0xE3CF
 
 // checkbox
 #define CHK_BOX_COL 0xDC
@@ -2146,7 +2146,7 @@ class RadioButton: public ScrObj {
 
 			int x = _x + _w/2 - 1;
 			int y = _y + _h/2 - 1 + _dy;
-			tft.fillSmoothCircle(x, y, _r, _col, greyscaleColor(_bgcol));
+			tft.fillSmoothCircle(x, y, _r, _col, _bgcol);
 			//tft.fillCircle(x, y, _r, _col);
 			_invalid = false;
 		}
@@ -2201,7 +2201,6 @@ class RadioButton: public ScrObj {
 			_invalid = true;
 		}
 
-
 		bool isOn()
 		{
 			return _isOn;
@@ -2242,7 +2241,7 @@ class RadioButton: public ScrObj {
 		int _dy = 0;
 		int _dx = 0;
 		uint16_t _col = 0xffff;
-		uint16_t _bgcol = greyscaleColor(RAD_BG_COL);
+		uint16_t _bgcol = COL_GREY_DC_565;
 		bool _background = true;
 };
 
@@ -2447,11 +2446,13 @@ class CompositeBox: public ScrObj {
 
 			_items[1]->setXYpos(((_x+_w)-_w/3) - _items[1]->getW()/2, (_y+_h/2) - _items[1]->getH()/2);
 
+			/*
 			if (_items.size() == 2)
 				return;
 
 			_items[1]->setXYpos(_x+_w-2*_w/3, (_y+_h/2) - _items[1]->getH()/2);
 			_items[2]->setXYpos(_x+_w-_w/3, (_y+_h/2) - _items[2]->getH()/2);
+			*/
 		}
 
 		void addItem(ScrObj* item)
@@ -2481,12 +2482,145 @@ class CompositeBox: public ScrObj {
 	private:
 		obj_list _items;
 		uint16_t _bg = COL_GREY_DC_565;
-		uint16_t _red = COL_RED_TANK;
+		uint16_t _red = COL_RED_TANK_565;
 		bool _empty = false;
 		//uint16_t _bg = 0xFFFF;
 };
 
-class PhBox: public ScrObj {
+#define COL_RED_EMPTY_565 0xfbcf
+class SmallBox: public ScrObj {
+	public:
+		virtual void draw() override
+		{
+			if (!_invalid || !_isVisible) {
+				return;
+			}
+
+			tft.fillRect(_x, _y, _w, _h, _empty ? _red : _bg);
+
+			if (_image) {
+				//_image->invalidate();
+				//_image->reload();
+				_image->draw();
+			}
+
+			if (_text) {
+				//_text->invalidate();
+				_text->prepare();
+				_text->draw();
+			}
+
+			if (_check) {
+				//_check->invalidate();
+				_check->draw();
+			}
+
+			_invalid = false;
+		}
+
+		virtual void prepare() override
+		{
+			if (_text) {
+				_text->invalidate();
+				_text->prepare();
+				//Serial.println("prepared!");
+			}
+		}
+
+		virtual void invalidate() override
+		{
+			_invalid = true;
+			if (_text)
+				_text->invalidate();
+			if (_check)
+				_check->invalidate();
+			if (_image)
+				_image->invalidate();
+		}
+
+		virtual void freeRes() override
+		{
+			if (_text)
+				_text->freeRes();
+			if (_check)
+				_check->freeRes();
+			if (_image)
+				_image->freeRes();
+		}
+
+		void on(bool flag)
+		{
+			if (!_check)
+				return;
+			_check->on(flag);
+			invalidate();
+		}
+
+		bool isOn()
+		{
+			if (!_check)
+				return false;
+
+			return _check->isOn();
+		}
+
+		bool getEmpty()
+		{
+			return _empty;
+		}
+
+		void setEmpty(bool empty = true)
+		{
+			_empty = empty;
+
+			if (_empty) {
+				_image = _imgEmp;
+				if (_text)
+					_text->setColors(_fg, _red);
+				if (_check)
+					_check->setBgColor(_red);
+			}
+			else {
+				_image = _imgFull;
+				if (_text)
+					_text->setColors(_fg, _bg);
+				if (_check)
+					_check->setBgColor(_bg);
+			}
+			invalidate();
+		}
+
+		void setText(Text* text)
+		{
+			_text = text;
+			_text->setXYpos(_x+4, _y+6);
+		}
+
+		void setCheck(CircIndicator* check)
+		{
+			_check = check;
+			_check->setXYpos(((_x+_w)-_w/4) - _check->getW()/2, (_y+_h/2) - _check->getH()/2);
+		}
+
+		void setImages(Image* imgFull, Image* imgEmp)
+		{
+			_image = imgFull;
+			_imgFull = imgFull;
+			_imgEmp = imgEmp;
+			_imgFull->setXYpos(_x, _y);
+			_imgEmp->setXYpos(_x, _y);
+		}
+
+	private:
+		uint16_t _fg = 0;
+		uint16_t _bg = COL_GREY_DC_565;
+		uint16_t _red = COL_RED_EMPTY_565;
+		bool _empty = false;
+		Text* _text = nullptr;
+		CircIndicator* _check = nullptr;
+		Image* _image = nullptr;
+		Image* _imgEmp = nullptr;
+		Image* _imgFull = nullptr;
 };
 
 typedef enum {
@@ -2573,7 +2707,7 @@ class Tank: public ScrObj {
 		{
 			int subrectH = 6;
 			int botRectH = 20;
-			tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, COL_RED_TANK);
+			tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, COL_RED_TANK_565);
 			tft.fillRect(_x+1, _y+_h-botRectH-1, _w-2, subrectH, _bg);
 		}
 
@@ -2599,7 +2733,7 @@ class Tank: public ScrObj {
 
 			int subrectH = 6;
 			int botRectH = 23;
-			tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, botRectH, 5, COL_RED_TANK);
+			tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, botRectH, 5, COL_RED_TANK_565);
 			tft.fillRect(_x+1, _y-subrectH+botRectH+1, _w-2, subrectH, _water);
 		}
 

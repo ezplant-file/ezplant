@@ -36,6 +36,10 @@ typedef enum {
 	IMG_AERO,
 	IMG_SPROUTS,
 	IMG_DROP,
+	IMG_PH_UP,
+	IMG_PH_DW,
+	IMG_PH_UP_EMP,
+	IMG_PH_DW_EMP,
 	END_OF_IMAGES
 
 } images_t;
@@ -74,7 +78,11 @@ const char* images[END_OF_IMAGES] = {
 	"/cycl.jpg",
 	"/aero.jpg",
 	"/sprouts.jpg",
-	"/drop.jpg"
+	"/drop.jpg",
+	"/phup.jpg",
+	"/phdw.jpg",
+	"/phupemp.jpg",
+	"/phdwemp.jpg"
 };
 
 

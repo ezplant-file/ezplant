@@ -244,10 +244,19 @@ class InputOutput {
 			}
 		}
 
+		bool getOut(int id)
+		{
+			if (id < 0)
+				return false;
+			return _out_states[id];
+		}
+
 		void driveOut(int id, bool state)
 		{
 			if (id < 0)
 				return;
+
+			_out_states[id] = state;
 
 			switch (id) {
 				default: break;
@@ -397,6 +406,7 @@ class InputOutput {
 		float _last_ph = 0.0;
 		int _last_tds = 0;
 		//uint16_t _buttons_buffer[10];
+		bool _out_states[PWR_PG_NITEMS];
 		uint16_t _adc[N_ADC];
 		bool _dig_keys[DIG_NKEYS];
 		bool _ui_keys[UI_NKEYS];
