@@ -304,7 +304,10 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Режим полива",
 
 	// list of last stages
-	"last stages"
+	"last stages",
+
+	// main page string
+	"Показание от "
 
 	//end of strings
 };

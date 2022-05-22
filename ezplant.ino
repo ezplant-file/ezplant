@@ -3554,9 +3554,6 @@ Page* buildStage8_4()
 	return &stage8;
 }
 
-void mainPageUpdater()
-{
-}
 
 #define FP_LEFT_PADDING 7
 Page* buildMainPage()
@@ -3601,6 +3598,12 @@ Page* buildMainPage()
 	tds.adjustTextX(5);
 	g_tds = &tds;
 	mainPage.addItem(&tds);
+
+	static StringText mainStr;
+	mainStr.setXYpos(7, 100);
+	mainStr.setText(gMainPageStr);
+	mainPage.addItem(&mainStr);
+	gMainPageText = &mainStr;
 
 	/* big boxes */
 	enum {
@@ -3768,11 +3771,14 @@ Page* buildMainPage()
 	static Image tapImg;
 	tapImg.loadRes(images[IMG_TAP]);
 
+	static Image tapImgRed;
+	tapImgRed.loadRes(images[IMG_TAP_RED]);
+
 	static CircIndicator tapInd;
 	tapInd.setText(EMPTY_STR);
 	tapInd.noBg();
 
-	bottomBoxes[TAP].setImages(&tapImg, &tapImg);
+	bottomBoxes[TAP].setImages(&tapImg, &tapImgRed);
 	bottomBoxes[TAP].setCheck(&tapInd);
 	bottomBoxes[TAP].invalidate();
 	g_Tap = &bottomBoxes[TAP];
@@ -3846,14 +3852,30 @@ Page* buildMainPage()
 	phUp.setWH(22, btboxes_height);
 	phUp.setCheck(&phUpInd);
 	phUp.setImages(&phUpImg, &phUpImgEmp);
+	phUp.adjustCheckX(1);
 	g_ph_up = &phUp;
 
-	static CircIndicator phDwnInd;
-	phDwnInd.setText(EMPTY_STR);
-	phDwnInd.noBg();
-	phDwnInd.adjustCircleY(3);
+	static CircIndicator phDwInd;
+	phDwInd.setText(EMPTY_STR);
+	phDwInd.noBg();
+	phDwInd.adjustCircleY(3);
+
+	static Image phDwImg;
+	phDwImg.loadRes(images[IMG_PH_DW]);
+
+	static Image phDwImgEmp;
+	phDwImgEmp.loadRes(images[IMG_PH_DW_EMP]);
+
+	static SmallBox phDw;
+	phDw.setXYpos(bottomBoxes[PH].getX() + 28 + phUp.getW(), grid_start+(boxes[0].getH()+gap)*2);
+	phDw.setWH(22, btboxes_height);
+	phDw.setCheck(&phDwInd);
+	phDw.setImages(&phDwImg, &phDwImgEmp);
+	phDw.adjustCheckX(0);
+	g_ph_dw = &phDw;
 
 	mainPage.addItem(&phUp);
+	mainPage.addItem(&phDw);
 
 	// tank
 	g_tankBig.setXYpos(201, 45);
@@ -4159,15 +4181,15 @@ void loop()
 		else if (cmd == "next") {
 			g_tankBig++;
 		}
-		/*
 		else if (cmd == "toggle") {
 			testFlag = !testFlag;
-			g_B->setEmpty(testFlag);
+			g_Tap->setEmpty(testFlag);
+			g_ph_up->setEmpty(testFlag);
 		}
 		else if (cmd == "check") {
-			g_B->on(!g_B->isOn());
+			g_Tap->on(!g_Tap->isOn());
+			g_ph_up->on(!g_ph_up->isOn());
 		}
-		*/
 		else if (cmd == "port_a") {
 			testFlag = !testFlag;
 			io.driveOut(PWR_PG_PORT_A, testFlag);

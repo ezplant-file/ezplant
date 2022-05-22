@@ -304,7 +304,10 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Irrigation mode",
 
 	// list of last stages
-	"last stages"
+	"last stages",
+
+	// main page string
+	"Sensors data taken at "
 
 	//end of strings
 };

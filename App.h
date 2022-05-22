@@ -541,6 +541,31 @@ class DateTime: public ScrObj {
 			_visible[YEAR].setWidth(FOUR_CHR);
 			_visible[YEAR].adjustWidth(4);
 		}
+
+		String* getDateStr()
+		{
+			String hour = "";
+			if (_timeinfo.tm_hour < 10)
+				hour += "0";
+			String min = "";
+			if (_timeinfo.tm_min < 10)
+				min += "0";
+			String mon = "";
+			if (_timeinfo.tm_mon)
+				mon += "0";
+			min += String(_timeinfo.tm_min);
+			hour += String(_timeinfo.tm_hour);
+			mon += String(_timeinfo.tm_mon);
+			_dateString = (String) hour
+				+ ":" + min
+				+ " " + _timeinfo.tm_mday
+				+ "." + mon
+				+ "." + _timeinfo.tm_year%100;
+			return &_dateString;
+		}
+
+	private:
+		String _dateString;
 } datetime;
 
 class Panel {
@@ -621,6 +646,7 @@ class Panel {
 			_minutes.invalidate();
 			_hours.prepare();
 			_hours.draw();
+			_minutes.prepare();
 			_minutes.draw();
 
 			_timestamp = millis();
@@ -673,7 +699,6 @@ class Panel {
 				_statusInternet.freeRes();
 				_prevNetImage = _curNetImage;
 				_changed = true;
-
 			}
 
 			// if wifi status changed
@@ -783,7 +808,7 @@ class Rig {
 			_passvent = false;
 			_vent = false;
 			io.haltAll();
-			Serial.println("halted...");
+			//Serial.println("halted...");
 		}
 
 		void update()
@@ -812,6 +837,11 @@ class Rig {
 			return _passvent;
 		}
 
+		void setMeasureWindow(bool window=true)
+		{
+			_measureWindow = window;
+		}
+
 	private:
 		bool _paused;
 		bool _window_opened = false;
@@ -821,6 +851,11 @@ class Rig {
 		bool _led = false;
 		bool _vent = false;
 		bool _passvent = false;
+		bool _measureWindow = false;
+
+		void _haltPumps()
+		{
+		}
 
 		void _updateLight()
 		{
@@ -934,8 +969,28 @@ class Rig {
 				_closeWindow();
 		}
 
+		void _updateABC()
+		{
+		}
+
+		void _updatePH()
+		{
+		}
+
+		void _updateH2O()
+		{
+		}
+
 		void _updateSolutions()
 		{
+			_updateABC();
+			_updatePH();
+			_updateH2O();
+
+			if (_measureWindow) {
+				_haltPumps();
+				return;
+			}
 		}
 
 		void _openWindow()
@@ -1002,6 +1057,10 @@ SmallBox* g_A;
 SmallBox* g_B;
 SmallBox* g_C;
 SmallBox* g_ph_up;
+SmallBox* g_ph_dw;
+
+StringText* gMainPageText;
+String gMainPageStr = String(scrStrings[MP_STRING]);
 
 class App {
 	private:
@@ -1013,6 +1072,8 @@ class App {
 		unsigned long _sensMils = 0;
 		unsigned long _repMils = 0;
 		unsigned long _mainMils = 0;
+		unsigned long _measMils = 0;
+		unsigned long _measInterval = 30000;
 		bool _blink = false;
 		bool _dbFlag = false;
 		bool _triggered = false;
@@ -1025,6 +1086,11 @@ class App {
 		static constexpr unsigned long REPEAT_INT = 1000;
 
 	public:
+		void setMeasInterval(unsigned long interval)
+		{
+			_measInterval = interval;
+		}
+
 		void draw()
 		{
 			currPage->draw();
@@ -1045,6 +1111,10 @@ class App {
 			}
 				//rtc.begin();
 			g_ping_success = false;
+
+			//datetime.init();
+			//gMainPageStr = String(scrStrings[MP_STRING]) + *datetime.getDateStr();
+
 			tft.init();
 			//tft.initDMA(true);
 			tft.setRotation(0);
@@ -1074,11 +1144,18 @@ class App {
 			g_rig.update();
 
 			/* main page updates */
-			if (currPage == pages[MAIN_PG] && millis() - _mainMils > MAIN_P_UPDATE) {
-				//Serial.println("update main page");
+			if (currPage == pages[MAIN_PG] && millis() - _measMils > _measInterval) {
+				_measMils = millis();
 				g_ph->setValue(io.getPH());
 				g_tds->setValue(io.getEC());
+				gMainPageText->erase();
+				gMainPageStr = String(scrStrings[MP_STRING]) + *datetime.getDateStr();
+				gMainPageText->invalidate();
+				gMainPageText->prepare();
+				gMainPageText->draw();
+			}
 
+			if (currPage == pages[MAIN_PG] && millis() - _mainMils > MAIN_P_UPDATE) {
 				g_tem->setValue(io.getTem());
 				g_tem->draw();
 				g_hum->setValue(int(io.getHum()));
@@ -1107,12 +1184,34 @@ class App {
 
 				if (dig[DIG_KEY7] != g_ph_up->getEmpty()) {
 					g_ph_up->setEmpty(dig[DIG_KEY7]);
-					Serial.println("Bang!");
-					Serial.println(dig[DIG_KEY7]);
+				}
+
+				if (dig[DIG_KEY6] != g_ph_dw->getEmpty()) {
+					g_ph_dw->setEmpty(dig[DIG_KEY6]);
 				}
 
 				if (dig[DIG_KEY5] != g_Tap->getEmpty()) {
 					g_Tap->setEmpty(dig[DIG_KEY5]);
+				}
+
+				/* tank */
+
+				bool tanklow, tankmid, tankhi;
+				tanklow = dig[DIG_KEY2];
+				tankmid = dig[DIG_KEY3];
+				tankhi = dig[DIG_KEY4];
+
+				if (!tanklow && !tankmid) {
+					g_tankBig.setState(T_EMPTY);
+				}
+				else if (tanklow && !tankmid) {
+					g_tankBig.setState(T_HALF);
+				}
+				else if (tankmid && !tankhi) {
+					g_tankBig.setState(T_TWOTHIRDS);
+				}
+				else if (tankmid && tankhi) {
+					g_tankBig.setState(T_FULL);
 				}
 
 				/* outputs */
@@ -1126,6 +1225,18 @@ class App {
 
 				if (io.getOut(PWR_PG_PORT_C) != g_C->isOn()) {
 					g_C->on(io.getOut(PWR_PG_PORT_C));
+				}
+
+				if (io.getOut(PWR_PG_PORT_D) != g_ph_up->isOn()) {
+					g_ph_up->on(io.getOut(PWR_PG_PORT_D));
+				}
+
+				if (io.getOut(PWR_PG_PORT_E) != g_ph_dw->isOn()) {
+					g_ph_dw->on(io.getOut(PWR_PG_PORT_E));
+				}
+
+				if (io.getOut(PWR_PG_PORT_F) != g_Tap->isOn()) {
+					g_Tap->on(io.getOut(PWR_PG_PORT_F));
 				}
 
 

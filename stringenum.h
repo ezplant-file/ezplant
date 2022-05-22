@@ -306,6 +306,9 @@ typedef enum {
 	// list of last stages
 	LSTAGES_STR,
 
+	// main page string
+	MP_STRING,
+
 	END_OF_STRINGS
 } dispStrings_t;
 

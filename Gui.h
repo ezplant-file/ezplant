@@ -26,10 +26,10 @@
 
 #include <vector>	// keep page items in vector
 #include <iostream>
-//#include <string>	// calculate _w based on longest sting
 
 #include "images.h"
 #include "settings.h"	// settings enum
+//#include "IO.h" 	// sens for Tank.update()
 
 /***************************** defines *************************/
 // gap between menu items
@@ -2596,6 +2596,13 @@ class SmallBox: public ScrObj {
 			_text->setXYpos(_x+4, _y+6);
 		}
 
+		void adjustCheckX(int x)
+		{
+			if (!_check)
+				return;
+			_check->setXYpos(_x+_w/2-_check->getW()/2 + x, _y+_h/2-_check->getH()/2);
+		}
+
 		void setCheck(CircIndicator* check)
 		{
 			_check = check;
@@ -2673,6 +2680,9 @@ class Tank: public ScrObj {
 
 		void setState(tank_state_t state)
 		{
+			if (_state == state)
+				return;
+
 			_state = state;
 			invalidate();
 		}
