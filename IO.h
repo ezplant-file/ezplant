@@ -162,6 +162,24 @@ class InputOutput {
 			_pressed = true;
 		}
 
+		void initMeters()
+		{
+			if (!ph_meter.begin())
+				_no_ph = true;
+			if (!tds_meter.begin())
+				_no_tds = true;
+		}
+
+		bool tdsPresent()
+		{
+			return !_no_tds;
+		}
+
+		bool phPresent()
+		{
+			return !_no_ph;
+		}
+
 		void init()
 		{
 			// sensors
@@ -189,11 +207,13 @@ class InputOutput {
 
 		float getEC()
 		{
+			//return 0.3;
 			return tds_meter.getEC();
 		}
 
 		float getPH()
 		{
+			//return 6.1;
 			return ph_meter.getPH();
 		}
 
@@ -410,6 +430,8 @@ class InputOutput {
 		uint16_t _adc[N_ADC];
 		bool _dig_keys[DIG_NKEYS];
 		bool _ui_keys[UI_NKEYS];
+		bool _no_ph = false;
+		bool _no_tds = false;
 } io;
 
 #endif

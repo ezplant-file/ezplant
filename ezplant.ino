@@ -3,6 +3,8 @@
 #include "freertos/task.h"
 //#include "esp_task_wdt.h"
 
+//#define HEAP_DEBUG
+//#define SENSOR_DEBUG
 #define TASKS
 #define APP_DEBUG
 #include "settings.h"
@@ -2328,6 +2330,7 @@ Page* buildStage2()
 	days.setSettingsId(LIGHT_DAY);
 	days.setValue(g_data.getInt(LIGHT_DAY));
 	days.setCallback(saveInputFieldSetting, &days);
+	days.setLimits(0, 14);
 
 	stage2.addItem(&bulbImg);
 	//stage2.addItem(&heading1);
@@ -2422,6 +2425,7 @@ Page* buildStage3()
 	temp.setSettingsId(VENT_TEMP_THRES);
 	temp.setValue(g_data.getInt(VENT_TEMP_THRES));
 	temp.setCallback(saveInputFieldSetting, &temp);
+	temp.setLimits(10, 40);
 
 	static Text humtxt;
 	humtxt.setXYpos(PG_LEFT_PADD, 242);
@@ -2440,6 +2444,7 @@ Page* buildStage3()
 	hum.setSettingsId(VENT_HUM_THRES);
 	hum.setValue(g_data.getInt(VENT_HUM_THRES));
 	hum.setCallback(saveInputFieldSetting, &hum);
+	hum.setLimits(10, 90);
 
 	stage3.addItem(&ventCheck);
 	stage3.addItem(&fanImg);
@@ -2539,6 +2544,7 @@ Page* buildStage4()
 	temp.setSettingsId(PASSVENT_TEMP_THRES);
 	temp.setValue(g_data.getInt(PASSVENT_TEMP_THRES));
 	temp.setCallback(saveInputFieldSetting, &temp);
+	temp.setLimits(10, 40);
 
 	static Text humtxt;
 	humtxt.setXYpos(PG_LEFT_PADD, 242);
@@ -2559,6 +2565,7 @@ Page* buildStage4()
 	hum.setSettingsId(PASSVENT_HUM_THRES);
 	hum.setValue(g_data.getInt(PASSVENT_HUM_THRES));
 	hum.setCallback(saveInputFieldSetting, &hum);
+	hum.setLimits(10, 90);
 
 	//stage4.addItemPtr(std::move(hum));
 
@@ -2619,6 +2626,7 @@ Page* buildStage5()
 	limit->setSettingsId(GR_CYCL_1_DAYS);
 	limit->setValue(g_data.getInt(GR_CYCL_1_DAYS));
 	limit->setCallback(inputsCallback, limit);
+	limit->setLimits(1, 120);
 
 	static Text second;
 	second.setXYpos(bulletsX, 142);
@@ -2633,6 +2641,7 @@ Page* buildStage5()
 	limit->setSettingsId(GR_CYCL_2_DAYS);
 	limit->setValue(g_data.getInt(GR_CYCL_2_DAYS));
 	limit->setCallback(inputsCallback, limit);
+	limit->setLimits(1, 120);
 
 
 	static Text third;
@@ -2648,6 +2657,7 @@ Page* buildStage5()
 	limit->setSettingsId(GR_CYCL_3_DAYS);
 	limit->setValue(g_data.getInt(GR_CYCL_3_DAYS));
 	limit->setCallback(inputsCallback, limit);
+	limit->setLimits(1, 120);
 
 	static Image sprouts;
 	sprouts.setXYpos(38, 218);
@@ -3024,6 +3034,7 @@ Page* buildStage7()
 	pumptime.setSettingsId(ACID_PUMPS);
 	pumptime.setValue(g_data.getInt(ACID_PUMPS));
 	pumptime.setCallback(saveInputFieldSetting, &pumptime);
+	pumptime.setLimits(1, 100);
 
 	stage7.addItem(&acid);
 	stage7.addItem(&par1);
@@ -3093,6 +3104,7 @@ Page* buildStage8()
 	seconds.setSettingsId(PUMP_SEC);
 	seconds.setValue(g_data.getInt(PUMP_SEC));
 	seconds.setCallback(saveInputFieldSetting, &seconds);
+	seconds.setLimits(0, 300);
 
 	stage8.addItem(&subTitle);
 	stage8.addItem(&par1);
@@ -3149,6 +3161,7 @@ Page* buildStage9()
 	seconds.setSettingsId(AERO_PUMP_SEC);
 	seconds.setValue(g_data.getInt(AERO_PUMP_SEC));
 	seconds.setCallback(saveInputFieldSetting, &seconds);
+	seconds.setLimits(0, 300);
 
 	stage9.addItem(&aeration);
 	stage9.addItem(&bubbles);
@@ -3560,6 +3573,11 @@ Page* buildMainPage()
 {
 	static Page mainPage;
 	mainPage.setTitle(FP_TITLE);
+	// TODO: remove in prod:
+	gMesState.setXYpos(78, 30);
+	gMesState.setText(G_STATE);
+	gMesState.setValue(0);
+	mainPage.addItem(&gMesState);
 
 	static BlueTextButton menu;
 	menu.setXYpos(FP_LEFT_PADDING, 289);
@@ -3602,6 +3620,7 @@ Page* buildMainPage()
 	static StringText mainStr;
 	mainStr.setXYpos(7, 100);
 	mainStr.setText(gMainPageStr);
+	mainStr.setPaddingX(0);
 	mainPage.addItem(&mainStr);
 	gMainPageText = &mainStr;
 
@@ -4114,13 +4133,6 @@ void setup(void)
 	forward.setCircle();
 	forward.neverHide();
 
-	//buildTopBar();
-
-	currPage->draw();
-	topBar.setText(currPage->getTitle());
-	topBar.prepare();
-	topBar.draw();
-
 #ifdef APP_DEBUG
 	oldMillis = millis();
 #endif
@@ -4130,6 +4142,20 @@ void setup(void)
 
 	rtc.begin();
 	datetime.init();
+
+	// main page items (TODO: save current values to file and load at start)
+	/*
+	g_ph->setValue(io.getPH());
+	g_tds->setValue(io.getEC());
+	gMainPageStr = String(scrStrings[MP_STRING]) + *datetime.getDateStr();
+	*/
+
+	//app.setInit();
+	// draw current page
+	currPage->draw();
+	topBar.setText(currPage->getTitle());
+	topBar.prepare();
+	topBar.draw();
 }
 
 void deleteSettingsFile()
@@ -4178,6 +4204,7 @@ void loop()
 		else if (cmd == "stop") {
 			g_rig.halt();
 		}
+		/*
 		else if (cmd == "next") {
 			g_tankBig++;
 		}
@@ -4194,9 +4221,10 @@ void loop()
 			testFlag = !testFlag;
 			io.driveOut(PWR_PG_PORT_A, testFlag);
 		}
+		*/
 	}
 
-#ifdef APP_DEBUG
+#ifdef SENSOR_DEBUG
 	if (millis() - debMils > DEBUG_INT) {
 		Serial.print("Tem: ");
 		Serial.println(io.getTem());

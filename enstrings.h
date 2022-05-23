@@ -307,7 +307,10 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"last stages",
 
 	// main page string
-	"Sensors data taken at "
+	"Sensors data taken at ",
+
+	//
+	"m_state"
 
 	//end of strings
 };

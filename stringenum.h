@@ -309,6 +309,9 @@ typedef enum {
 	// main page string
 	MP_STRING,
 
+	//
+	G_STATE,
+
 	END_OF_STRINGS
 } dispStrings_t;
 

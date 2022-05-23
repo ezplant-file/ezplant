@@ -109,6 +109,8 @@ typedef enum {
 	// additional settings
 	ADD_LED_BRIGHT,
 	START_DAY,
+	EC_HYST,
+	PH_HYST,
 
 	NSETTINGS
 } rig_settings_t;
@@ -156,6 +158,21 @@ class Data {
 			set(SPRAY_CONS, true);
 			set(SPRAY_CYCL, false);
 			set(ADD_LED_BRIGHT, 127);
+			set(EC_HYST, 0.2f);
+			set(PH_HYST, 0.5f);
+			set(EC_PUMPS, 10);
+			set(ACID_PUMPS, 10);
+			set(LIGHT_FROM, 8);
+			set(LIGHT_TO, 23);
+			set(LIGHT_DAY, 3);
+			set(VENT_TIME_FROM, 8);
+			set(VENT_TIME_TO, 23);
+			set(VENT_TEMP_THRES, 30);
+			set(VENT_HUM_THRES, 60);
+			set(PASSVENT_TIME_FROM, 8);
+			set(PASSVENT_TIME_TO, 23);
+			set(PASSVENT_TEMP_THRES, 30);
+			set(PASSVENT_HUM_THRES, 60);
 		}
 
 		void print()

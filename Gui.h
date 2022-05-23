@@ -691,7 +691,7 @@ class Text: public ScrObj {
 				return;
 
 			tft.fillRect(_x + _dx, _y + _dy, _w, _h, _bg);
-			freeRes();
+			//freeRes();
 		}
 
 		void setColors(uint16_t fg, uint16_t bg)
@@ -795,6 +795,11 @@ class Text: public ScrObj {
 		void rightJustify()
 		{
 			_rightjsfy = true;
+		}
+
+		void setPaddingX(int padding)
+		{
+			_paddingX = padding;
 		}
 
 	private:

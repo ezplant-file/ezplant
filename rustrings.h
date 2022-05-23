@@ -307,7 +307,10 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"last stages",
 
 	// main page string
-	"Показание от "
+	"Показание от ",
+
+	//
+	"стадия"
 
 	//end of strings
 };
