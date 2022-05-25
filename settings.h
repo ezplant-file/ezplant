@@ -174,9 +174,9 @@ class Data {
 			set(PASSVENT_TIME_TO, 23);
 			set(PASSVENT_TEMP_THRES, 30);
 			set(PASSVENT_HUM_THRES, 60);
-			set(PUMP_SEC, 300);
-			set(AERO_PUMP_SEC, 300);
-			set(PUMP_TIME, 1);
+			set(PUMP_SEC, 15);
+			set(AERO_PUMP_SEC, 15);
+			set(PUMP_TIME, 15);
 		}
 
 		void print()

@@ -162,14 +162,34 @@ class InputOutput {
 			_pressed = true;
 		}
 
+		void initTdsPh()
+		{
+			if (!ph_meter.begin())
+				_no_ph = true;
+			else
+				_no_ph = false;
+
+			if (!tds_meter.begin())
+				_no_tds = true;
+			else
+				_no_tds = false;
+		}
+
 		void initMeters()
 		{
 			if (!ph_meter.begin())
 				_no_ph = true;
+			else
+				_no_ph = false;
 			if (!tds_meter.begin())
 				_no_tds = true;
+			else
+				_no_tds = false;
+
 			if (!sht_meter.begin())
 				_no_sht = true;
+			else
+				_no_sht = false;
 		}
 
 		bool noTds()

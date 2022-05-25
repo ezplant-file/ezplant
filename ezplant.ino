@@ -4,9 +4,13 @@
 //#include "esp_task_wdt.h"
 
 //#define HEAP_DEBUG
-//#define SENSOR_DEBUG
-#define TASKS
+//#define STACK_DEBUG
+#define RIG_DEBUG
+#define SENSOR_DEBUG
+#define APP_TESTING
 #define APP_DEBUG
+
+#define TASKS
 #include "settings.h"
 
 // backlight
@@ -3567,17 +3571,38 @@ Page* buildStage8_4()
 	return &stage8;
 }
 
+void pauseBtnCallback(void* btn)
+{
+	if (btn == nullptr)
+		return;
+
+	BlueTextButton* pause = (BlueTextButton*) btn;
+
+	if (pause->isOn()) {
+		g_rig.start();
+		pause->setText(TXT_PAUSE);
+		pause->on(false);
+		pause->invalidate();
+	}
+	else {
+		g_rig.halt();
+		pause->setText(TXT_START);
+		pause->on(true);
+		pause->invalidate();
+	}
+}
 
 #define FP_LEFT_PADDING 7
 Page* buildMainPage()
 {
 	static Page mainPage;
 	mainPage.setTitle(FP_TITLE);
-	// TODO: remove in prod:
+#ifdef RIG_DEBUG
 	gMesState.setXYpos(78, 30);
 	gMesState.setText(G_STATE);
 	gMesState.setValue(0);
 	mainPage.addItem(&gMesState);
+#endif
 
 	static BlueTextButton menu;
 	menu.setXYpos(FP_LEFT_PADDING, 289);
@@ -3587,7 +3612,8 @@ Page* buildMainPage()
 	static BlueTextButton pause;
 	pause.setXYpos(180, 289);
 	pause.setText(TXT_PAUSE);
-	pause.setCallback(std::bind(&Rig::halt, &g_rig));
+	//pause.setCallback(std::bind(&Rig::halt, &g_rig));
+	pause.setCallback(pauseBtnCallback, &pause);
 
 	static Image drop;
 	drop.setXYpos(17, 40);
@@ -4226,14 +4252,14 @@ void loop()
 
 #ifdef SENSOR_DEBUG
 	if (millis() - debMils > DEBUG_INT) {
-		Serial.print("Tem: ");
-		Serial.println(io.getTem());
-		Serial.print("Hum: ");
-		Serial.println(io.getHum());
-		Serial.print("PH: ");
-		Serial.println(io.getPH(), 1);
-		Serial.print("EC: ");
-		Serial.println(io.getEC(), 1);
+		Serial.print("getTem: ");
+		Serial.println(sht_meter.getTem());
+		Serial.print("getHum: ");
+		Serial.println(sht_meter.getHum());
+		Serial.print("getPH: ");
+		Serial.println(ph_meter.getPH(), 1);
+		Serial.print("getEC: ");
+		Serial.println(tds_meter.getEC(), 1);
 		Serial.println("********");
 		//Serial.print("Hour: ");
 		//Serial.println(datetime.getHour());
@@ -4242,8 +4268,7 @@ void loop()
 		debMils = millis();
 	}
 #endif
-	/*
-#ifdef APP_DEBUG
+#ifdef STACK_DEBUG
 	if (millis() - oldMillis > STACK_CHECK_INTERVAL) {
 		uint16_t unused = uxTaskGetStackHighWaterMark(NULL);
 		Serial.print("gui task unused stack: ");
@@ -4252,6 +4277,4 @@ void loop()
 		oldMillis = millis();
 	}
 #endif
-*/
-
 }

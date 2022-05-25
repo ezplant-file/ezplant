@@ -19,6 +19,7 @@ typedef enum {
 	TXT_MINUTES,
 	TXT_SECONDS,
 	TXT_PAUSE,
+	TXT_START,
 	// main menu strings
 	MENU,
 	NEW_PLANT,

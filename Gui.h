@@ -236,6 +236,13 @@ class ScrObj {
 			_invalid = true;
 		}
 
+		void setInvisibleNoErase()
+		{
+			if (_neverHide)
+				return;
+			_isVisible = false;
+		}
+
 		void setInvisible()
 		{
 			//_isSelectable = false;
@@ -459,6 +466,16 @@ class BlueTextButton: public ScrObj {
 			_invalid = false;
 		}
 
+		bool isOn()
+		{
+			return _on;
+		}
+
+		void on(bool state)
+		{
+			_on = state;
+		}
+
 		//void setColors(uint16_t fg, uint16_t bg)
 	private:
 		void _setColors()
@@ -469,6 +486,7 @@ class BlueTextButton: public ScrObj {
 		}
 
 	private:
+		bool _on = false;
 		uint16_t _fg;
 		uint16_t _bg;
 		uint8_t _paddingX = BL_BTN_X_PADDING;

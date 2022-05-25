@@ -5,7 +5,6 @@
 
 #include <ctime>
 #include <atomic>
-std::atomic<bool> gInterrupt;
 #include "Gui.h"
 #include "IO.h"
 
@@ -567,7 +566,7 @@ class DateTime: public ScrObj {
 			if (_timeinfo.tm_min < 10)
 				min += "0";
 			String mon = "";
-			if (_timeinfo.tm_mon)
+			if (_timeinfo.tm_mon < 10)
 				mon += "0";
 			min += String(_timeinfo.tm_min);
 			hour += String(_timeinfo.tm_hour);
@@ -822,7 +821,7 @@ class Panel {
 		void _hideTime()
 		{
 			_showtime = false;
-			_time.setInvisible();
+			_time.setInvisibleNoErase();
 			//_hours.setInvisible();
 			//_minutes.setInvisible();
 		}
@@ -845,8 +844,9 @@ class Panel {
 		//OutputField _hours, _minutes;
 } topBar;
 
-// TODO: remove in prod
+#ifdef RIG_DEBUG
 OutputField gMesState;
+#endif
 
 class Rig {
 	public:
@@ -966,9 +966,6 @@ class Rig {
 
 		void _updateVent()
 		{
-			if (io.noSht())
-				return;
-
 			_vent = false;
 			if (!g_data.getInt(VENT_ON)) {
 				io.driveOut(PWR_PG_FAN, false);
@@ -985,9 +982,9 @@ class Rig {
 
 			if (!a)
 				x = false;
-			if (!b)
+			if (!b || io.noSht())
 				y = false;
-			if (!c)
+			if (!c || io.noSht())
 				z = false;
 
 			bool Q = x || y || z;
@@ -1000,11 +997,22 @@ class Rig {
 				io.driveOut(PWR_PG_FAN, false);
 		}
 
+		void _openWindow()
+		{
+			io.driveOut(PWR_PG_UP, true);
+			_window_energized = true;
+			_window_timer = millis();
+		}
+
+		void _closeWindow()
+		{
+			io.driveOut(PWR_PG_DOWN, true);
+			_window_energized = true;
+			_window_timer = millis();
+		}
+
 		void _updatePassVent()
 		{
-			if (io.noSht())
-				return;
-
 			if (_window_energized || _window_opened) {
 				_passvent = true;
 			}
@@ -1039,9 +1047,9 @@ class Rig {
 
 			if (!a)
 				x = false;
-			if (!b)
+			if (!b || io.noSht())
 				y = false;
-			if (!c)
+			if (!c || io.noSht())
 				z = false;
 
 			bool Q = x || y || z;
@@ -1062,11 +1070,90 @@ class Rig {
 		int _pumpCseconds = 0;
 		int _pumpPHseconds = 0;
 
+		static constexpr unsigned long _begin_interval = 10000;
+		unsigned long _begin_mils = 0;
+		bool _metersBusy = false;
+		float _lastPh;
+		float _lastEc;
+
+		bool _localMeas = false;
+		bool _localMeas2 = false;
+		unsigned long _meas_mils = 0;
+		static constexpr unsigned long _meas_interval = 15000;
+
+		void _measure()
+		{
+			if (!_metersBusy) {
+				io.initMeters();
+
+#ifdef RIG_DEBUG
+				gMesState.setValue(1);
+#endif
+
+				_begin_mils = millis();
+				_metersBusy = true;
+			}
+
+			if (millis() - _begin_mils > _begin_interval && !_localMeas) {
+
+				for (int i = 0; i < 3; i++) {
+					_lastPh = io.getPH();
+					_lastEc = io.getEC();
+				}
+
+				_meas_mils = millis();
+				_localMeas = true;
+				_localMeas2 = true;
+			}
+
+			if (millis() - _meas_mils > _meas_interval && _localMeas2) {
+				_lastPh = io.getPH();
+				_lastEc = io.getEC();
+
+#ifdef RIG_DEBUG
+				gMesState.setValue(2);
+#endif
+
+				_measuretime = false;
+				_localMeas = false;
+				_metersBusy = false;
+				_localMeas2 = false;
+				_measuredone = true;
+
+				if (!io.noTds()) {
+					_prepareABC = true;
+
+				}
+				else if (!io.noPh()) {
+					_preparePH = true;
+				}
+#ifdef RIG_DEBUG
+				else
+					gMesState.setValue(0);
+#endif
+
+
+				_mainpumpwindow = false;
+				_aeropumpwindow = false;
+			}
+		}
+
+		void _updateSolutions()
+		{
+			if (_measuretime) {
+				_measure();
+				return;
+			}
+
+			_updateABC();
+			_squirtABC();
+			_updatePH();
+			_squirtPH();
+		}
+
+
 		void _updateABC()
 		{
-			if (io.noTds())
-				return;
-
 			if (!_prepareABC)
 				return;
 
@@ -1120,13 +1207,6 @@ class Rig {
 				ec_c = EC_C3;
 			}
 
-			/*
-			Serial.println("EC - HYST: ");
-			Serial.println(g_data.getFloat(ec_set) - g_data.getFloat(EC_HYST), 1);
-			Serial.print("Last EC: ");
-			Serial.println(_lastEc, 1);
-			*/
-
 			// if EC more than what's set
 			if (g_data.getFloat(ec_set) - g_data.getFloat(EC_HYST) <= _lastEc) {
 				_prepareABC = false;
@@ -1154,16 +1234,14 @@ class Rig {
 
 		void _squirtABC()
 		{
-			if (io.noTds())
-				return;
-
 			if (!_commenceABC)
 				return;
 
 			if (pumps == A_ON) {
 				if (!io.getOut(PWR_PG_PORT_A)) {
-					// TODO: remove in prod
+#ifdef RIG_DEBUG
 					gMesState.setValue(3);
+#endif
 
 					io.driveOut(PWR_PG_PORT_A, true);
 				}
@@ -1194,7 +1272,6 @@ class Rig {
 					pumps = A_ON;
 					_commenceABC = false;
 					_preparePH = true;
-					//gMesState.setValue(0);
 				}
 			}
 			//Serial.println("ABC squirted");
@@ -1208,15 +1285,25 @@ class Rig {
 
 		void _updatePH()
 		{
-			if (io.noPh())
-				return;
+
 			if (!_preparePH || _commencePH)
 				return;
-			Serial.println(__func__);
+
+			if (io.noPh()) {
+				_preparePH = false;
+#ifdef RIG_DEBUG
+				gMesState.setValue(0);
+#endif
+				return;
+			}
+
+
 			if (!g_data.getInt(ACID_ON)) {
 				_preparePH = false;
+#ifdef RIG_DEBUG
 				gMesState.setValue(0);
 				Serial.println("PH not set in settings");
+#endif
 				return;
 			}
 
@@ -1263,9 +1350,6 @@ class Rig {
 
 		void _squirtPH()
 		{
-			if (io.noPh())
-				return;
-
 			if (!_commencePH)
 				return;
 
@@ -1279,46 +1363,59 @@ class Rig {
 			if (_ph_state == PH_UP) {
 				if (up_empty) {
 					Serial.println("PH UP EMPTY");
+#ifdef RIG_DEBUG
 					gMesState.setValue(0);
+#endif
 					_commencePH = false;
 					return;
 				}
 				if (!io.getOut(PWR_PG_PORT_D)) {
-					// TODO: remove in prod
+#ifdef RIG_DEBUG
 					gMesState.setValue(4);
+#endif
 
 					io.driveOut(PWR_PG_PORT_D, true);
 				}
 				if (millis() - _pump_mils > _pumpPHseconds*1000) {
 					io.driveOut(PWR_PG_PORT_D, false);
 					_ph_state = NO_PH;
+#ifdef RIG_DEBUG
 					gMesState.setValue(0);
+#endif
 					_commencePH = false;
 				}
 			}
 			else if (_ph_state == PH_DW) {
 				if (down_empty) {
 					Serial.println("PH DOWN EMPTY");
+#ifdef RIG_DEBUG
 					gMesState.setValue(0);
+#endif
 					_commencePH = false;
 					return;
 				}
 				if (!io.getOut(PWR_PG_PORT_E)) {
 					// TODO: remove in prod
+#ifdef RIG_DEBUG
 					gMesState.setValue(4);
+#endif
 
 					io.driveOut(PWR_PG_PORT_E, true);
 				}
 				if (millis() - _pump_mils > _pumpPHseconds*1000) {
 					io.driveOut(PWR_PG_PORT_E, false);
 					_ph_state = NO_PH;
+#ifdef RIG_DEBUG
 					gMesState.setValue(0);
+#endif
 					_commencePH = false;
 				}
 
 			}
 			else if (_ph_state == NO_PH) {
+#ifdef RIG_DEBUG
 				gMesState.setValue(0);
+#endif
 				_commencePH = false;
 				return;
 			}
@@ -1410,92 +1507,6 @@ class Rig {
 		{
 		}
 
-		static constexpr unsigned long _begin_interval = 10000;
-		unsigned long _begin_mils = 0;
-		bool _metersBusy = false;
-		float _lastPh;
-		float _lastEc;
-
-		bool _localMeas = false;
-		bool _localMeas2 = false;
-		unsigned long _meas_mils = 0;
-		static constexpr unsigned long _meas_interval = 15000;
-
-		void _measure()
-		{
-			if (!_metersBusy) {
-				io.initMeters();
-				Serial.println("STATE 1");
-
-				// TODO: remove in prod
-				gMesState.setValue(1);
-
-				_begin_mils = millis();
-				_metersBusy = true;
-			}
-
-			//Serial.print("mils - mils: ");
-			//Serial.println(millis() - _begin_mils);
-
-			if (millis() - _begin_mils > _begin_interval && !_localMeas) {
-
-				Serial.println("STATE 2");
-				for (int i = 0; i < 3; i++) {
-					_lastPh = io.getPH();
-					_lastEc = io.getEC();
-				}
-
-				_meas_mils = millis();
-				_localMeas = true;
-				_localMeas2 = true;
-			}
-
-			if (millis() - _meas_mils > _meas_interval && _localMeas2) {
-				Serial.println("STATE 3");
-				_lastPh = io.getPH();
-				_lastEc = io.getEC();
-
-				// TODO: remove in prod
-				gMesState.setValue(2);
-
-				_measuretime = false;
-				_localMeas = false;
-				_metersBusy = false;
-				_localMeas2 = false;
-				_measuredone = true;
-				_prepareABC = true;
-
-				_mainpumpwindow = false;
-				_aeropumpwindow = false;
-			}
-		}
-
-		void _updateSolutions()
-		{
-			if (_measuretime) {
-				_measure();
-				return;
-			}
-
-			_updateABC();
-			_squirtABC();
-			_updatePH();
-			_squirtPH();
-		}
-
-		void _openWindow()
-		{
-			io.driveOut(PWR_PG_UP, true);
-			_window_energized = true;
-			_window_timer = millis();
-		}
-
-		void _closeWindow()
-		{
-			io.driveOut(PWR_PG_DOWN, true);
-			_window_energized = true;
-			_window_timer = millis();
-		}
 } g_rig;
 
 
@@ -1594,6 +1605,10 @@ class App {
 
 		void init()
 		{
+#ifdef APP_TESTING
+			setMeasIntervalMinutes(5);
+#endif
+
 			resetCalibFlags();
 			switch (g_selected_lang) {
 				default:
@@ -1634,14 +1649,18 @@ class App {
 			datetime.update();
 			g_rig.update();
 
+			/*
+			Serial.println("measure stuff");
+			Serial.println(_measInterval);
+			Serial.println(_measMils);
+			Serial.println(_initDone);
+			Serial.println();
+			*/
 			if (millis() - _measMils > _measInterval  || !_initDone) {
 				_measMils = millis();
 				g_rig.measureTime();
 				_initDone = true;
-				/*
-				g_ph->setValue(io.getPH());
-				g_tds->setValue(io.getEC());
-				*/
+				Serial.println("Measure TIME!");
 			}
 
 			// main pump window set
@@ -1665,7 +1684,6 @@ class App {
 				g_ph->setValue(g_rig.lastPH());
 				g_tds->setValue(g_rig.lastEC());
 
-				//gMesState.setValue(0);
 
 				gMainPageStr = String(scrStrings[MP_STRING]) + *datetime.getDateStr();
 				gMainPageText->invalidate();
@@ -1770,10 +1788,6 @@ class App {
 				uint16_t* values = io.getAnalogValues();
 
 				for (int i = 0; i < N_ADC; i++) {
-					/*
-					if (gADC[i] == nullptr)
-						continue;
-						*/
 					gADC[i]->setValue(values[i]);
 				}
 
@@ -1781,8 +1795,7 @@ class App {
 			}
 
 			if (currPage == pages[DIG_DIAG_PG]
-					&& millis() - _digMils > DIG_READ_INTERVAL
-					&& gInterrupt) {
+					&& millis() - _digMils > DIG_READ_INTERVAL) {
 				io.readDigital();
 
 				bool* keys = io.getDigitalValues();
