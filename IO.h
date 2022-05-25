@@ -96,7 +96,7 @@ enum {
 };
 
 // digital inputs bits (position matter!)
-enum {
+typedef enum {
 	DIG_KEY1,
 	DIG_KEY2,
 	DIG_KEY3,
@@ -108,7 +108,7 @@ enum {
 	DIG_KEY9,
 	DIG_KEY10,
 	DIG_NKEYS
-};
+} dig_inputs_t;
 
 // power diag page items bits (position matter!)
 enum {
@@ -168,24 +168,29 @@ class InputOutput {
 				_no_ph = true;
 			if (!tds_meter.begin())
 				_no_tds = true;
+			if (!sht_meter.begin())
+				_no_sht = true;
 		}
 
-		bool tdsPresent()
+		bool noTds()
 		{
-			return !_no_tds;
+			return _no_tds;
 		}
 
-		bool phPresent()
+		bool noPh()
 		{
-			return !_no_ph;
+			return _no_ph;
+		}
+
+		bool noSht()
+		{
+			return _no_sht;
 		}
 
 		void init()
 		{
 			// sensors
-			sht_meter.begin();
-			tds_meter.begin();
-			ph_meter.begin();
+			initMeters();
 
 			// expander stuff
 			gpio[FIRST_EXPANDER].begin();
@@ -338,6 +343,14 @@ class InputOutput {
 			return _dig_keys;
 		}
 
+		bool getDigital(dig_inputs_t input)
+		{
+			if (input > DIG_NKEYS)
+				return false;
+
+			return _dig_keys[input];
+		}
+
 		// TODO: make private, operate on interrupt
 		void readDigital()
 		{
@@ -397,6 +410,7 @@ class InputOutput {
 	private:
 		uint16_t _readExpanders()
 		{
+			gpio[SECOND_EXPANDER].portRead(BOTH_PORTS);
 			return gpio[FIRST_EXPANDER].portRead(BOTH_PORTS);
 		}
 
@@ -432,6 +446,7 @@ class InputOutput {
 		bool _ui_keys[UI_NKEYS];
 		bool _no_ph = false;
 		bool _no_tds = false;
+		bool _no_sht = false;
 } io;
 
 #endif

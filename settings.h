@@ -111,6 +111,7 @@ typedef enum {
 	START_DAY,
 	EC_HYST,
 	PH_HYST,
+	PUMP_TIME, // allowed H20 pump time
 
 	NSETTINGS
 } rig_settings_t;
@@ -130,7 +131,7 @@ typedef enum {
 
 rig_type g_rig_type = RIG_DEEPWATER;
 
-// TODO: save g_data to file, populate g_data on startup from file
+// planting settings (no wifi data or screen settings here...)
 class Data {
 	public:
 		Data()
@@ -173,6 +174,9 @@ class Data {
 			set(PASSVENT_TIME_TO, 23);
 			set(PASSVENT_TEMP_THRES, 30);
 			set(PASSVENT_HUM_THRES, 60);
+			set(PUMP_SEC, 300);
+			set(AERO_PUMP_SEC, 300);
+			set(PUMP_TIME, 1);
 		}
 
 		void print()

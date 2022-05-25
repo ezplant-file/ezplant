@@ -886,6 +886,7 @@ class Rig {
 			_updateVent();
 			_updatePassVent();
 			_updateSolutions();
+			_updateRigType();
 		}
 
 		bool getLed()
@@ -933,10 +934,6 @@ class Rig {
 		bool _passvent = false;
 		bool _measureWindow = false;
 
-		void _haltPumps()
-		{
-		}
-
 		void _updateLight()
 		{
 			_led = false;
@@ -969,6 +966,9 @@ class Rig {
 
 		void _updateVent()
 		{
+			if (io.noSht())
+				return;
+
 			_vent = false;
 			if (!g_data.getInt(VENT_ON)) {
 				io.driveOut(PWR_PG_FAN, false);
@@ -1002,6 +1002,9 @@ class Rig {
 
 		void _updatePassVent()
 		{
+			if (io.noSht())
+				return;
+
 			if (_window_energized || _window_opened) {
 				_passvent = true;
 			}
@@ -1061,6 +1064,9 @@ class Rig {
 
 		void _updateABC()
 		{
+			if (io.noTds())
+				return;
+
 			if (!_prepareABC)
 				return;
 
@@ -1148,6 +1154,9 @@ class Rig {
 
 		void _squirtABC()
 		{
+			if (io.noTds())
+				return;
+
 			if (!_commenceABC)
 				return;
 
@@ -1199,6 +1208,8 @@ class Rig {
 
 		void _updatePH()
 		{
+			if (io.noPh())
+				return;
 			if (!_preparePH || _commencePH)
 				return;
 			Serial.println(__func__);
@@ -1252,6 +1263,9 @@ class Rig {
 
 		void _squirtPH()
 		{
+			if (io.noPh())
+				return;
+
 			if (!_commencePH)
 				return;
 
@@ -1310,7 +1324,89 @@ class Rig {
 			}
 		}
 
-		void _updateH2O()
+		void _updateRigType()
+		{
+			switch (g_rig_type) {
+				default: break;
+				case RIG_DEEPWATER: _deepwater(); break;
+				case RIG_LAYER: _layer(); break;
+				case RIG_FLOOD: _flood(); break;
+				case RIG_AERO: _aero(); break;
+				case RIG_DRIP: _drip(); break;
+				case RIG_OPENG: _openg(); break;
+				case RIG_GREENH: _greenh(); break;
+				case RIG_MIXSOL: _mixsol(); break;
+			}
+		}
+
+		bool _mainpumpwindow = false;
+		bool _aeropumpwindow = false;
+	public:
+		void setMainPumpWindow()
+		{
+			_mainpumpwindow = true;
+		}
+
+		void setAeroPumpWindow()
+		{
+			_aeropumpwindow = true;
+		}
+
+	private:
+
+		void _deepwater()
+		{
+			// TODO: H2O pump time limit
+			// H2O pump
+			if (!io.getDigital(DIG_KEY3) && !_measuretime) {
+				io.driveOut(PWR_PG_PORT_F, !io.getDigital(DIG_KEY5));
+			}
+			else if (io.getDigital(DIG_KEY3) || io.getDigital(DIG_KEY4) || _measuretime) {
+				io.driveOut(PWR_PG_PORT_F, false);
+			}
+
+			// aero pump
+			if (_aeropumpwindow && g_data.getInt(AERO_PUMP)) {
+				io.driveOut(PWR_PG_PORT_H, false);
+			}
+			else if (g_data.getInt(AERO_ON)){
+				io.driveOut(PWR_PG_PORT_H, true);
+			}
+
+			// main pump
+			if (_mainpumpwindow || _measuretime) {
+				io.driveOut(PWR_PG_PORT_G, false);
+			}
+			else {
+				io.driveOut(PWR_PG_PORT_G, io.getDigital(DIG_KEY2));
+			}
+		}
+
+		void _layer()
+		{
+		}
+
+		void _flood()
+		{
+		}
+
+		void _aero()
+		{
+		}
+
+		void _drip()
+		{
+		}
+
+		void _openg()
+		{
+		}
+
+		void _greenh()
+		{
+		}
+
+		void _mixsol()
 		{
 		}
 
@@ -1368,6 +1464,9 @@ class Rig {
 				_localMeas2 = false;
 				_measuredone = true;
 				_prepareABC = true;
+
+				_mainpumpwindow = false;
+				_aeropumpwindow = false;
 			}
 		}
 
@@ -1382,14 +1481,6 @@ class Rig {
 			_squirtABC();
 			_updatePH();
 			_squirtPH();
-			//_updateH2O();
-
-			/*
-			if (_measureWindow) {
-				_haltPumps();
-				return;
-			}
-			*/
 		}
 
 		void _openWindow()
@@ -1472,7 +1563,7 @@ class App {
 		unsigned long _repMils = 0;
 		unsigned long _mainMils = 0;
 		unsigned long _measMils = 0;
-		unsigned long _measInterval = 600000;
+		unsigned long _measInterval = 30 * 60000;
 		bool _blink = false;
 		bool _dbFlag = false;
 		bool _triggered = false;
@@ -1486,9 +1577,9 @@ class App {
 		static constexpr unsigned long REPEAT_INT = 1000;
 
 	public:
-		void setMeasInterval(unsigned long interval)
+		void setMeasIntervalMinutes(unsigned interval)
 		{
-			_measInterval = interval*1000;
+			_measInterval = interval * 60000;
 		}
 
 		void draw()
@@ -1551,6 +1642,22 @@ class App {
 				g_ph->setValue(io.getPH());
 				g_tds->setValue(io.getEC());
 				*/
+			}
+
+			// main pump window set
+			if (millis() - _measMils > _measInterval
+					- g_data.getInt(PUMP_SEC)*1000
+					&& g_data.getInt(PUMP_OFF)
+					&& io.getOut(PWR_PG_PORT_G)) {
+				g_rig.setMainPumpWindow();
+			}
+
+			// aero pump window set
+			if (millis() - _measMils > _measInterval
+					- g_data.getInt(AERO_PUMP_SEC)*1000
+					&& g_data.getInt(AERO_PUMP)
+					&& io.getOut(PWR_PG_PORT_H)) {
+				g_rig.setAeroPumpWindow();
 			}
 
 			/* main page updates */
