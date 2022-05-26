@@ -233,7 +233,7 @@ class InputOutput {
 		float getEC()
 		{
 			//return 0.3;
-			return tds_meter.getEC();
+			return (float)tds_meter.getEC()/1000;
 		}
 
 		float getPH()

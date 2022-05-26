@@ -20,6 +20,7 @@ typedef enum {
 	TXT_SECONDS,
 	TXT_PAUSE,
 	TXT_START,
+	TXT_DOTS,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
@@ -35,6 +36,7 @@ typedef enum {
 	SCREENLANG,
 	CALIB,
 	THRES,
+	ADDSETT,
 
 	// display/lang settings
 	SCREEN,
@@ -312,6 +314,18 @@ typedef enum {
 
 	//
 	G_STATE,
+
+	// addit. settings page 1
+	AS1_LIGHT,
+	AS1_STIME,
+	AS1_PUMPDUR,
+	AS1_PHEC_INT,
+
+	// addit settings page 2
+	AS2_PH_HYST,
+	AS2_EC_HYST,
+	AS2_SOL_INT,
+	AS2_RANGE,
 
 	END_OF_STRINGS
 } dispStrings_t;

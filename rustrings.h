@@ -20,6 +20,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"секунд",
 	"Пауза",
 	"Старт",
+	"...",
 	// main menu strings
 	"Меню",
 	"Новая посадка",
@@ -35,6 +36,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Экран и язык интерфейса",
 	"Калибровка датчиков",
 	"Настройки порогов",
+	"Доп. настройки",
 
 	// display/lang settings
 	"Экран",
@@ -310,8 +312,20 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	// main page string
 	"Показание от ",
 
-	//
-	"стадия"
+	// debug measure
+	"стадия",
+
+	// addit. settings page 1
+	"Мощность освещения",
+	"Разрешённое время \nдля нормализации раствора",
+	"Разрешённое (аварийное) \nвремя долива воды",
+	"Период измерения pH и EC",
+
+	// addit settings page 2
+	"Гистересис pH",
+	"Гистересис EC",
+	"Интервал между доб. \nконцентратов, мин",
+	"Диапазон значений, которые \nсчитать корректными:"
 
 	//end of strings
 };

@@ -1406,6 +1406,7 @@ Text* fonts[] = {
 
 
 
+/*
 Page* buildFontPage()
 {
 	smallestFont.setFont(SMALLESTFONT);
@@ -1446,6 +1447,7 @@ Page* buildFontPage()
 
 	return &fontPage;
 }
+*/
 
 
 /************************************ LANG PAGE ******************************/
@@ -1632,7 +1634,7 @@ enum mainMenuItems {
 	MM_SETT,
 	MM_DIAG,
 	MM_TEST,
-	MM_FONT,
+	//MM_FONT,
 	//MM_FIRST_PAGE,
 	MM_NITEMS
 };
@@ -1651,7 +1653,7 @@ Page* buildMenuPage()
 	menu1[MM_SETT] = SETTINGS;
 	menu1[MM_DIAG] = DIAG;
 	menu1[MM_TEST] = TEST_PAGE;
-	menu1[MM_FONT] = FONT_PAGE;
+	//menu1[MM_FONT] = FONT_PAGE;
 	//menu1[MM_FIRST_PAGE] = FP_SUBTTL;
 
 	int j = 0;
@@ -1670,7 +1672,7 @@ Page* buildMenuPage()
 	menu_items[MM_PLANT].setCallback(callPage, pages[STAGE1_PG]);
 	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
 	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
-	menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
+	//menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
 	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
 	//menu_items[MM_FIRST_PAGE].setCallback(callPage, pages[STAGE1_PG]);
 
@@ -1687,12 +1689,126 @@ Page* buildMenuPage()
 	return &menuPage;
 }
 
+Page* buildAddSettPage()
+{
+	static Page addSettPage;
+	addSettPage.setTitle(ADDSETT);
+
+	static Text ltPwr;
+	ltPwr.setXYpos(PG_LEFT_PADD, 37);
+	ltPwr.setText(AS1_LIGHT);
+
+	static InputField pwr;
+	pwr.setXYpos(153, 42);
+	pwr.setText(PERCENT);
+	//pwr.setValue(g_data.getInt());
+
+	static Text alTime;
+	alTime.setXYpos(PG_LEFT_PADD, 70);
+	alTime.setText(AS1_STIME);
+
+	static HourLimits time(59, 110);
+	//time.setXYpos(59, 110);
+
+	static Text alPump;
+	alPump.setXYpos(PG_LEFT_PADD, 156);
+	alPump.setText(AS1_PUMPDUR);
+
+	static InputField pumpIn;
+	pumpIn.setXYpos(71, 195);
+	pumpIn.setText(TXT_MINUTES);
+
+	static Text measInt;
+	measInt.setXYpos(PG_LEFT_PADD, 236);
+	measInt.setText(AS1_PHEC_INT);
+
+	static InputField intervalIn;
+	intervalIn.setXYpos(71, 255);
+	intervalIn.setText(TXT_MINUTES);
+
+	addSettPage.addItem(&ltPwr);
+	addSettPage.addItem(&pwr);
+	addSettPage.addItem(&alTime);
+	addSettPage.addItem((ScrObj*)time.getLowerPtr());
+	addSettPage.addItem((ScrObj*)time.getDashPtr());
+	addSettPage.addItem((ScrObj*)time.getHigherPtr());
+	addSettPage.addItem(&alPump);
+	addSettPage.addItem(&pumpIn);
+	addSettPage.addItem(&measInt);
+	addSettPage.addItem(&intervalIn);
+
+	addSettPage.addItem(&back);
+	addSettPage.addItem(&forward);
+
+	return &addSettPage;
+}
+
+Page* buildSecondAddSettPage()
+{
+	static Page addSettPage;
+	addSettPage.setTitle(ADDSETT);
+
+	static Text hystPH;
+	hystPH.setXYpos(PG_LEFT_PADD, 51);
+	hystPH.setText(AS2_PH_HYST);
+
+	static InputField hystphIn;
+	hystphIn.setXYpos(177, 47);
+	hystphIn.setText(EMPTY_STR);
+
+	static Text hystEC;
+	hystEC.setXYpos(PG_LEFT_PADD, 94);
+	hystEC.setText(AS2_EC_HYST);
+
+	static InputField hystecIn;
+	hystecIn.setXYpos(177, 90);
+	hystecIn.setText(EMPTY_STR);
+
+	static Text interval;
+	interval.setXYpos(PG_LEFT_PADD, 124);
+	interval.setText(AS2_SOL_INT);
+
+	static InputField intervalIn;
+	intervalIn.setXYpos(177, 137);
+	intervalIn.setText(EMPTY_STR);
+
+	static Text range;
+	range.setXYpos(PG_LEFT_PADD, 174);
+	range.setText(AS2_RANGE);
+
+	static InputField phLo;
+	phLo.setXYpos(54, 217);
+	phLo.setAlign(LEFT);
+	phLo.setText(TXT_PH);
+
+	static InputField phHi;
+	phHi.setXYpos(125, 217);
+	phHi.setAlign(LEFT);
+	phHi.setText(TXT_DOTS);
+
+	static InputField ecLo;
+	ecLo.setXYpos(54, 253);
+	ecLo.setAlign(LEFT);
+	ecLo.setText(TXT_EC);
+
+	static InputField ecHi;
+	ecHi.setXYpos(125, 253);
+	ecHi.setAlign(LEFT);
+	ecHi.setText(TXT_DOTS);
+
+	addSettPage.addItem(&back);
+	//addSettPage.addItem(&forward);
+
+	return &addSettPage;
+}
+
 enum settingsPageMenuItems {
 	MN_TIMEDATE,
 	MN_WIFI,
 	MN_SCREENLANG,
 	MN_CALIB,
 	MN_THRES,
+	//MN_ADDSETT,
 	MN_NITEMS
 };
 
@@ -1707,6 +1823,7 @@ Page* buildSettingsPage()
 	ru_menu_settings[MN_SCREENLANG] = SCREENLANG;
 	ru_menu_settings[MN_CALIB] = CALIB;
 	ru_menu_settings[MN_THRES] = THRES;
+	//ru_menu_settings[MN_ADDSETT] = ADDSETT;
 
 	int j = 0;
 	int gap = MENU_GAP;
@@ -1720,6 +1837,7 @@ Page* buildSettingsPage()
 		j++;
 	}
 
+	//settings_items[MN_ADDSETT].setCallback(callPage, pages[ADDSETT_PG]);
 	settings_items[MN_TIMEDATE].setCallback(callPage, pages[TIME_PG]);
 
 	if (g_wifi_set) {
@@ -4025,9 +4143,11 @@ void buildAllPages()
 	pages[TIME_PG] = buildTimePage();
 	pages[WIFI_SETT_PG] = buildWiFiSettPage();
 	pages[WIFI_PG] = buildWifiPage();
-	pages[FONT_PG] = buildFontPage();
+	//pages[FONT_PG] = buildFontPage();
 	pages[TEST_PG] = buildTestPage();
 	pages[LANG_PG] = buildLangPage();
+	pages[ADDSETT_PG] = buildAddSettPage();
+	pages[ADDSETT2_PG] = buildSecondAddSettPage();
 	pages[SETT_PG] = buildSettingsPage();
 
 	// list of last stages
@@ -4047,6 +4167,10 @@ void linkPages()
 
 	// debug last stages
 //	pages[LSTAGES]->setPrev(pages[MENU_PG]);
+	pages[ADDSETT_PG]->setPrev(pages[SETT_PG]);
+	pages[ADDSETT_PG]->setNext(pages[ADDSETT2_PG]);
+
+	pages[ADDSETT2_PG]->setPrev(pages[ADDSETT_PG]);
 
 	// new planting first page
 	pages[STAGE1_PG]->setPrev(pages[MAIN_PG]);
@@ -4072,7 +4196,7 @@ void linkPages()
 
 	// menu pages
 	pages[SETT_PG]->setPrev(pages[MENU_PG]);
-	pages[FONT_PG]->setPrev(pages[MENU_PG]);
+	//pages[FONT_PG]->setPrev(pages[MENU_PG]);
 	pages[TEST_PG]->setPrev(pages[MENU_PG]);
 
 	// settings pages

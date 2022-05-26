@@ -20,6 +20,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"seconds",
 	"Pause",
 	"Start",
+	"...",
 	// main menu strings
 	"Menu",
 	"New planting",
@@ -35,6 +36,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Screen and language",
 	"Sensors calibration",
 	"Threshold settings",
+	"Addit. settings",
 
 	// display/lang settings
 	"Screen",
@@ -310,8 +312,20 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// main page string
 	"Sensors data taken at ",
 
-	//
-	"m_state"
+	// debug measure
+	"m_state",
+
+	// addit. settings page 1
+	"Light intensity",
+	"Allowed solution \nnormalization time",
+	"Main pump allowed \nworking duration",
+	"pH and EC measurement interval",
+
+	// addit settings page 2
+	"pH hysteresis",
+	"EC hysteresis",
+	"Interval between solutions \npouring, minutes",
+	"Value range to deem correct:"
 
 	//end of strings
 };

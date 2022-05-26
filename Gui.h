@@ -2515,6 +2515,27 @@ class SmallBox: public ScrObj {
 	public:
 		virtual void draw() override
 		{
+			if (_blink) {
+				if (_image->isVisible() && !_blinking) {
+					_blinking = true;
+					_image->setInvisible();
+					invalidate();
+					_blinkMils = millis();
+				}
+
+				if (millis() - _blinkMils > _BLINK_INT) {
+					_blinkstate = !_blinkstate;
+					if (_blinkstate) {
+						_image->setVisible();
+						invalidate();
+					}
+					else {
+						_image->setInvisible();
+						invalidate();
+					}
+					_blinkMils = millis();
+				}
+			}
 			if (!_invalid || !_isVisible) {
 				return;
 			}
@@ -2641,7 +2662,17 @@ class SmallBox: public ScrObj {
 			_imgEmp->setXYpos(_x, _y);
 		}
 
+		void setBlink()
+		{
+			_blink = true;
+		}
+
 	private:
+		bool _blink = false;
+		bool _blinkstate = false;
+		bool _blinking = false;
+		unsigned long _blinkMils = 0;
+		static constexpr unsigned long _BLINK_INT = 300;
 		uint16_t _fg = 0;
 		uint16_t _bg = COL_GREY_DC_565;
 		uint16_t _red = COL_RED_EMPTY_565;

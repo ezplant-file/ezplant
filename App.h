@@ -110,7 +110,7 @@ typedef enum {
 	MENU_PG,
 	SETT_PG,
 	LANG_PG,
-	FONT_PG,
+	//FONT_PG,
 	TEST_PG,
 	WIFI_PG,
 	WIFI_SETT_PG,
@@ -153,7 +153,9 @@ typedef enum {
 	STAGE82_PG,
 	STAGE83_PG,
 	STAGE84_PG,
-	LSTAGES,
+	//LSTAGES,
+	ADDSETT_PG,
+	ADDSETT2_PG,
 	NPAGES
 } pages_t;
 
@@ -848,6 +850,24 @@ class Panel {
 OutputField gMesState;
 #endif
 
+// main page indicators
+OutputFieldMain* g_tem;
+OutputFieldMain* g_hum;
+OutputField* g_ph;
+OutputField* g_tds;
+CircIndicator* g_light;
+CircIndicator* g_passvent;
+CircIndicator* g_vent;
+
+// small boxes
+SmallBox* g_Tap;
+SmallBox* g_A;
+SmallBox* g_B;
+SmallBox* g_C;
+SmallBox* g_ph_up;
+SmallBox* g_ph_dw;
+
+
 class Rig {
 	public:
 		Rig(): _paused(true){};
@@ -1135,6 +1155,7 @@ class Rig {
 
 				_mainpumpwindow = false;
 				_aeropumpwindow = false;
+				_rigInitDone = true;
 			}
 		}
 
@@ -1438,6 +1459,7 @@ class Rig {
 
 		bool _mainpumpwindow = false;
 		bool _aeropumpwindow = false;
+		bool _rigInitDone = false;
 	public:
 		void setMainPumpWindow()
 		{
@@ -1450,16 +1472,45 @@ class Rig {
 		}
 
 	private:
+		bool _pumpison = false;
+		bool _haltpump = false;
+		unsigned long _pumpMils = 0;
+		static constexpr unsigned long _PUMP_TIMEOUT = 60000;
 
 		void _deepwater()
 		{
+			if (!_rigInitDone)
+				return;
 			// TODO: H2O pump time limit
 			// H2O pump
-			if (!io.getDigital(DIG_KEY3) && !_measuretime) {
-				io.driveOut(PWR_PG_PORT_F, !io.getDigital(DIG_KEY5));
+			if (!_haltpump) {
+				if (!io.getDigital(DIG_KEY3) && !_measuretime) {
+					io.driveOut(PWR_PG_PORT_F, !io.getDigital(DIG_KEY5));
+				}
+				else if (io.getDigital(DIG_KEY3) || io.getDigital(DIG_KEY4) || _measuretime) {
+					io.driveOut(PWR_PG_PORT_F, false);
+				}
 			}
-			else if (io.getDigital(DIG_KEY3) || io.getDigital(DIG_KEY4) || _measuretime) {
+			else {
+				//g_Tap->setBlink();
 				io.driveOut(PWR_PG_PORT_F, false);
+			}
+
+			// reset flag is pump is off
+			if (!io.getOut(PWR_PG_PORT_F)) {
+				_pumpison = false;
+			}
+
+			// raise flag if pump is on
+			if (!_pumpison && io.getOut(PWR_PG_PORT_F)) {
+				_pumpison = true;
+				// remember when
+				_pumpMils = millis();
+			}
+
+			if (!_haltpump && _pumpison && millis() - _pumpMils > _PUMP_TIMEOUT) {
+				_haltpump = true;
+				Serial.println("Main pump timed out");
 			}
 
 			// aero pump
@@ -1542,23 +1593,6 @@ enum {
 };
 
 Toggle* exlMotorTgl[MOTOR_NITEMS];
-
-// main page indicators
-OutputFieldMain* g_tem;
-OutputFieldMain* g_hum;
-OutputField* g_ph;
-OutputField* g_tds;
-CircIndicator* g_light;
-CircIndicator* g_passvent;
-CircIndicator* g_vent;
-
-// small boxes
-SmallBox* g_Tap;
-SmallBox* g_A;
-SmallBox* g_B;
-SmallBox* g_C;
-SmallBox* g_ph_up;
-SmallBox* g_ph_dw;
 
 StringText* gMainPageText;
 String gMainPageStr = String(scrStrings[MP_STRING]);
