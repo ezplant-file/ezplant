@@ -112,6 +112,10 @@ typedef enum {
 	EC_HYST,
 	PH_HYST,
 	PUMP_TIME, // allowed H20 pump time
+	NORM_AL_TM_HI,
+	NORM_AL_TM_LO,
+	ADD_MEAS_INT,
+	SOLUTIONS_INT,
 
 	NSETTINGS
 } rig_settings_t;

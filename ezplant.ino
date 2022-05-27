@@ -1699,16 +1699,23 @@ Page* buildAddSettPage()
 	ltPwr.setText(AS1_LIGHT);
 
 	static InputField pwr;
-	pwr.setXYpos(153, 42);
+	pwr.setXYpos(158, 37);
 	pwr.setText(PERCENT);
-	//pwr.setValue(g_data.getInt());
+	pwr.setSettingsId(ADD_LED_BRIGHT);
+	pwr.setValue(g_data.getInt(ADD_LED_BRIGHT));
 
 	static Text alTime;
 	alTime.setXYpos(PG_LEFT_PADD, 70);
 	alTime.setText(AS1_STIME);
 
 	static HourLimits time(59, 110);
-	//time.setXYpos(59, 110);
+	ScrOjb* lo = time.getLowerPtr();
+	ScrOjb* hi = time.getHigherPtr();
+	lo->setSettingsId(NORM_AL_TM_LO);
+	hi->setSettingsId(NORM_AL_TM_HI);
+	lo->setValue(g_data.getInt(NORM_AL_TM_LO));
+	hi->setSettingsId(NORM_AL_TM_HI);
+	hi->setValue(g_data.getInt(NORM_AL_TM_LO));
 
 	static Text alPump;
 	alPump.setXYpos(PG_LEFT_PADD, 156);
@@ -1717,6 +1724,8 @@ Page* buildAddSettPage()
 	static InputField pumpIn;
 	pumpIn.setXYpos(71, 195);
 	pumpIn.setText(TXT_MINUTES);
+	pumpIn.setSettingsId(PUMP_TIME);
+	pumpIn.setValue(g_data.getInt(PUMP_TIME));
 
 	static Text measInt;
 	measInt.setXYpos(PG_LEFT_PADD, 236);
@@ -1725,6 +1734,8 @@ Page* buildAddSettPage()
 	static InputField intervalIn;
 	intervalIn.setXYpos(71, 255);
 	intervalIn.setText(TXT_MINUTES);
+	intervalIn.setSettingsId(ADD_MEAS_INT);
+	intervalIn.setValue(g_data.getInt(ADD_MEAS_INT));
 
 	addSettPage.addItem(&ltPwr);
 	addSettPage.addItem(&pwr);
@@ -1755,6 +1766,8 @@ Page* buildSecondAddSettPage()
 	static InputField hystphIn;
 	hystphIn.setXYpos(177, 47);
 	hystphIn.setText(EMPTY_STR);
+	hystPhIn.setSettingsId(PH_HYST);
+	hystPhIn.setValue(g_data.getInt(PH_HYST));
 
 	static Text hystEC;
 	hystEC.setXYpos(PG_LEFT_PADD, 94);
@@ -1763,6 +1776,8 @@ Page* buildSecondAddSettPage()
 	static InputField hystecIn;
 	hystecIn.setXYpos(177, 90);
 	hystecIn.setText(EMPTY_STR);
+	hystecIn.setSettingsId(EC_HYST);
+	hystecIn.setValue(g_data.getInt(PH_HYST));
 
 	static Text interval;
 	interval.setXYpos(PG_LEFT_PADD, 124);
@@ -1771,6 +1786,8 @@ Page* buildSecondAddSettPage()
 	static InputField intervalIn;
 	intervalIn.setXYpos(177, 137);
 	intervalIn.setText(EMPTY_STR);
+	intervalIn.setSettingsId(SOLUTIONS_INT);
+	intervalIn.setValue(g_data.getInt(SOLUTIONS_INT));
 
 	static Text range;
 	range.setXYpos(PG_LEFT_PADD, 174);
@@ -1796,6 +1813,17 @@ Page* buildSecondAddSettPage()
 	ecHi.setAlign(LEFT);
 	ecHi.setText(TXT_DOTS);
 
+	addSettPage.addItem(&hystPH);
+	addSettPage.addItem(&hystphIn);
+	addSettPage.addItem(&hystEC);
+	addSettPage.addItem(&hystecIn);
+	addSettPage.addItem(&interval);
+	addSettPage.addItem(&intervalIn);
+	addSettPage.addItem(&range);
+	addSettPage.addItem(&phLo);
+	addSettPage.addItem(&phHi);
+	addSettPage.addItem(&ecLo);
+	addSettPage.addItem(&ecHi);
 	addSettPage.addItem(&back);
 	//addSettPage.addItem(&forward);
 
@@ -1808,7 +1836,7 @@ enum settingsPageMenuItems {
 	MN_SCREENLANG,
 	MN_CALIB,
 	MN_THRES,
-	//MN_ADDSETT,
+	MN_ADDSETT,
 	MN_NITEMS
 };
 
@@ -1823,7 +1851,7 @@ Page* buildSettingsPage()
 	ru_menu_settings[MN_SCREENLANG] = SCREENLANG;
 	ru_menu_settings[MN_CALIB] = CALIB;
 	ru_menu_settings[MN_THRES] = THRES;
-	//ru_menu_settings[MN_ADDSETT] = ADDSETT;
+	ru_menu_settings[MN_ADDSETT] = ADDSETT;
 
 	int j = 0;
 	int gap = MENU_GAP;
@@ -1837,7 +1865,7 @@ Page* buildSettingsPage()
 		j++;
 	}
 
-	//settings_items[MN_ADDSETT].setCallback(callPage, pages[ADDSETT_PG]);
+	settings_items[MN_ADDSETT].setCallback(callPage, pages[ADDSETT_PG]);
 	settings_items[MN_TIMEDATE].setCallback(callPage, pages[TIME_PG]);
 
 	if (g_wifi_set) {
