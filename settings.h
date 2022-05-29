@@ -111,11 +111,15 @@ typedef enum {
 	START_DAY,
 	EC_HYST,
 	PH_HYST,
-	PUMP_TIME, // allowed H20 pump time
+	PUMP_TIMEOUT, // allowed H20 pump time
 	NORM_AL_TM_HI,
 	NORM_AL_TM_LO,
 	ADD_MEAS_INT,
 	SOLUTIONS_INT,
+	ALLOWED_PH_MIN,
+	ALLOWED_PH_MAX,
+	ALLOWED_EC_MIN,
+	ALLOWED_EC_MAX,
 
 	NSETTINGS
 } rig_settings_t;
@@ -162,7 +166,7 @@ class Data {
 			set(DRIP_CYCL, false);
 			set(SPRAY_CONS, true);
 			set(SPRAY_CYCL, false);
-			set(ADD_LED_BRIGHT, 127);
+			set(ADD_LED_BRIGHT, 100);
 			set(EC_HYST, 0.2f);
 			set(PH_HYST, 0.5f);
 			set(EC_PUMPS, 10);
@@ -180,7 +184,16 @@ class Data {
 			set(PASSVENT_HUM_THRES, 60);
 			set(PUMP_SEC, 15);
 			set(AERO_PUMP_SEC, 15);
-			set(PUMP_TIME, 15);
+			set(PUMP_TIMEOUT, 1);
+			set(NORM_AL_TM_HI, 23);
+			set(NORM_AL_TM_LO, 0);
+			set(ADD_MEAS_INT, 30);
+			set(SOLUTIONS_INT, 1);
+			set(ALLOWED_PH_MIN, 4.0f);
+			set(ALLOWED_PH_MAX, 9.0f);
+			set(ALLOWED_EC_MIN, 0.06f);
+			set(ALLOWED_EC_MAX, 4.0f);
+
 		}
 
 		void print()
@@ -313,6 +326,17 @@ class Data {
 				_data[DRIP_CYCL_SEC] = load[STR(DRIP_CYCL_SEC)].get<float>();
 				_data[ADD_LED_BRIGHT] = load[STR(ADD_LED_BRIGHT)].get<float>();
 				_data[START_DAY] = load[STR(START_DAY)].get<float>();
+				_data[EC_HYST] = load[STR(EC_HYST)].get<float>();
+				_data[PH_HYST] = load[STR(PH_HYST)].get<float>();
+				_data[PUMP_TIMEOUT] = load[STR(PUMP_TIMEOUT)].get<float>();
+				_data[NORM_AL_TM_HI] = load[STR(NORM_AL_TM_HI)].get<float>();
+				_data[NORM_AL_TM_LO] = load[STR(NORM_AL_TM_LO)].get<float>();
+				_data[ADD_MEAS_INT] = load[STR(ADD_MEAS_INT)].get<float>();
+				_data[SOLUTIONS_INT] = load[STR(SOLUTIONS_INT)].get<float>();
+				_data[ALLOWED_PH_MIN] = load[STR(ALLOWED_PH_MIN)].get<float>();
+				_data[ALLOWED_PH_MAX] = load[STR(ALLOWED_PH_MAX)].get<float>();
+				_data[ALLOWED_EC_MIN] = load[STR(ALLOWED_EC_MIN)].get<float>();
+				_data[ALLOWED_EC_MAX] = load[STR(ALLOWED_EC_MAX)].get<float>();
 
 				load.clear();
 
@@ -417,6 +441,18 @@ class Data {
 			d[STR(DRIP_CYCL_SEC)] = (_data[DRIP_CYCL_SEC]);
 			d[STR(ADD_LED_BRIGHT)] = (_data[ADD_LED_BRIGHT]);
 			d[STR(START_DAY)] = (_data[START_DAY]);
+			d[STR(EC_HYST)] = (_data[EC_HYST]);
+			d[STR(PH_HYST)] = (_data[PH_HYST]);
+			d[STR(PUMP_TIMEOUT)] = (_data[PUMP_TIMEOUT]);
+			d[STR(NORM_AL_TM_HI)] = (_data[NORM_AL_TM_HI]);
+			d[STR(NORM_AL_TM_LO)] = (_data[NORM_AL_TM_LO]);
+			d[STR(ADD_MEAS_INT)] = (_data[ADD_MEAS_INT]);
+			d[STR(SOLUTIONS_INT)] = (_data[SOLUTIONS_INT]);
+			d[STR(ALLOWED_PH_MIN)] = (_data[ALLOWED_PH_MIN]);
+			d[STR(ALLOWED_PH_MAX)] = (_data[ALLOWED_PH_MAX]);
+			d[STR(ALLOWED_EC_MIN)] = (_data[ALLOWED_EC_MIN]);
+			d[STR(ALLOWED_EC_MAX)] = (_data[ALLOWED_EC_MAX]);
+
 
 			File file = SPIFFS.open(data_file, "w");
 			if (!file) {

@@ -1137,22 +1137,12 @@ class InputField: public ScrObj {
 			if (!_notext)
 				_text.draw();
 
-			tft.setTextColor(_fg, _bg);
-			tft.loadFont(FONTS[_fontIndex]);
-			//_w = tft.textWidth(String(_value)) + _paddingX*2;
-			if (_background)
-				tft.fillRect(_x, _y, _w, _h, _bg);
-
-			if (_showPlus) {
-				tft.setCursor(_x + _dx, _y+_paddingY);
-			}
-			else {
-				tft.setCursor(_x + _dx +_paddingX, _y+_paddingY);
-			}
-
+			/* string formatting */
 			String tmp = "";
 			if (_isFloat) {
-				tmp = String(_fvalue, 1);
+				tmp = String(_fvalue, 2);
+				if (tmp[3] == '0')
+					tmp = String(_fvalue, 1);
 			}
 			else {
 				tmp = String(_value);
@@ -1174,15 +1164,29 @@ class InputField: public ScrObj {
 
 			tmp += _str;
 
-			tft.print(tmp);
-			//tft.print(_value);
+			uint8_t calcPaddingY = _paddingY;
 
-			/*
-			tft.setCursor(_x+_w+_paddingX, _y+_paddingY);
-			tft.setTextColor(_fg, TFT_WHITE);
-			_textw = tft.textWidth(scrStrings[_index]) + _paddingX*2;
-			tft.print(scrStrings[_index]);
-			*/
+			if (tmp.length() > 3)
+				calcPaddingY = _paddingY/2;
+
+			/* background, font and cursor */
+			tft.setTextColor(_fg, _bg);
+			tft.loadFont(FONTS[_fontIndex]);
+
+			if (_background)
+				tft.fillRect(_x, _y, _w, _h, _bg);
+
+			if (_showPlus) {
+				tft.setCursor(_x + _dx, _y+_paddingY);
+			}
+			else {
+				tft.setCursor(_x + _dx +_paddingX, _y+_paddingY);
+			}
+
+
+			/* printing */
+			tft.print(tmp);
+
 			tft.unloadFont();
 
 			_invalid = false;
@@ -1329,9 +1333,13 @@ class InputField: public ScrObj {
 		virtual void add() override
 		{
 			if (_isFloat) {
+				if (_hardlimits && _fvalue >= _fupper)
+					return;
 				setValue(_fvalue += _delta.f);
 			}
 			else {
+				if (_hardlimits && _value >= _upper)
+					return;
 				setValue(_value += _delta.i);
 			}
 		}
@@ -1339,11 +1347,20 @@ class InputField: public ScrObj {
 		virtual void sub() override
 		{
 			if (_isFloat) {
+				if (_hardlimits && _fvalue <= _flower)
+					return;
 				setValue(_fvalue -= _delta.f);
 			}
 			else {
+				if (_hardlimits && _value <= _lower)
+					return;
 				setValue(_value -= _delta.i);
 			}
+		}
+
+		void hardLimits()
+		{
+			_hardlimits = true;
 		}
 
 		void setDelta(int delta)
@@ -1469,6 +1486,7 @@ class InputField: public ScrObj {
 		}
 
 	protected:
+		bool _hardlimits = false;
 		union {
 			int i = 1;
 			float f;
@@ -1530,6 +1548,7 @@ class OutputFieldMain: public InputField {
 			tft.setCursor(_x+_dx, _y);
 
 			String tmp = "";
+
 			if (_isFloat) {
 				tmp = String(_fvalue, 1);
 			}

@@ -974,7 +974,7 @@ class Rig {
 			if (g_data.getInt(LIGHT_FROM) <= tmp && tmp < g_data.getInt(LIGHT_TO)) {
 
 				// set led brightness
-				uint8_t brightness = g_data.getInt(ADD_LED_BRIGHT);
+				uint8_t brightness = clamp(uint8_t(g_data.getFloat(ADD_LED_BRIGHT)/100 * 255), 1, 255);
 				io.drivePWMout(PWR_PG_LIGHT, brightness);
 				_led = true;
 			}
@@ -1161,15 +1161,23 @@ class Rig {
 
 		void _updateSolutions()
 		{
-			if (_measuretime) {
-				_measure();
-				return;
-			}
+			int tmp = datetime.getHour();
 
-			_updateABC();
-			_squirtABC();
-			_updatePH();
-			_squirtPH();
+			// allowed time interval
+			if (g_data.getInt(NORM_AL_TM_LO) <= tmp && tmp < g_data.getInt(NORM_AL_TM_HI)) {
+
+				// measure pH and EC
+				if (_measuretime) {
+					_measure();
+					return;
+				}
+
+				// normalize
+				_updateABC();
+				_squirtABC();
+				_updatePH();
+				_squirtPH();
+			}
 		}
 
 
@@ -1475,7 +1483,7 @@ class Rig {
 		bool _pumpison = false;
 		bool _haltpump = false;
 		unsigned long _pumpMils = 0;
-		static constexpr unsigned long _PUMP_TIMEOUT = 60000;
+		//static constexpr unsigned long _PUMP_TIMEOUT = 60000;
 
 		void _deepwater()
 		{
@@ -1508,9 +1516,11 @@ class Rig {
 				_pumpMils = millis();
 			}
 
-			if (!_haltpump && _pumpison && millis() - _pumpMils > _PUMP_TIMEOUT) {
+			if (!_haltpump && _pumpison && millis() - _pumpMils > g_data.getInt(PUMP_TIMEOUT)) {
 				_haltpump = true;
+#ifdef APP_DEBUG
 				Serial.println("Main pump timed out");
+#endif
 			}
 
 			// aero pump
@@ -1642,6 +1652,7 @@ class App {
 #ifdef APP_TESTING
 			setMeasIntervalMinutes(5);
 #endif
+			setMeasIntervalMinutes(g_data.getInt(ADD_MEAS_INT));
 
 			resetCalibFlags();
 			switch (g_selected_lang) {

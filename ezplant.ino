@@ -409,6 +409,9 @@ void callPage(void* page_ptr)
 		g_rig.start();
 	}
 
+	if (currPage == pages[ADDSETT_PG]) {
+		g_data.save();
+	}
 
 	currPage->freeRes();
 
@@ -1481,7 +1484,8 @@ Page* buildLangPage()
 	gBrightness.setValue(g_init_brightness);
 	gBrightness.setText(PERCENT);
 	gBrightness.setCallback(gSetBacklight);
-	gBrightness.setLimits(1, 100);
+	gBrightness.setLimits(5, 100);
+	gBrightness.hardLimits();
 	gBrightness.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
@@ -1529,6 +1533,7 @@ Page* buildLangPage()
 	gDimseconds.setLimits(LOWER_DIMAFTER, HIGHER_DIMAFTER);
 	gDimseconds.setText(TXT_SEC);
 	gDimseconds.setCallback(gDimAfter);
+	gDimseconds.setLimits(5, 300);
 	gDimseconds.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
@@ -1695,27 +1700,30 @@ Page* buildAddSettPage()
 	addSettPage.setTitle(ADDSETT);
 
 	static Text ltPwr;
-	ltPwr.setXYpos(PG_LEFT_PADD, 37);
+	ltPwr.setXYpos(PG_LEFT_PADD, 42);
 	ltPwr.setText(AS1_LIGHT);
 
 	static InputField pwr;
 	pwr.setXYpos(158, 37);
 	pwr.setText(PERCENT);
 	pwr.setSettingsId(ADD_LED_BRIGHT);
+	pwr.setLimits(1, 100);
 	pwr.setValue(g_data.getInt(ADD_LED_BRIGHT));
+	pwr.setCallback(saveInputFieldSetting, &pwr);
 
 	static Text alTime;
 	alTime.setXYpos(PG_LEFT_PADD, 70);
 	alTime.setText(AS1_STIME);
 
 	static HourLimits time(59, 110);
-	ScrOjb* lo = time.getLowerPtr();
-	ScrOjb* hi = time.getHigherPtr();
+	ScrObj* lo = (ScrObj*) time.getLowerPtr();
+	ScrObj* hi = (ScrObj*) time.getHigherPtr();
 	lo->setSettingsId(NORM_AL_TM_LO);
 	hi->setSettingsId(NORM_AL_TM_HI);
 	lo->setValue(g_data.getInt(NORM_AL_TM_LO));
-	hi->setSettingsId(NORM_AL_TM_HI);
-	hi->setValue(g_data.getInt(NORM_AL_TM_LO));
+	hi->setValue(g_data.getInt(NORM_AL_TM_HI));
+	lo->setCallback(saveInputFieldSetting, lo);
+	hi->setCallback(saveInputFieldSetting, hi);
 
 	static Text alPump;
 	alPump.setXYpos(PG_LEFT_PADD, 156);
@@ -1724,8 +1732,10 @@ Page* buildAddSettPage()
 	static InputField pumpIn;
 	pumpIn.setXYpos(71, 195);
 	pumpIn.setText(TXT_MINUTES);
-	pumpIn.setSettingsId(PUMP_TIME);
-	pumpIn.setValue(g_data.getInt(PUMP_TIME));
+	pumpIn.setSettingsId(PUMP_TIMEOUT);
+	pumpIn.setLimits(1, 100);
+	pumpIn.setValue(g_data.getInt(PUMP_TIMEOUT));
+	pumpIn.setCallback(saveInputFieldSetting, &pumpIn);
 
 	static Text measInt;
 	measInt.setXYpos(PG_LEFT_PADD, 236);
@@ -1735,7 +1745,9 @@ Page* buildAddSettPage()
 	intervalIn.setXYpos(71, 255);
 	intervalIn.setText(TXT_MINUTES);
 	intervalIn.setSettingsId(ADD_MEAS_INT);
+	intervalIn.setLimits(1, 60);
 	intervalIn.setValue(g_data.getInt(ADD_MEAS_INT));
+	intervalIn.setCallback(saveInputFieldSetting, &intervalIn);
 
 	addSettPage.addItem(&ltPwr);
 	addSettPage.addItem(&pwr);
@@ -1754,6 +1766,52 @@ Page* buildAddSettPage()
 	return &addSettPage;
 }
 
+// disallow hi fields being lower than lo fields
+void checkHiField(void* self, void* hiField)
+{
+	if (hiField == nullptr || self == nullptr)
+		return;
+
+	InputField* hi = (InputField*) hiField;
+	InputField* lo = (InputField*) self;
+
+	if (lo->getFvalue() >= hi->getFvalue()) {
+		hi->setValue(lo->getFvalue());
+		hi->add();
+	}
+
+	if (lo->getFvalue() > hi->getFvalue()) {
+		lo->add();
+		hi->add();
+	}
+
+	saveInputFieldSetting(lo);
+	saveInputFieldSetting(hi);
+}
+
+// disallow lo fields being higher than hi fields
+void checkLoField(void* self, void* loField)
+{
+	if (loField == nullptr || self == nullptr)
+		return;
+
+	InputField* lo = (InputField*) loField;
+	InputField* hi = (InputField*) self;
+
+	if (lo->getFvalue() >= hi->getFvalue()) {
+		lo->setValue(hi->getFvalue());
+		lo->sub();
+	}
+
+	if (lo->getFvalue() > hi->getFvalue()) {
+		lo->add();
+		hi->add();
+	}
+
+	saveInputFieldSetting(lo);
+	saveInputFieldSetting(hi);
+}
+
 Page* buildSecondAddSettPage()
 {
 	static Page addSettPage;
@@ -1766,8 +1824,11 @@ Page* buildSecondAddSettPage()
 	static InputField hystphIn;
 	hystphIn.setXYpos(177, 47);
 	hystphIn.setText(EMPTY_STR);
-	hystPhIn.setSettingsId(PH_HYST);
-	hystPhIn.setValue(g_data.getInt(PH_HYST));
+	hystphIn.setFloat();
+	hystphIn.setfLimits(0.1f, 2.0f);
+	hystphIn.setSettingsId(PH_HYST);
+	hystphIn.setValue(g_data.getFloat(PH_HYST));
+	hystphIn.setCallback(saveInputFieldSetting, &hystphIn);
 
 	static Text hystEC;
 	hystEC.setXYpos(PG_LEFT_PADD, 94);
@@ -1776,8 +1837,12 @@ Page* buildSecondAddSettPage()
 	static InputField hystecIn;
 	hystecIn.setXYpos(177, 90);
 	hystecIn.setText(EMPTY_STR);
+	hystecIn.setFloat();
+	hystecIn.setfLimits(0.05f, 0.5f);
+	hystecIn.setDelta(0.01f);
 	hystecIn.setSettingsId(EC_HYST);
-	hystecIn.setValue(g_data.getInt(PH_HYST));
+	hystecIn.setValue(g_data.getFloat(EC_HYST));
+	hystecIn.setCallback(saveInputFieldSetting, &hystecIn);
 
 	static Text interval;
 	interval.setXYpos(PG_LEFT_PADD, 124);
@@ -1786,32 +1851,64 @@ Page* buildSecondAddSettPage()
 	static InputField intervalIn;
 	intervalIn.setXYpos(177, 137);
 	intervalIn.setText(EMPTY_STR);
+	intervalIn.setLimits(0, 5);
 	intervalIn.setSettingsId(SOLUTIONS_INT);
 	intervalIn.setValue(g_data.getInt(SOLUTIONS_INT));
+	intervalIn.setCallback(saveInputFieldSetting, &intervalIn);
 
 	static Text range;
 	range.setXYpos(PG_LEFT_PADD, 174);
 	range.setText(AS2_RANGE);
 
 	static InputField phLo;
+	static InputField phHi;
 	phLo.setXYpos(54, 217);
 	phLo.setAlign(LEFT);
 	phLo.setText(TXT_PH);
+	phLo.setFloat();
+	//phLo.hardLimits();
+	phLo.setfLimits(1.0f, 10.0f);
+	phLo.setSettingsId(ALLOWED_PH_MIN);
+	phLo.setValue(g_data.getFloat(ALLOWED_PH_MIN));
+	//phLo.setCallback(checkHiField, &phLo, &phHi);
+	phLo.setCallback([=](void*){checkHiField(&phLo, &phHi);});
 
-	static InputField phHi;
 	phHi.setXYpos(125, 217);
 	phHi.setAlign(LEFT);
 	phHi.setText(TXT_DOTS);
+	phHi.setFloat();
+	//phHi.hardLimits();
+	phHi.setfLimits(1.0f, 10.0f);
+	phHi.setSettingsId(ALLOWED_PH_MAX);
+	phHi.setValue(g_data.getFloat(ALLOWED_PH_MAX));
+	//phHi.setCallback(checkLoField, &phHi, &phLo);
+	phHi.setCallback([=](void*){checkLoField(&phHi, &phLo);});
 
 	static InputField ecLo;
+	static InputField ecHi;
 	ecLo.setXYpos(54, 253);
 	ecLo.setAlign(LEFT);
 	ecLo.setText(TXT_EC);
+	ecLo.setFloat();
+	//ecLo.hardLimits();
+	ecLo.setfLimits(0.01f, 10.0f);
+	ecLo.setDelta(0.01f);
+	ecLo.setSettingsId(ALLOWED_EC_MIN);
+	ecLo.setValue(g_data.getFloat(ALLOWED_EC_MIN));
+	//ecLo.setCallback(checkHiField, &ecLo, &ecHi);
+	ecLo.setCallback([=](void*){checkHiField(&ecLo, &ecHi);});
 
-	static InputField ecHi;
 	ecHi.setXYpos(125, 253);
 	ecHi.setAlign(LEFT);
 	ecHi.setText(TXT_DOTS);
+	ecHi.setFloat();
+	//ecHi.hardLimits();
+	ecHi.setfLimits(0.01f, 10.0f);
+	ecHi.setDelta(0.01f);
+	ecHi.setSettingsId(ALLOWED_EC_MAX);
+	ecHi.setValue(g_data.getFloat(ALLOWED_EC_MAX));
+	//ecHi.setCallback(checkLoField, &ecHi, &ecLo);
+	ecHi.setCallback([=](void*){checkLoField(&ecHi, &ecLo);});
 
 	addSettPage.addItem(&hystPH);
 	addSettPage.addItem(&hystphIn);
