@@ -858,6 +858,7 @@ OutputField* g_tds;
 CircIndicator* g_light;
 CircIndicator* g_passvent;
 CircIndicator* g_vent;
+CircIndicator* g_pump;
 
 // small boxes
 SmallBox* g_Tap;
@@ -893,6 +894,7 @@ class Rig {
 			_led = false;
 			_passvent = false;
 			_vent = false;
+			_pumpison = false;
 			io.haltAll();
 			//Serial.println("halted...");
 		}
@@ -922,6 +924,11 @@ class Rig {
 		bool getPassVent()
 		{
 			return _passvent;
+		}
+
+		bool getPump()
+		{
+			return _mainpump;
 		}
 
 		void setMeasureWindow(bool window=true)
@@ -1481,6 +1488,7 @@ class Rig {
 
 	private:
 		bool _pumpison = false;
+		bool _mainpump = false;
 		bool _haltpump = false;
 		unsigned long _pumpMils = 0;
 		//static constexpr unsigned long _PUMP_TIMEOUT = 60000;
@@ -1519,7 +1527,7 @@ class Rig {
 			if (!_haltpump && _pumpison && millis() - _pumpMils > g_data.getInt(PUMP_TIMEOUT)) {
 				_haltpump = true;
 #ifdef APP_DEBUG
-				Serial.println("Main pump timed out");
+				Serial.println("H2O pump timed out");
 #endif
 			}
 
@@ -1538,6 +1546,8 @@ class Rig {
 			else {
 				io.driveOut(PWR_PG_PORT_G, io.getDigital(DIG_KEY2));
 			}
+
+			_mainpump = io.getOut(PWR_PG_PORT_G);
 		}
 
 		void _layer()
@@ -1749,6 +1759,8 @@ class App {
 				g_passvent->draw();
 				g_light->on(g_rig.getLed());
 				g_light->draw();
+				g_pump->on(g_rig.getPump());
+				g_pump->draw();
 
 				// bottom boxes
 				/* inputs */

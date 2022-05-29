@@ -4017,6 +4017,7 @@ Page* buildMainPage()
 
 	static CircIndicator pumpInd;
 	pumpInd.setText(EMPTY_STR);
+	g_pump = &pumpInd;
 
 	static SimpleBox placeh;
 	placeh.setWH(0, 0);
