@@ -1166,9 +1166,19 @@ class Rig {
 			}
 		}
 
+		// between a, b, c and ph pumping
+		int _sol_interval = 0;
+		bool _intervalFlag = false;
+
+		void _setSolInterval(int seconds)
+		{
+			_sol_interval = seconds * 1000;
+		}
+
 		void _updateSolutions()
 		{
 			int tmp = datetime.getHour();
+			_setSolInterval(g_data.getInt(SOLUTIONS_INT));
 
 			// allowed time interval
 			if (g_data.getInt(NORM_AL_TM_LO) <= tmp && tmp < g_data.getInt(NORM_AL_TM_HI)) {
@@ -1243,7 +1253,7 @@ class Rig {
 				ec_c = EC_C3;
 			}
 
-			// if EC more than what's set
+			// if EC more than what's set go to PH
 			if (g_data.getFloat(ec_set) - g_data.getFloat(EC_HYST) <= _lastEc) {
 				_prepareABC = false;
 				_preparePH = true;
@@ -1264,8 +1274,11 @@ class Rig {
 		unsigned long _pump_mils = 0;
 		enum {
 			A_ON,
+			WAIT_A,
 			B_ON,
-			C_ON
+			WAIT_B,
+			C_ON,
+			WAIT_C
 		} pumps = A_ON;
 
 		void _squirtABC()
@@ -1283,6 +1296,13 @@ class Rig {
 				}
 				if (millis() - _pump_mils > _pumpAseconds*1000) {
 					io.driveOut(PWR_PG_PORT_A, false);
+					pumps = WAIT_A;
+					_pump_mils = millis();
+				}
+			}
+
+			if (pumps == WAIT_A) {
+				if (millis() - _pump_mils > _sol_interval) {
 					pumps = B_ON;
 					_pump_mils = millis();
 				}
@@ -1294,6 +1314,13 @@ class Rig {
 				}
 				if (millis() - _pump_mils> _pumpBseconds*1000) {
 					io.driveOut(PWR_PG_PORT_B, false);
+					pumps = WAIT_B;
+					_pump_mils = millis();
+				}
+			}
+
+			if (pumps == WAIT_B) {
+				if (millis() - _pump_mils > _sol_interval) {
 					pumps = C_ON;
 					_pump_mils = millis();
 				}
@@ -1305,7 +1332,14 @@ class Rig {
 				}
 				if (millis() - _pump_mils> _pumpCseconds*1000) {
 					io.driveOut(PWR_PG_PORT_C, false);
+					pumps = WAIT_C;
+				}
+			}
+
+			if (pumps == WAIT_C) {
+				if (millis() - _pump_mils > _sol_interval) {
 					pumps = A_ON;
+					_pump_mils = millis();
 					_commenceABC = false;
 					_preparePH = true;
 				}
@@ -1491,7 +1525,12 @@ class Rig {
 		bool _mainpump = false;
 		bool _haltpump = false;
 		unsigned long _pumpMils = 0;
-		//static constexpr unsigned long _PUMP_TIMEOUT = 60000;
+		unsigned long _pump_timeout = 60000;
+
+		void _setPumpTimeOut(int minutes)
+		{
+			_pump_timeout = minutes * 60 * 1000;
+		}
 
 		void _deepwater()
 		{
@@ -1524,7 +1563,9 @@ class Rig {
 				_pumpMils = millis();
 			}
 
-			if (!_haltpump && _pumpison && millis() - _pumpMils > g_data.getInt(PUMP_TIMEOUT)) {
+			_setPumpTimeOut(g_data.getInt(PUMP_TIMEOUT));
+
+			if (!_haltpump && _pumpison && millis() - _pumpMils > _pump_timeout) {
 				_haltpump = true;
 #ifdef APP_DEBUG
 				Serial.println("H2O pump timed out");
@@ -1617,6 +1658,8 @@ Toggle* exlMotorTgl[MOTOR_NITEMS];
 StringText* gMainPageText;
 String gMainPageStr = String(scrStrings[MP_STRING]);
 
+bool saveSettings(void);
+
 class App {
 	private:
 		unsigned long _digMils = 0;
@@ -1659,10 +1702,6 @@ class App {
 
 		void init()
 		{
-#ifdef APP_TESTING
-			setMeasIntervalMinutes(5);
-#endif
-			setMeasIntervalMinutes(g_data.getInt(ADD_MEAS_INT));
 
 			resetCalibFlags();
 			switch (g_selected_lang) {
@@ -1700,6 +1739,7 @@ class App {
 		void update()
 		{
 
+			setMeasIntervalMinutes(g_data.getInt(ADD_MEAS_INT));
 			topBar.update();
 			datetime.update();
 			g_rig.update();
@@ -1711,6 +1751,7 @@ class App {
 			Serial.println(_initDone);
 			Serial.println();
 			*/
+
 			if (millis() - _measMils > _measInterval  || !_initDone) {
 				_measMils = millis();
 				g_rig.measureTime();
@@ -2111,6 +2152,8 @@ class App {
 				_cursor.draw(false);
 				callPage(pages[MAIN_PG]);
 				currItem = currPage->getCurrItemAt(_iterator);
+				saveSettings();
+				g_data.save();
 			}
 
 			_dbFlag = false;

@@ -1845,13 +1845,13 @@ Page* buildSecondAddSettPage()
 	hystecIn.setCallback(saveInputFieldSetting, &hystecIn);
 
 	static Text interval;
-	interval.setXYpos(PG_LEFT_PADD, 124);
+	interval.setXYpos(PG_LEFT_PADD, 129);
 	interval.setText(AS2_SOL_INT);
 
 	static InputField intervalIn;
 	intervalIn.setXYpos(177, 137);
 	intervalIn.setText(EMPTY_STR);
-	intervalIn.setLimits(0, 5);
+	intervalIn.setLimits(0, 60);
 	intervalIn.setSettingsId(SOLUTIONS_INT);
 	intervalIn.setValue(g_data.getInt(SOLUTIONS_INT));
 	intervalIn.setCallback(saveInputFieldSetting, &intervalIn);

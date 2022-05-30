@@ -324,7 +324,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// addit settings page 2
 	"pH hysteresis",
 	"EC hysteresis",
-	"Interval between solutions \npouring, minutes",
+	"Interval between solutions \npouring, seconds",
 	"Value range to deem correct:"
 
 	//end of strings

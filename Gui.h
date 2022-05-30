@@ -1611,11 +1611,11 @@ class HourLimits: public ScrObj {
 			_higher.adjustTextX(-2);
 			_lower.adjustTextX(-2);
 
-			_higher.setLimits(0, 23);
-			_lower.setLimits(0, 23);
+			_higher.setLimits(0, 24);
+			_lower.setLimits(0, 24);
 
-			_lower.setValue(8);
-			_higher.setValue(23);
+			//_lower.setValue(8);
+			//_higher.setValue(23);
 		}
 
 		void* getHigherPtr()
