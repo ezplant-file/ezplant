@@ -143,9 +143,12 @@ class InputOutput {
 	public:
 		bool update()
 		{
-			if (_pressed) {
+			if (_pressed || !digitalRead(EXPANDER_INT)) {
 				readDigital();
 				_pressed = false;
+#ifdef EXPANDERS_DEBUG
+				Serial.println("Прерывание от расширителя выводов");
+#endif
 			}
 
 			for (auto& i:_ui_keys) {
@@ -160,6 +163,18 @@ class InputOutput {
 		void ARDUINO_ISR_ATTR isr()
 		{
 			_pressed = true;
+			/*
+			try
+			{
+				readDigital();
+			}
+			catch(...)
+			{
+				Serial.print("wire end returned: ");
+				Serial.println(_wireError);
+				_wireError = 0;
+			}
+			*/
 		}
 
 		void initTdsPh()
@@ -210,7 +225,7 @@ class InputOutput {
 		void init()
 		{
 			// sensors
-			initMeters();
+			//initMeters();
 
 			// expander stuff
 			gpio[FIRST_EXPANDER].begin();
@@ -228,6 +243,8 @@ class InputOutput {
 			pinMode(PORT_H, OUTPUT);
 			pinMode(LED, OUTPUT);
 			pinMode(FAN, OUTPUT);
+
+			readDigital();
 		}
 
 		float getEC()
@@ -256,6 +273,8 @@ class InputOutput {
 			if (id < PWR_PG_PORT_F || id > PWR_PG_LIGHT)
 				return;
 
+			_out_states[id] = true;
+
 			switch (id) {
 				default: break;
 				case PWR_PG_PORT_F: analogWrite(PORT_F, pwm); break;
@@ -270,6 +289,8 @@ class InputOutput {
 		{
 			if (id < PWR_PG_PORT_F || id > PWR_PG_LIGHT)
 				return;
+
+			_out_states[id] = false;
 
 			switch (id) {
 				default: break;
@@ -427,9 +448,46 @@ class InputOutput {
 			return _ui_keys[UI_HOME];
 		}
 
+
 	private:
+		int _wireError = 0;
+
 		uint16_t _readExpanders()
 		{
+			/*
+			static constexpr int DATASIZE = 2;
+			char data[DATASIZE]{0};
+			Wire.beginTransmission(0x20);
+			Wire.requestFrom(0x20, 2);
+			static int i = 0;
+			while (Wire.available()) {
+				data[i] = Wire.read();
+				i++;
+				i %= DATASIZE;
+			}
+			uint16_t firstExpData= *((uint16_t*)data);
+
+			//Wire.beginTransmission(0x21);
+			Wire.requestFrom(0x21, 2);
+
+			while (Wire.available()) {
+				data[i] = Wire.read();
+				i++;
+				i %= DATASIZE;
+			}
+
+			_wireError = Wire.endTransmission();
+
+
+			if (!_wireError) {
+				return firstExpData;
+			}
+			else {
+				Serial.println("Wire error");
+				throw std::runtime_error("wire error");
+			}
+			*/
+
 			gpio[SECOND_EXPANDER].portRead(BOTH_PORTS);
 			return gpio[FIRST_EXPANDER].portRead(BOTH_PORTS);
 		}

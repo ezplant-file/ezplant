@@ -3,10 +3,11 @@
 #include "freertos/task.h"
 //#include "esp_task_wdt.h"
 
-//#define HEAP_DEBUG
+#define HEAP_DEBUG
 //#define STACK_DEBUG
-#define RIG_DEBUG
-#define SENSOR_DEBUG
+//#define RIG_DEBUG
+//#define SENSOR_DEBUG
+#define EXPANDERS_DEBUG
 #define APP_TESTING
 #define APP_DEBUG
 
@@ -229,6 +230,7 @@ void getCallback()
 		callPage(pages[WIFI_SETT_PG]);
 	}
 
+
 	connectWithCred();
 }
 
@@ -369,6 +371,9 @@ void gChangeWifi(void* arg)
 
 void callPage(void* page_ptr)
 {
+
+	io.readDigital();
+
 	if (page_ptr == nullptr)
 		return;
 
@@ -409,8 +414,17 @@ void callPage(void* page_ptr)
 		g_rig.start();
 	}
 
-	if (currPage == pages[ADDSETT_PG]) {
+	if (currPage == pages[ADDSETT_PG] || currPage == pages[ADDSETT2_PG]) {
 		g_data.save();
+	}
+
+	if (currPage == pages[PWR_DIAG_PG]) {
+		g_rig.halt();
+		g_rig.start();
+		//io.readDigital();
+#ifdef APP_DEBUG
+		Serial.println("Diag page");
+#endif
 	}
 
 	currPage->freeRes();
@@ -438,8 +452,8 @@ void callPage(void* page_ptr)
 	if (currPage == pages[SETT_PG]) {
 		saveSettings();
 	}
-}
 
+}
 
 // wifi on/off checkbox
 void wifiChCallback(void* arg)
@@ -1533,7 +1547,6 @@ Page* buildLangPage()
 	gDimseconds.setLimits(LOWER_DIMAFTER, HIGHER_DIMAFTER);
 	gDimseconds.setText(TXT_SEC);
 	gDimseconds.setCallback(gDimAfter);
-	gDimseconds.setLimits(5, 300);
 	gDimseconds.setColors(
 			greyscaleColor(FONT_COLOR),
 			greyscaleColor(GR_BTN_BG_COLOR)
@@ -4363,6 +4376,7 @@ void setup(void)
 #endif
 	}
 
+	// load planting settings (TODO: consolidate all settings)
 	g_data.load();
 
 	// connect to wifi or create AP

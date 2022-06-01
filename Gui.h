@@ -2534,6 +2534,7 @@ class SmallBox: public ScrObj {
 	public:
 		virtual void draw() override
 		{
+			/*
 			if (_blink) {
 				if (_image->isVisible() && !_blinking) {
 					_blinking = true;
@@ -2555,6 +2556,7 @@ class SmallBox: public ScrObj {
 					_blinkMils = millis();
 				}
 			}
+			*/
 			if (!_invalid || !_isVisible) {
 				return;
 			}
@@ -2578,6 +2580,7 @@ class SmallBox: public ScrObj {
 				_check->draw();
 			}
 
+			freeRes();
 			_invalid = false;
 		}
 
