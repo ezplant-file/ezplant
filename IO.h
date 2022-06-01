@@ -322,6 +322,9 @@ class InputOutput {
 			if (id < 0)
 				return;
 
+			if (state == _out_states[id])
+				return;
+
 			_out_states[id] = state;
 
 			switch (id) {

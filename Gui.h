@@ -114,7 +114,59 @@ lang_t g_selected_lang = RU_LANG;
 // pointer to current language strings
 const char** scrStrings = ruStrings;
 
-
+typedef enum {
+	MAIN_PG,
+	MENU_PG,
+	SETT_PG,
+	LANG_PG,
+	//FONT_PG,
+	TEST_PG,
+	WIFI_PG,
+	WIFI_SETT_PG,
+	TIME_PG,
+	// common sensor settings
+	CAL_SETT_PG,
+	SENS_FAIL_PG,
+	// ph
+	CAL_PH1_PG,
+	CAL_PH2_PG,
+	CAL_PH3_PG,
+	CAL_PH4_PG,
+	CAL_PH5_PG,
+	// tds
+	CAL_TDS1_PG,
+	CAL_TDS2_PG,
+	CAL_TDS3_PG,
+	CAL_TDS4_PG,
+	CAL_TDS5_PG,
+	// diag
+	DIAG_PG,
+	SENS_DIAG_PG,
+	TDS_DIAG_PG,
+	PH_DIAG_PG,
+	ADC_DIAG_PG,
+	DIG_DIAG_PG,
+	PWR_DIAG_PG,
+	FIRST_PG,
+	STAGE1_PG,
+	STAGE2_PG,
+	STAGE3_PG,
+	STAGE4_PG,
+	STAGE5_PG,
+	STAGE6_PG,
+	STAGE7_PG,
+	STAGE8_PG,
+	STAGE9_PG,
+	// stage 2 alt
+	STAGE92_PG,
+	STAGE82_PG,
+	STAGE83_PG,
+	STAGE84_PG,
+	//LSTAGES,
+	ADDSETT_PG,
+	ADDSETT2_PG,
+	NPAGES
+} pages_t;
 
 // fonts
 typedef enum {
@@ -575,6 +627,61 @@ class GreyTextButton: public ScrObj {
 		TFT_eSprite* _btnSpr = nullptr;
 };
 
+class NoSpriteText: public ScrObj {
+	public:
+		NoSpriteText(): ScrObj(0, TEXT_HEIGHT, false)
+		{
+		}
+
+		virtual void freeRes() override
+		{
+		}
+
+		virtual void draw() override
+		{
+			if (_index == EMPTY_STR)
+				return;
+
+			if (!_invalid || !_isVisible)
+				return;
+
+			tft.loadFont(FONTS[_fontIndex]);
+			tft.setTextColor(_fg, _bg);
+			tft.setCursor(_x, _y);
+			tft.print(scrStrings[_index]);
+			tft.unloadFont();
+			_invalid = false;
+		}
+
+		virtual void prepare() override
+		{
+		}
+
+		virtual void erase() override
+		{
+		}
+
+		void setColors(uint16_t fg, uint16_t bg)
+		{
+			_fg = fg;
+			_bg = bg;
+		}
+
+		virtual void setText(dispStrings_t index) override
+		{
+			if (index > END_OF_STRINGS) {
+				return;
+			}
+
+			_index = index;
+			_invalid = true;
+		}
+
+	private:
+		uint16_t _fg = FONT_COL_565;
+		uint16_t _bg = TFT_WHITE;
+};
+
 
 // print text to sprite
 class Text: public ScrObj {
@@ -678,7 +785,7 @@ class Text: public ScrObj {
 
 			std::string longestAlone{longest, longestSize};
 
-			_w = _txtSp->textWidth(longestAlone.c_str()) + _paddingX; //*2;
+			_w = _txtSp->textWidth(longestAlone.c_str()) + _paddingX;
 
 			/*
 #ifdef APP_DEBUG
@@ -698,7 +805,6 @@ class Text: public ScrObj {
 #endif
 			_txtSp->fillSprite(TFT_TRANSPARENT);
 			_txtSp->setTextColor(_fg, _bg);
-			//_txtSp->print(_text);
 			_txtSp->print(scrStrings[_index]);
 			_txtSp->unloadFont();
 		}
@@ -2656,7 +2762,7 @@ class SmallBox: public ScrObj {
 			invalidate();
 		}
 
-		void setText(Text* text)
+		void setText(NoSpriteText* text)
 		{
 			_text = text;
 			_text->setXYpos(_x+4, _y+6);
@@ -2699,7 +2805,7 @@ class SmallBox: public ScrObj {
 		uint16_t _bg = COL_GREY_DC_565;
 		uint16_t _red = COL_RED_EMPTY_565;
 		bool _empty = false;
-		Text* _text = nullptr;
+		NoSpriteText* _text = nullptr;
 		CircIndicator* _check = nullptr;
 		Image* _image = nullptr;
 		Image* _imgEmp = nullptr;

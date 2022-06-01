@@ -3,12 +3,12 @@
 #include "freertos/task.h"
 //#include "esp_task_wdt.h"
 
-#define HEAP_DEBUG
+//#define HEAP_DEBUG
 //#define STACK_DEBUG
-//#define RIG_DEBUG
+#define RIG_DEBUG
 //#define SENSOR_DEBUG
-#define EXPANDERS_DEBUG
-#define APP_TESTING
+//#define EXPANDERS_DEBUG
+//#define APP_TESTING
 #define APP_DEBUG
 
 #define TASKS
@@ -3983,7 +3983,6 @@ Page* buildMainPage()
 	humInd.setColors(0, COL_GREY_DC_565);
 	humInd.setText(EMPTY_STR);
 	humInd.setWidth(TWO_CHR);
-	//humInd.trim();
 	humInd.setWH(22, 13);
 	humInd.adjustX(3);
 	g_hum = &humInd;
@@ -3997,7 +3996,6 @@ Page* buildMainPage()
 	boxes[B_HUM].addItem(&hum);
 	boxes[B_HUM].addItem(&humInd);
 	boxes[B_HUM].addItem(&percent);
-	//humInd.adjustX(13);
 
 	/* temperature box */
 	static Image tem;
@@ -4009,7 +4007,6 @@ Page* buildMainPage()
 	temInd.setText(EMPTY_STR);
 	temInd.noBg();
 	temInd.adjustX(-6);
-	//temInd.trim();
 	temInd.setFloat();
 	temInd.setWH(33, 13);
 	g_tem = &temInd;
@@ -4022,7 +4019,6 @@ Page* buildMainPage()
 	boxes[B_TEM].addItem(&tem);
 	boxes[B_TEM].addItem(&temInd);
 	boxes[B_TEM].addItem(&degree);
-	//temInd.adjustX(7);
 
 	/* pump box */
 	static Image pump;
@@ -4049,7 +4045,6 @@ Page* buildMainPage()
 
 	int btboxes_height = 24;
 
-	//static CompositeBox bottomBoxes[NBTBOXES];
 	static SmallBox bottomBoxes[NBTBOXES];
 
 	bottomBoxes[TAP].setWH(41, btboxes_height);
@@ -4065,9 +4060,14 @@ Page* buildMainPage()
 		x += bottomBoxes[j?j-1:0].getW()*(j?1:0);
 		i.setXYpos(FP_LEFT_PADDING+x+gap*j, grid_start+(boxes[0].getH()+gap)*2);
 		i.invalidate();
-		mainPage.addItem(&i);
+		//mainPage.addItem(&i);
 		j++;
 	}
+	mainPage.addItem(&bottomBoxes[TAP]);
+	mainPage.addItem(&bottomBoxes[A]);
+	mainPage.addItem(&bottomBoxes[B]);
+	mainPage.addItem(&bottomBoxes[C]);
+	mainPage.addItem(&bottomBoxes[PH]);
 
 	/* tap box */
 	static Image tapImg;
@@ -4086,7 +4086,7 @@ Page* buildMainPage()
 	g_Tap = &bottomBoxes[TAP];
 
 	/* A box */
-	static Text aTxt;
+	static NoSpriteText aTxt;
 	aTxt.setFont(BOLDFONT);
 	aTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	aTxt.setText(TXT_A);
@@ -4097,11 +4097,10 @@ Page* buildMainPage()
 
 	bottomBoxes[A].setText(&aTxt);
 	bottomBoxes[A].setCheck(&aInd);
-	//bottomBoxes[A].adjust();
 	g_A = &bottomBoxes[A];
 
 	/* B box */
-	static Text bTxt;
+	static NoSpriteText bTxt;
 	bTxt.setFont(BOLDFONT);
 	bTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	bTxt.setText(TXT_B);
@@ -4112,11 +4111,10 @@ Page* buildMainPage()
 
 	bottomBoxes[B].setText(&bTxt);
 	bottomBoxes[B].setCheck(&bInd);
-	//bottomBoxes[B].adjust();
 	g_B = &bottomBoxes[B];
 
 	/* C box */
-	static Text cTxt;
+	static NoSpriteText cTxt;
 	cTxt.setFont(BOLDFONT);
 	cTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	cTxt.setText(TXT_C);
@@ -4127,11 +4125,10 @@ Page* buildMainPage()
 
 	bottomBoxes[C].setText(&cTxt);
 	bottomBoxes[C].setCheck(&cInd);
-	//bottomBoxes[C].adjust();
 	g_C = &bottomBoxes[C];
 
 	/* pH box */
-	static Text phTxt;
+	static NoSpriteText phTxt;
 	phTxt.setFont(BOLDFONT);
 	phTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	phTxt.setText(TXT_PH);
@@ -4155,6 +4152,7 @@ Page* buildMainPage()
 	phUp.setCheck(&phUpInd);
 	phUp.setImages(&phUpImg, &phUpImgEmp);
 	phUp.adjustCheckX(1);
+	phUp.invalidate();
 	g_ph_up = &phUp;
 
 	static CircIndicator phDwInd;
@@ -4174,6 +4172,7 @@ Page* buildMainPage()
 	phDw.setCheck(&phDwInd);
 	phDw.setImages(&phDwImg, &phDwImgEmp);
 	phDw.adjustCheckX(0);
+	phDw.invalidate();
 	g_ph_dw = &phDw;
 
 	mainPage.addItem(&phUp);
@@ -4203,7 +4202,7 @@ void gSetBacklight(void* arg)
 	analogWrite(LED_PIN, gBrightness.getValue());
 }
 
-#ifdef APP_DEBUG
+#ifdef STACK_DEBUG
 #define STACK_CHECK_INTERVAL 10000
 unsigned long oldMillis;
 #endif
@@ -4423,7 +4422,7 @@ void setup(void)
 	forward.setCircle();
 	forward.neverHide();
 
-#ifdef APP_DEBUG
+#ifdef STACK_DEBUG
 	oldMillis = millis();
 #endif
 

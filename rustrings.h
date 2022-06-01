@@ -23,7 +23,7 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"...",
 	// main menu strings
 	"Меню",
-	"Новая посадка",
+	"Посадка",
 	"Онлайн мониторинг",
 	"Настройки",
 	"Диагностика оборудования",
