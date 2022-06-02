@@ -1,6 +1,10 @@
 #ifndef __APP_H__
 #define __APP_H__
 
+// print object address
+#define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
+#define DEBUG_PRINT_HEX(A) Serial.println((unsigned long long) (A), HEX)
+
 #include <ctime>
 #include <atomic>
 #include "Gui.h"
@@ -19,10 +23,6 @@ WebServer server(80);
 #include <ESP32Ping.h>
 
 /*--------------------------------------------------------------------------------------------*/
-
-// print object address
-#define DEBUG_PRINT(A) Serial.println((unsigned long long) (A))
-#define DEBUG_PRINT_HEX(A) Serial.println((unsigned long long) (A), HEX)
 
 // debounce stuff
 #define CURSOR_TIMER 500

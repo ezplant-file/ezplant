@@ -5,9 +5,9 @@
 
 //#define HEAP_DEBUG
 //#define STACK_DEBUG
-#define RIG_DEBUG
+//#define RIG_DEBUG
 //#define SENSOR_DEBUG
-//#define EXPANDERS_DEBUG
+#define EXPANDERS_DEBUG
 //#define APP_TESTING
 #define APP_DEBUG
 

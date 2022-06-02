@@ -230,9 +230,9 @@ class Rig {
 		bool _prepareABC = false;
 		bool _commencePH = false;
 		bool _preparePH = false;
-		int _pumpAseconds = 0;
-		int _pumpBseconds = 0;
-		int _pumpCseconds = 0;
+		float _pumpAseconds = 0;
+		float _pumpBseconds = 0;
+		float _pumpCseconds = 0;
 		int _pumpPHseconds = 0;
 
 		static constexpr unsigned long _begin_interval = 10000;
@@ -268,12 +268,22 @@ class Rig {
 			_acid = g_data.getInt(ACID_ON);
 			_ec = g_data.getInt(EC_ON);
 
+			if (!_acid && !_ec) {
+#ifdef RIG_DEBUG
+				Serial.println("Нормализация не установлена пользователем");
+#endif
+				_resetMeasure();
+				return;
+			}
+
 			if (!_metersBusy) {
-				io.initMeters();
 #ifdef RIG_DEBUG
 				gMesState.setValue(1);
 				Serial.println("Инициализация датчиков ph и tds");
+				Serial.print("День посадки: ");
+				Serial.println(datetime.getDays());
 #endif
+				io.initMeters();
 				_begin_mils = millis();
 				_metersBusy = true;
 
@@ -284,26 +294,17 @@ class Rig {
 					gMesState.setValue(0);
 #endif
 					_resetMeasure();
-					_localMeas = true;
+					return;
 				}
 
-				if (!_acid && !_ec) {
-#ifdef RIG_DEBUG
-					Serial.println("Нормализация не установлена в пользователем");
-					gMesState.setValue(0);
-#endif
-					_resetMeasure();
-					_localMeas = true;
-				}
 #ifdef RIG_DEBUG
 				else if (!_acid) {
-					Serial.println("Нормализация pH не установлена в пользователем");
+					Serial.println("Нормализация pH не установлена пользователем");
 				}
 				else if (!_ec) {
-					Serial.println("Нормализация EC не установлена в пользователем");
+					Serial.println("Нормализация EC не установлена пользователем");
 				}
 #endif
-
 			}
 
 			if (millis() - _begin_mils > _begin_interval && !_localMeas) {
@@ -325,8 +326,10 @@ class Rig {
 				_lastPh = io.getPH();
 				_lastEc = io.getEC();
 
+				io.reinit();
 #ifdef RIG_DEBUG
 				Serial.println("Показания сняты");
+				Serial.println();
 				gMesState.setValue(2);
 #endif
 				_resetMeasure();
@@ -342,7 +345,6 @@ class Rig {
 				else
 					gMesState.setValue(0);
 #endif
-
 			}
 		}
 
@@ -388,13 +390,6 @@ class Rig {
 
 			if (!_ec)
 				return;
-			/*
-			if (!g_data.getInt(EC_ON)) {
-				_prepareABC = false;
-				Serial.println("");
-				return;
-			}
-			*/
 
 			// return if one of the tanks is empty
 			bool* dig = io.getDigitalValues();
@@ -449,22 +444,40 @@ class Rig {
 #endif
 			}
 
+			float set_ec = g_data.getFloat(ec_set);
+			float hyst_ec = g_data.getFloat(EC_HYST);
+			float target_ec = set_ec - hyst_ec;
+
+#ifdef RIG_DEBUG
+			Serial.print("Целевой ЕС: ");
+			Serial.println(set_ec);
+			Serial.print("Гистерезис ЕС: ");
+			Serial.println(hyst_ec);
+			Serial.print("Целевой ЕС - гистерезис: ");
+			Serial.println(set_ec - hyst_ec);
+			Serial.print("Текущий: ");
+			Serial.println(_lastEc);
+			Serial.println();
+#endif
+
 			// if EC more than what's set go to PH
-			if (g_data.getFloat(ec_set) - g_data.getFloat(EC_HYST) <= _lastEc) {
+			if (_lastEc >= target_ec) {
+#ifdef RIG_DEBUG
+				Serial.print("Текущие показания EC в пределах нормы");
+#endif
 				_prepareABC = false;
 				_preparePH = true;
 				return;
 			}
 
 			_commenceABC = true;;
+
 			//squirt amount set in settings
 			_pumpAseconds = g_data.getFloat(ec_a) * pumptime;
 			_pumpBseconds = g_data.getFloat(ec_b) * pumptime;
 			_pumpCseconds = g_data.getFloat(ec_c) * pumptime;
 			_pump_mils = millis();
 			_prepareABC = false;
-
-			//Serial.println("ABC updated");
 		}
 
 		unsigned long _pump_mils = 0;
@@ -489,16 +502,15 @@ class Rig {
 					Serial.println("Резервуар A");
 					gMesState.setValue(3);
 #endif
-
 					io.driveOut(pumpA, true);
 				}
 				if (millis() - _pump_mils > _pumpAseconds*1000) {
-
 #ifdef RIG_DEBUG
+					unsigned long timeA = millis() - _pump_mils;
 					Serial.print("Установка времени работы насоса A, сек:");
-					Serial.println(_pumpAseconds);
+					Serial.println(_pumpAseconds, 1);
 					Serial.print("Время работы насоса A, мс: ");
-					Serial.println(millis() - _pump_mils);
+					Serial.println(timeA);
 #endif
 					io.driveOut(pumpA, false);
 					pumps = WAIT_A;
@@ -522,10 +534,11 @@ class Rig {
 				}
 				if (millis() - _pump_mils > _pumpBseconds*1000) {
 #ifdef RIG_DEBUG
+					unsigned long timeB = millis() - _pump_mils;
 					Serial.print("Установка времени работы насоса B, сек:");
-					Serial.println(_pumpBseconds);
+					Serial.println(_pumpBseconds, 1);
 					Serial.print("Время работы насоса B, мс: ");
-					Serial.println(millis() - _pump_mils);
+					Serial.println(timeB);
 #endif
 					io.driveOut(pumpB, false);
 					pumps = WAIT_B;
@@ -548,12 +561,12 @@ class Rig {
 					io.driveOut(pumpC, true);
 				}
 				if (millis() - _pump_mils> _pumpCseconds*1000) {
-
 #ifdef RIG_DEBUG
+					unsigned long timeC = millis() - _pump_mils;
 					Serial.print("Установка времени работы насоса C, сек:");
-					Serial.println(_pumpCseconds);
+					Serial.println(_pumpCseconds, 1);
 					Serial.print("Время работы насоса C, мс: ");
-					Serial.println(millis() - _pump_mils);
+					Serial.println(timeC);
 #endif
 					io.driveOut(pumpC, false);
 					pumps = WAIT_C;
@@ -568,7 +581,6 @@ class Rig {
 					_preparePH = true;
 				}
 			}
-			//Serial.println("ABC squirted");
 		}
 
 		enum {
@@ -586,31 +598,12 @@ class Rig {
 			if (!_acid)
 				return;
 
-			/*
-			if (io.noPh()) {
-				_preparePH = false;
-#ifdef RIG_DEBUG
-				gMesState.setValue(0);
-#endif
-				return;
-			}
-			*/
-
-
-			/*
-			if (!g_data.getInt(ACID_ON)) {
-				_preparePH = false;
-#ifdef RIG_DEBUG
-				gMesState.setValue(0);
-				Serial.println("PH not set in settings");
-#endif
-				return;
-			}
-			*/
-
 
 			rig_settings_t ph_set;
 			int today = datetime.getDays();
+#ifdef RIG_DEBUG
+			Serial.println();
+#endif
 
 			if (today < g_data.getInt(GR_CYCL_1_DAYS)) {
 #ifdef RIG_DEBUG
@@ -633,27 +626,32 @@ class Rig {
 				ph_set = ACID_3;
 			}
 
-			/*
-			Serial.println("PH - HYST: ");
-			Serial.println(g_data.getFloat(ph_set) - g_data.getFloat(PH_HYST), 1);
-			Serial.print("Last PH: ");
-			Serial.println(_lastPh, 1);
-			*/
-
 			float ph = g_data.getFloat(ph_set);
 			float ph_hyst = g_data.getFloat(PH_HYST);
 
 			// if PH is less
-			if (ph - ph_hyst > _lastPh) {
+			float loLim = ph - ph_hyst;
+			float hiLim = ph + ph_hyst;
+			if (loLim > _lastPh) {
 #ifdef RIG_DEBUG
-				Serial.println("pH низкий");
+				Serial.print("pH низкий: ");
+				Serial.println(_lastPh);
+				Serial.print("Целевой: ");
+				Serial.println(ph);
+				Serial.print("Целевой - гистерезис: ");
+				Serial.println(loLim, 1);
 #endif
 				_ph_state = PH_UP;
 				_commencePH = true;
 			}
 			else if (ph + ph_hyst < _lastPh) {
 #ifdef RIG_DEBUG
-				Serial.println("pH высокий");
+				Serial.print("pH высокий: ");
+				Serial.println(_lastPh);
+				Serial.print("Целевой pH: ");
+				Serial.println(ph);
+				Serial.print("Целевой pH + гистерезис: ");
+				Serial.println(hiLim, 1);
 #endif
 				_ph_state = PH_DW;
 				_commencePH = true;
@@ -661,6 +659,12 @@ class Rig {
 			else {
 #ifdef RIG_DEBUG
 				Serial.println("pH в пределах установок");
+				Serial.print("Целевой pH: ");
+				Serial.println(ph);
+				Serial.print("Целевой pH - гистерезис: ");
+				Serial.println(loLim, 1);
+				Serial.print("Целевой pH + гистерезис: ");
+				Serial.println(hiLim, 1);
 				gMesState.setValue(0);
 #endif
 				_ph_state = NO_PH;
@@ -704,10 +708,11 @@ class Rig {
 				if (millis() - _pump_mils > _pumpPHseconds*1000) {
 
 #ifdef RIG_DEBUG
+					unsigned long timePH = millis() - _pump_mils;
 					Serial.print("Установка времени работы насоса PH_UP, сек:");
 					Serial.println(_pumpPHseconds);
 					Serial.print("Время работы насоса PH_UP, мс: ");
-					Serial.println(millis() - _pump_mils);
+					Serial.println(timePH);
 #endif
 					io.driveOut(PWR_PG_PORT_D, false);
 					_ph_state = NO_PH;
@@ -727,7 +732,6 @@ class Rig {
 					return;
 				}
 				if (!io.getOut(phDwPump)) {
-					// TODO: remove in prod
 #ifdef RIG_DEBUG
 					gMesState.setValue(4);
 					Serial.println("Нормализуем pH");
@@ -741,6 +745,7 @@ class Rig {
 					Serial.println(_pumpPHseconds);
 					Serial.print("Время работы насоса PH_DOWN, мс: ");
 					Serial.println(millis() - _pump_mils);
+					Serial.println();
 #endif
 					io.driveOut(phDwPump, false);
 					_ph_state = NO_PH;
@@ -749,17 +754,7 @@ class Rig {
 #endif
 					_commencePH = false;
 				}
-
 			}
-			/*
-			else if (_ph_state == NO_PH) {
-#ifdef RIG_DEBUG
-				gMesState.setValue(0);
-#endif
-				_commencePH = false;
-				return;
-			}
-			*/
 		}
 
 		void _updateRigType()
@@ -843,7 +838,6 @@ class Rig {
 
 			if (!_rigInitDone)
 				return;
-			// TODO: H2O pump time limit
 			// H2O pump
 			if (!_haltpump) {
 				if (!io.getDigital(DIG_KEY3) && !_measuretime) {

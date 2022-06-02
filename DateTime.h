@@ -77,7 +77,7 @@ class DateTime: public ScrObj {
 
 		int getDays()
 		{
-			return _timeinfo.tm_yday - _startday;
+			return _timeinfo.tm_yday - _startday + 1;
 		}
 
 		void setStartDay()

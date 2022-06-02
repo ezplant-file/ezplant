@@ -222,11 +222,25 @@ class InputOutput {
 			return _no_sht;
 		}
 
+		void reinit()
+		{
+#ifdef EXPANDERS_DEBUG
+			Serial.println("РеИнициализация расширителя");
+#endif
+			// expander stuff
+			gpio[FIRST_EXPANDER].begin();
+			gpio[SECOND_EXPANDER].begin();
+			gpio[FIRST_EXPANDER].portMode(BOTH_PORTS, pinsAll(INPUT));
+			gpio[SECOND_EXPANDER].portMode(SECOND_PORT, pinsAll(INPUT));
+			gpio[SECOND_EXPANDER].portMode(FIRST_PORT, pinsAll(OUTPUT));
+			gpio[SECOND_EXPANDER].portWrite(FIRST_PORT, pinsAll(LOW));
+		}
+
 		void init()
 		{
-			// sensors
-			//initMeters();
-
+#ifdef EXPANDERS_DEBUG
+			Serial.println("Инициализация расширителя");
+#endif
 			// expander stuff
 			gpio[FIRST_EXPANDER].begin();
 			gpio[SECOND_EXPANDER].begin();
@@ -244,6 +258,7 @@ class InputOutput {
 			pinMode(LED, OUTPUT);
 			pinMode(FAN, OUTPUT);
 
+			// update data in esp memory
 			readDigital();
 		}
 
@@ -319,11 +334,32 @@ class InputOutput {
 
 		void driveOut(int id, bool state)
 		{
-			if (id < 0)
+			if (id < 0) {
+#ifdef EXPANDERS_DEBUG
+				Serial.print("Неверный вывод");
+#endif
 				return;
+			}
 
-			if (state == _out_states[id])
+			if (state == _out_states[id]) {
 				return;
+			}
+			else {
+#ifdef EXPANDERS_DEBUG
+				Serial.println();
+				switch (id) {
+					default: Serial.println("Не вывод расширителя"); break;
+					case PWR_PG_PORT_A: Serial.println("Вывод A."); break;
+					case PWR_PG_PORT_B: Serial.println("Вывод B."); break;
+					case PWR_PG_PORT_C: Serial.println("Вывод C."); break;
+					case PWR_PG_PORT_D: Serial.println("Вывод D."); break;
+					case PWR_PG_PORT_E: Serial.println("Вывод E."); break;
+				}
+
+				Serial.print("Cостояние: ");
+				Serial.println(state);
+#endif
+			}
 
 			_out_states[id] = state;
 
@@ -335,6 +371,9 @@ class InputOutput {
 				case PWR_PG_PORT_D:
 				case PWR_PG_PORT_E:
 					gpio[SECOND_EXPANDER].digitalWrite(id, state);
+#ifdef EXPANDERS_DEBUG
+					Serial.println("Данные расширителю отправлены");
+#endif
 					break;
 				case PWR_PG_PORT_F:
 					digitalWrite(PORT_F, state);
