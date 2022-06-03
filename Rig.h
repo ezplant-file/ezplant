@@ -326,7 +326,7 @@ class Rig {
 				_lastPh = io.getPH();
 				_lastEc = io.getEC();
 
-				io.reinit();
+				//io.reinit();
 #ifdef RIG_DEBUG
 				Serial.println("Показания сняты");
 				Serial.println();
