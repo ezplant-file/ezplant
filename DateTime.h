@@ -14,7 +14,6 @@ extern Page* currPage;
 #define RTC_CHECK_INTERVAL 60000
 #define USER_INPUT_SETTLE 500
 
-std::atomic<bool> g_sync_succ;
 std::atomic<int8_t> g_utc;
 
 extern std::atomic<bool> g_ping_success;
@@ -44,7 +43,7 @@ class DateTime: public ScrObj {
 
 		void init()
 		{
-			g_sync_succ = false;
+			_sync_succ = false;
 			getI2Ctime();
 			if (_sync) {
 				syncNTP();
@@ -52,6 +51,7 @@ class DateTime: public ScrObj {
 		}
 
 	private:
+		std::atomic<bool> _sync_succ;
 		InputField _visible[N_DATETIME_VISIBLE];
 		Text _fieldsTitle;
 		bool _sync = false;
@@ -105,9 +105,13 @@ class DateTime: public ScrObj {
 			}
 
 			if (_userInputSettled && _sync) {
-				syncNTP();
-				prepare();
-				invalidate();
+
+				// notify
+
+				/***************/
+				//syncNTP();
+				//prepare();
+				//invalidate();
 				_userInputSettled = false;
 				_timeSynced = true;
 			}
