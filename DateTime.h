@@ -1,5 +1,11 @@
 #ifndef __DATETIME_H__
 #define __DATETIME_H__
+
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <condition_variable>
+
 #include "Gui.h"
 // TODO: always get time from i2c, sync i2c once per hour...
 
@@ -28,6 +34,7 @@ enum {
 	N_DATETIME_VISIBLE
 };
 
+typedef std::unique_lock<std::mutex> lock_t;
 
 class DateTime: public ScrObj {
 	public:
@@ -43,6 +50,7 @@ class DateTime: public ScrObj {
 
 		void init()
 		{
+			timeTread = std::thread(std::bind(&DateTime::_updateTime, this));
 			_sync_succ = false;
 			getI2Ctime();
 			if (_sync) {
@@ -51,7 +59,6 @@ class DateTime: public ScrObj {
 		}
 
 	private:
-		std::atomic<bool> _sync_succ;
 		InputField _visible[N_DATETIME_VISIBLE];
 		Text _fieldsTitle;
 		bool _sync = false;
@@ -63,6 +70,24 @@ class DateTime: public ScrObj {
 		unsigned long _userInputTimestamp = 0;
 		int _count = 0;
 		int _startday = 0;
+
+		std::atomic<bool> _sync_succ;
+		std::thread timeTread;
+		std::mutex timeMutex;
+		std::condition_variable conditionVar;
+		static constexpr int UPDATE_TIMEOUT = 60;
+
+		void _updateTime()
+		{
+			//std::unique_lock<std::mutex> lock(timeMutex);
+			lock_t lock(timeMutex);
+			conditionVar.wait(lock);
+			for (;;) {
+				syncNTP();
+				conditionVar.wait_for(lock, std::chrono::minutes(UPDATE_TIMEOUT));
+			}
+		}
+
 	public:
 
 		int getHour()
@@ -107,6 +132,7 @@ class DateTime: public ScrObj {
 			if (_userInputSettled && _sync) {
 
 				// notify
+				conditionVar.notify_one();
 
 				/***************/
 				//syncNTP();
@@ -116,42 +142,21 @@ class DateTime: public ScrObj {
 				_timeSynced = true;
 			}
 
-			if (g_sync_succ) {
+			if (_sync_succ) {
 				invalidate();
 				prepare();
-				g_sync_succ = false;
+				_sync_succ = false;
 			}
+
 
 			if (millis() - _rtcMils > RTC_CHECK_INTERVAL) {
 				_rtcMils = millis();
 
-				/*****
-
-				Serial.print("now: ");
-				time_t now = time(0);
-				Serial.println(now);
-				struct tm* date = localtime(&now);
-				Serial.print("y day: ");
-				Serial.println(date->tm_yday);
-
-				*****/
-
-				if (_sync && _count == 0) {
-					syncNTP();
-					setI2Ctime();
-				}
-
-				_count++;
-				if (_count == 60) {
-					_count = 0;
-				}
-
-
 				getI2Ctime();
 
 				if (currPage == pages[TIME_PG]) {
-					prepare();
 					invalidate();
+					prepare();
 				}
 			}
 		}
@@ -211,8 +216,8 @@ class DateTime: public ScrObj {
 			_sync = sync;
 
 			if (_sync) {
-				// TODO: add wait animation
-				syncNTP();
+				//syncNTP();
+				conditionVar.notify_one();
 			}
 			else {
 				getI2Ctime();
@@ -246,15 +251,19 @@ class DateTime: public ScrObj {
 
 		void getI2Ctime()
 		{
+			//lock_t lock(timeMutex);
 			time_t time;
 			time = rtc.gettimeUnix();
 			struct tm *tmp = localtime(&time);
 			_timeinfo = *tmp;
+			//lock.unlock();
 		}
 
 		void setI2Ctime()
 		{
+			//lock_t lock(timeMutex);
 			rtc.settimeUnix(mktime(&_timeinfo));
+			//lock.unlock();
 		}
 
 		void syncNTP()
@@ -272,6 +281,7 @@ class DateTime: public ScrObj {
 				return;
 			}
 			else {
+				_sync_succ = true;
 				setI2Ctime();
 			}
 		}
@@ -286,6 +296,9 @@ class DateTime: public ScrObj {
 
 		virtual void prepare() override
 		{
+			/*
+			lock_t lock(timeMutex);
+			*/
 
 			mktime(&_timeinfo);
 
@@ -294,6 +307,8 @@ class DateTime: public ScrObj {
 			_visible[DAY].setValue(_timeinfo.tm_mday);
 			_visible[MON].setValue(_timeinfo.tm_mon + 1);
 			_visible[YEAR].setValue(_timeinfo.tm_year + 1900);
+
+			//lock.unlock();
 
 			for (auto& i:_visible) {
 				if (_sync) {
@@ -331,7 +346,7 @@ class DateTime: public ScrObj {
 			timePage.addItem(&_fieldsTitle);
 
 			for (auto& i:_visible) {
-				i.adjustX(-4);
+				//i.adjustX(-4);
 				i.adjustTextX(-4);
 				i.showLeadZero();
 				i.setFont(MIDFONT);
@@ -373,6 +388,8 @@ class DateTime: public ScrObj {
 
 		String* getTimeStr()
 		{
+			lock_t lock(timeMutex);
+
 			String hour = "";
 			if (_timeinfo.tm_hour < 10)
 				hour += "0";
@@ -382,12 +399,16 @@ class DateTime: public ScrObj {
 			min += String(_timeinfo.tm_min);
 			hour += String(_timeinfo.tm_hour);
 			_timeString = (String) hour + ":" + min;
-			return &_timeString;
 
+			lock.unlock();
+
+			return &_timeString;
 		}
 
 		String* getDateStr()
 		{
+			lock_t lock(timeMutex);
+
 			String hour = "";
 			if (_timeinfo.tm_hour < 10)
 				hour += "0";
@@ -405,6 +426,9 @@ class DateTime: public ScrObj {
 				+ " " + _timeinfo.tm_mday
 				+ "." + mon
 				+ "." + _timeinfo.tm_year%100;
+
+			lock.unlock();
+
 			return &_dateString;
 		}
 
