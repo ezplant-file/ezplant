@@ -11,6 +11,7 @@
 #include <iarduino_PCA9555.h>
 #include <FunctionalInterrupt.h>
 
+
 #define PH_METER_ADDRESS 0x0a
 #define TDS_METER_ADDRESS 0x0b
 #define SHT_METER_ADDRESS 0x0c
@@ -126,6 +127,10 @@ enum {
 	PWR_PG_DOWN,
 	PWR_PG_NITEMS
 };
+
+class Toggle;
+
+Toggle* toggles[PWR_PG_NITEMS];
 
 // user keys bits (position matter!)
 enum {
@@ -320,6 +325,7 @@ class InputOutput {
 		void haltAll()
 		{
 			for (int i = 0; i < PWR_PG_NITEMS; i++) {
+				toggles[i]->on(false);
 				haltPWMout(i);
 				driveOut(i, LOW);
 			}
@@ -376,28 +382,35 @@ class InputOutput {
 #endif
 					break;
 				case PWR_PG_PORT_F:
-					digitalWrite(PORT_F, state);
+					analogWrite(PORT_F, state?255:0);
+					//digitalWrite(PORT_F, state);
 					break;
 				case PWR_PG_PORT_G:
-					digitalWrite(PORT_G, state);
+					analogWrite(PORT_G, state?255:0);
+					//digitalWrite(PORT_G, state);
 					break;
 				case PWR_PG_PORT_H:
-					digitalWrite(PORT_H, state);
+					analogWrite(PORT_H, state?255:0);
+					//digitalWrite(PORT_H, state);
 					break;
 				case PWR_PG_FAN:
-					digitalWrite(FAN, state);
+					analogWrite(FAN, state?255:0);
+					//digitalWrite(FAN, state);
 					break;
 				case PWR_PG_LIGHT:
-					digitalWrite(LED, state);
+					analogWrite(LED, state?255:0);
+					//digitalWrite(LED, state);
 					break;
 				case PWR_PG_UP:
-					gpio[SECOND_EXPANDER].digitalWrite(BIT_M_DIR, LOW);
-					delay(MOTOR_SW_DELAY);
+					Serial.println("Motor UP");
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, LOW);
+					delay(MOTOR_SW_DELAY);
+					gpio[SECOND_EXPANDER].digitalWrite(BIT_M_DIR, LOW);
 					delay(MOTOR_SW_DELAY);
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, state);
 					break;
 				case PWR_PG_DOWN:
+					Serial.println("Motor DOWN");
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_MOTOR, LOW);
 					delay(MOTOR_SW_DELAY);
 					gpio[SECOND_EXPANDER].digitalWrite(BIT_M_DIR, state);

@@ -345,16 +345,25 @@ class DateTime: public ScrObj {
 
 			timePage.addItem(&_fieldsTitle);
 
-			for (auto& i:_visible) {
-				//i.adjustX(-4);
-				i.adjustTextX(-4);
-				i.showLeadZero();
-				i.setFont(MIDFONT);
-				i.setText(EMPTY_STR);
-				i.setWidth(TWO_CHR);
-				timePage.addItem(&i);
-			}
+			_visible[HOUR].setXYpos(PG_LEFT_PADD, _y);
+			_visible[MIN].setXYpos(53, _y);
+			_visible[DAY].setXYpos(109, _y);
+			_visible[MON].setXYpos(147, _y);
+			_visible[YEAR].setXYpos(187, _y);
 
+			_visible[DAY].adjustTextY(2);
+			_visible[MON].adjustTextY(2);
+
+			_visible[HOUR].setWidth(TWO_CHR);
+			_visible[MIN].setWidth(TWO_CHR);
+			_visible[DAY].setWidth(TWO_CHR);
+			_visible[MON].setWidth(TWO_CHR);
+			_visible[YEAR].setWidth(FOUR_CHR);
+
+			_visible[HOUR].showLeadZero();
+			_visible[MIN].showLeadZero();
+			_visible[DAY].showLeadZero();
+			_visible[MON].showLeadZero();
 
 			_visible[HOUR].setLimits(0, 23);
 			_visible[MIN].setLimits(0, 59);
@@ -367,14 +376,8 @@ class DateTime: public ScrObj {
 			_visible[DAY].setText(DT_DOT);
 			_visible[MON].setText(DT_DOT);
 
-			_visible[HOUR].setXYpos(PG_LEFT_PADD, _y);
-			_visible[MIN].setXYpos(53, _y);
-			_visible[DAY].setXYpos(109, _y);
-			_visible[MON].setXYpos(147, _y);
-			_visible[YEAR].setXYpos(187, _y);
-
-			_visible[DAY].adjustTextY(2);
-			_visible[MON].adjustTextY(2);
+			_visible[MIN].setText(EMPTY_STR);
+			_visible[YEAR].setText(EMPTY_STR);
 
 			_visible[HOUR].setCallback(std::bind(&DateTime::setHours, this, std::placeholders::_1));
 			_visible[MIN].setCallback(std::bind(&DateTime::setMinutes, this, std::placeholders::_1));
@@ -382,7 +385,18 @@ class DateTime: public ScrObj {
 			_visible[MON].setCallback(std::bind(&DateTime::setMon, this, std::placeholders::_1));
 			_visible[YEAR].setCallback(std::bind(&DateTime::setYear, this, std::placeholders::_1));
 
-			_visible[YEAR].setWidth(FOUR_CHR);
+			for (auto& i:_visible) {
+				//i.adjustX(-4);
+				i.adjustTextX(-5);
+				i.adjustTextY(-1);
+				//i.showLeadZero();
+				i.setFont(MIDFONT);
+				//i.setText(EMPTY_STR);
+				//i.setWidth(TWO_CHR);
+				timePage.addItem(&i);
+			}
+
+			//_visible[YEAR].setWidth(FOUR_CHR);
 			_visible[YEAR].adjustWidth(4);
 		}
 

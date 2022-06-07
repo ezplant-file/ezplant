@@ -406,6 +406,7 @@ void callPage(void* page_ptr)
 
 	if (currPage->lastStage()) {
 		g_first_launch = false;
+		datetime.initUTC(gUTC);
 		// save rig setup day of the year
 		datetime.setStartDay();
 		g_data.set(START_DAY, datetime.getStartDay());
@@ -1112,7 +1113,7 @@ Page* buildTimePage()
 	utc.setLimits(-11, 14);
 	utc.setFont(MIDFONT);
 	utc.setAlign(LEFT);
-	utc.adjustTextY(2);
+	//utc.adjustTextY(2);
 	utc.adjustTextX(4);
 	utc.setText(DT_UTC);
 	utc.setValue(gUTC);
@@ -2260,6 +2261,7 @@ Page* buildPwrDiag()
 		diagItems[i].setAlign(LEFT);
 		diagItems[i].setXYpos(x, y+(RAD_BTN_SIZE+gap)*j);
 		diagItems[i].setCallback(diagToggleCallback, &diagItems[i], i);
+		toggles[i] = &diagItems[i];
 		pwrDiag.addItem(&diagItems[i]);
 		j++;
 	}

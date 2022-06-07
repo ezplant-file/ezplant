@@ -33,6 +33,7 @@ class Rig {
 			_passvent = false;
 			_vent = false;
 			_pumpison = false;
+			_mainpump = false;
 			io.haltAll();
 			//Serial.println("halted...");
 		}
