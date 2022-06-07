@@ -7,9 +7,10 @@
 //#define STACK_DEBUG
 //#define RIG_DEBUG
 //#define SENSOR_DEBUG
-#define EXPANDERS_DEBUG
+//#define EXPANDERS_DEBUG
 //#define APP_TESTING
 #define APP_DEBUG
+#define ONLINE_DEBUG
 
 #define TASKS
 #include "settings.h"
@@ -31,6 +32,7 @@
 #include "Gui.h"
 #include "App.h"
 #include "IO.h"
+#include "Online.h"
 
 #define second_expander gpio[1]
 
@@ -4447,6 +4449,8 @@ void setup(void)
 	topBar.setText(currPage->getTitle());
 	topBar.prepare();
 	topBar.draw();
+
+	online.init();
 }
 
 void deleteSettingsFile()
@@ -4494,6 +4498,12 @@ void loop()
 		}
 		else if (cmd == "stop") {
 			g_rig.halt();
+		}
+		else if (cmd == "online") {
+			online.connect();
+		}
+		else if (cmd == "key") {
+			Serial.println(online.currentKey());
 		}
 		/*
 		else if (cmd == "next") {
