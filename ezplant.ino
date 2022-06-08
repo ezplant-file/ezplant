@@ -3831,6 +3831,92 @@ Page* buildStage8_4()
 	return &stage8;
 }
 
+enum OnlinePageObj {
+	OP_PAR,
+	OP_BTN,
+	OP_CODE_TXT,
+	OP_CODE,
+	OP_NEW_TXT,
+	OP_OUT_FIELD,
+	OP_CONNECTED,
+	OP_NITEMS
+};
+
+ScrObj* onlinePageItems[OP_NITEMS];
+
+void startOnline(void* arg)
+{
+	online.connect();
+	// change items states
+	// display key (maybe elsewhere)
+	//
+}
+
+String codeTxt = "";
+String secTxt = "";
+
+Page* buildOnlinePage()
+{
+	static Page onlinePage;
+	onlinePage.setTitle(OM_TITLE);
+
+	static Text subtitle;
+	subtitle.setXYpos(PG_LEFT_PADD, MB_Y_START);
+	subtitle.setFont(BOLDFONT);
+	subtitle.setText(OM_SUBTTL);
+
+	static Image img;
+	img.setXYpos(160, 62);
+	img.loadRes(images[IMG_CHART]);
+
+	static Text par1;
+	par1.setXYpos(PG_LEFT_PADD, 86);
+	par1.setText(OM_PAR1);
+
+	static BlueTextButton btn;
+	btn.setXYpos(PG_LEFT_PADD, 159);
+	btn.setText(OM_BUTTON);
+	btn.setCallback(startOnline);
+
+	static Text codetxt;
+	codetxt.setXYpos(PG_LEFT_PADD, 159);
+	codetxt.setText(OM_CODE_TXT);
+	codetxt.setInvisible();
+
+	static StringText code;
+	code.setXYpos(PG_LEFT_PADD, 159+26);
+	code.setText(codeTxt);
+	code.setInvisible();
+
+	static Text req;
+	req.setXYpos(PG_LEFT_PADD, 159+48);
+	req.setText(OM_REQ_TXT);
+	req.setInvisible();
+
+	static StringText sec;
+	sec.setXYpos(PG_LEFT_PADD, 159+67);
+	sec.setText(secTxt);
+	sec.setInvisible();
+
+	static Text connected;
+	connected.setXYpos(PG_LEFT_PADD, 159);
+	connected.setText(OM_CONNECTED);
+	//connected.setColors();
+	connected.setInvisible();
+
+	onlinePage.addItem(&subtitle);
+	onlinePage.addItem(&img);
+	onlinePage.addItem(&par1);
+	onlinePage.addItem(&btn);
+	onlinePage.addItem(&codetxt);
+	onlinePage.addItem(&code);
+	onlinePage.addItem(&req);
+	onlinePage.addItem(&sec);
+	onlinePage.addItem(&connected);
+
+	return &onlinePage;
+}
+
 void pauseBtnCallback(void* btn)
 {
 	if (btn == nullptr)
@@ -3851,6 +3937,7 @@ void pauseBtnCallback(void* btn)
 		pause->invalidate();
 	}
 }
+
 
 #define FP_LEFT_PADDING 7
 Page* buildMainPage()
@@ -4193,6 +4280,7 @@ Page* buildMainPage()
 	return &mainPage;
 }
 
+/*
 enum {
 	BTN_92,
 	BTN_82,
@@ -4200,6 +4288,7 @@ enum {
 	BTN_84,
 	LP_NBTNS
 };
+*/
 
 void gSetBacklight(void* arg)
 {
@@ -4294,6 +4383,7 @@ void buildAllPages()
 
 	// list of last stages
 	//pages[LSTAGES] = lastPagesList();
+	pages[ONLINE_PG] = buildOnlinePage();
 
 	pages[MENU_PG] = buildMenuPage();
 	pages[MAIN_PG] = buildMainPage();

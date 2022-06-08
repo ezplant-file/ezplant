@@ -165,6 +165,7 @@ typedef enum {
 	//LSTAGES,
 	ADDSETT_PG,
 	ADDSETT2_PG,
+	ONLINE_PG,
 	NPAGES
 } pages_t;
 
