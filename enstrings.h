@@ -325,7 +325,16 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"pH hysteresis",
 	"EC hysteresis",
 	"Interval between solutions \npouring, seconds",
-	"Value range to deem correct:"
+	"Value range to deem correct:",
+
+	// online monitoring
+	"Monitoring",
+	"Online monitoring",
+	"Add this device \n following instructions on \nhttps://dashboard.ezplant.ru",
+	"Sign up this device",
+	"Unique device number",
+	"You can request new code in",
+	"This device is connected"
 
 	//end of strings
 };

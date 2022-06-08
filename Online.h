@@ -7,12 +7,12 @@ using json = nlohmann::json;
 
 class OnlineMointor {
 	private:
-		const char* keyKey = "key";
-		const char* timeInterval = "timeInterval";
+		const char* _keyKey = "key";
+		const char* _timeIntervalKey = "timeInterval";
+		const char* _tokenAPIKey = "tokenAPI";
 		int _key = 0;
 		int _keepFor = 0;
-		/*
-		const char* _root_ca= ""; // \
+		const char* _root_ca= ""; //\
 				      "-----BEGIN CERTIFICATE-----\n" \
 				      "MIIFYDCCBEigAwIBAgIQQAF3ITfU6UK47naqPGQKtzANBgkqhkiG9w0BAQsFADA/\n" \
 				      "MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT\n" \
@@ -44,30 +44,88 @@ class OnlineMointor {
 				      "he8Y4IWS6wY7bCkjCWDcRQJMEhg76fsO3txE+FiYruq9RUWhiF1myv4Q6W+CyBFC\n" \
 				      "Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5\n" \
 				      "-----END CERTIFICATE-----\n";
-				      */
 
 		WiFiClient _client;
-		int _port = 80;
+
 		const char*  _server = "dashboard.ezplant.ru";
 		const char* _request1 = "/api/device-add.php";
 		const char* _request2 = "/api/device-add-chek.php?key=";
 		const char* _protocol = "http://"; // will be https eventually
-		String tokenAPI = "";
+		const char* _tokenFile = "/token";
+		unsigned long _confirmMils = 0;
+		unsigned long _req1_timestamp = 0;
+		static constexpr unsigned long _CONF_REPEAT = 20000;
+		bool _tokenLoaded = false;
+
+		String _token = "";
 
 	public:
 		void init()
 		{
-			//_client.setCACert(_root_ca);
+			_tokenLoaded = loadToken();
 		}
 
-		void connect()
+		bool loadToken()
+		{
+			if (!SPIFFS.exists(_tokenFile)) {
+#ifdef ONLINE_DEBUG
+			Serial.println("token file doesn't exist");
+#endif
+				return false;
+			}
+
+			File file = SPIFFS.open(_tokenFile, "r");
+
+			if (!file) {
+#ifdef ONLINE_DEBUG
+				Serial.println("failed to load token file");
+#endif
+				return false;
+			}
+
+			_token = file.readStringUntil(EOF);
+#ifdef ONLINE_DEBUG
+			Serial.println(_token);
+#endif
+			file.close();
+
+			return true;
+		}
+
+		bool saveToken()
+		{
+			File file = SPIFFS.open(_tokenFile, "w");
+			if (!file) {
+#ifdef ONLINE_DEBUG
+				Serial.println("failed to save token file");
+#endif
+				return false;
+			}
+
+			file.print(_token.c_str());
+			file.flush();
+			file.close();
+
+			return true;
+		}
+
+		void reset()
+		{
+			_key = 0;
+			_keepFor = 0;
+			_client.stop();
+		}
+
+		bool connect()
 		{
 			if (!g_ping_success) {
 #ifdef ONLINE_DEBUG
 				Serial.println("Нет подключения");
 #endif
-				return;
+				return false;
 			}
+
+			// TODO: add action if _tokenLoaded
 
 
 			HTTPClient http;
@@ -80,7 +138,8 @@ class OnlineMointor {
 #ifdef ONLINE_DEBUG
 				Serial.println("Http code: " + String(httpCode));
 #endif
-				return;
+				_client.stop();
+				return false;
 			}
 
 			String payload = http.getString();
@@ -90,13 +149,14 @@ class OnlineMointor {
 			try
 			{
 				json resp = json::parse(payload.c_str());
-				_key = resp[keyKey].get<int>();
-				_keepFor = resp[timeInterval].get<int>();
+				_key = resp[_keyKey].get<int>();
+				_keepFor = resp[_timeIntervalKey].get<int>();
+#ifdef ONLINE_DEBUG
 				Serial.println("responses");
 				Serial.println(_key);
 				Serial.println(_keepFor);
+#endif
 				resp.clear();
-
 			}
 
 			catch (...)
@@ -104,19 +164,81 @@ class OnlineMointor {
 #ifdef ONLINE_DEBUG
 				Serial.println("json failed");
 #endif
-				return;
+				_client.stop();
+				return false;
 			}
 
+			_req1_timestamp = millis();
 			_client.stop();
+			return true;
 		}
 
-		void confirm()
+		bool confirm()
 		{
+			if (millis() - _confirmMils < _CONF_REPEAT)
+				return false;
+#ifdef ONLINE_DEBUG
+			Serial.println("Trying to confirm...");
+#endif
+
+			if (millis() - _req1_timestamp > _keepFor*1000 && _key) {
+				reset();
+#ifdef ONLINE_DEBUG
+				Serial.println("Key expired");
+#endif
+				return false;
+			}
+
+			_confirmMils = millis();
+
+			HTTPClient http;
+			String req = (String)_protocol+_server+_request2+String(_key);
+			http.begin(_client, req.c_str());
+
+			int httpCode = http.GET();
+
+			if (httpCode != HTTP_CODE_OK) {
+#ifdef ONLINE_DEBUG
+				Serial.println("Http code: " + String(httpCode));
+#endif
+				_client.stop();
+				return false;
+			}
+
+			String payload = http.getString();
+#ifdef ONLINE_DEBUG
+			Serial.println(payload);
+#endif
+			try
+			{
+				json resp = json::parse(payload.c_str());
+				std::string token = resp[_tokenAPIKey].get<std::string>();
+				_token = String(token.c_str());
+#ifdef ONLINE_DEBUG
+				Serial.println("responses");
+				Serial.println(_token);
+#endif
+				resp.clear();
+				saveToken();
+				reset();
+			}
+			catch (...)
+			{
+#ifdef ONLINE_DEBUG
+				Serial.println("online confirm json failed");
+#endif
+				_client.stop();
+				return false;
+			}
+			return true;
 		}
 
-		int currentKey()
+		void update()
 		{
-			return _key;
+			if (!_key)
+				return;
+
+			confirm();
 		}
 
 } online;

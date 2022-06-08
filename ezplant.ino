@@ -4388,7 +4388,6 @@ void setup(void)
 	// init all stuff in App.h
 	app.init();
 
-
 	buildAllPages();
 
 	topBar.build();
@@ -4449,8 +4448,6 @@ void setup(void)
 	topBar.setText(currPage->getTitle());
 	topBar.prepare();
 	topBar.draw();
-
-	online.init();
 }
 
 void deleteSettingsFile()
@@ -4490,9 +4487,6 @@ void loop()
 			deleteSettingsFile();
 			deleteDataFile();
 		}
-		else if (cmd == "load") {
-			g_data.load();
-		}
 		else if (cmd == "start") {
 			g_rig.start();
 		}
@@ -4502,8 +4496,22 @@ void loop()
 		else if (cmd == "online") {
 			online.connect();
 		}
-		else if (cmd == "key") {
-			Serial.println(online.currentKey());
+		else if (cmd == "confirm") {
+			online.confirm();
+		}
+		else if (cmd == "day") {
+			Serial.println(datetime.getDays());
+		}
+		else if (cmd == "save") {
+			online.saveToken();
+		}
+		else if (cmd == "load") {
+			online.loadToken();
+		}
+		else if (cmd == "initOnline") {
+			if (!SPIFFS.exists("/token"))
+				return;
+			SPIFFS.remove("/token");
 		}
 		/*
 		else if (cmd == "next") {

@@ -327,6 +327,15 @@ typedef enum {
 	AS2_SOL_INT,
 	AS2_RANGE,
 
+	// online monitoring
+	OM_TITLE,
+	OM_SUBTTL,
+	OM_PAR1,
+	OM_BUTTON,
+	OM_CODE_TXT,
+	OM_REQ_TXT,
+	OM_CONNECTED,
+
 	END_OF_STRINGS
 } dispStrings_t;
 

@@ -25,7 +25,7 @@
 #define COLOR_DEPTH 16
 
 #include <vector>	// keep page items in vector
-#include <iostream>
+//#include <iostream>
 
 #include "images.h"
 #include "settings.h"	// settings enum

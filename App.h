@@ -11,6 +11,7 @@
 #include "IO.h"
 #include "Rig.h"
 #include "DateTime.h"
+#include "Online.h"
 
 // hardware... stuff
 #include <SPI.h>
@@ -218,37 +219,24 @@ class Panel {
 				return;
 			}
 
+			/* time stuff */
 			gTimeStr = *datetime.getTimeStr();
 			_time.invalidate();
 			_time.prepare();
 			_time.erase();
 			_time.draw();
-			/*
-			_hours.erase();
-			_minutes.erase();
-			_hours.invalidate();
-			_minutes.invalidate();
-			_hours.setValue(datetime.getHour());
-			_minutes.setValue(datetime.getMinute());
-			_hours.prepare();
-			_hours.draw();
-			_minutes.prepare();
-			_minutes.draw();
-			*/
 
 			_timestamp = millis();
 
 			int dBm = WiFi.RSSI();
 			uint8_t strength = map(dBm, -95, -45, 0, 4);
 
-			/*
-#ifdef APP_DEBUG
+#ifdef WIFI_DEBUG
 			Serial.print("WiFi strength: ");
 			Serial.println(dBm);
 			Serial.print("Wifi status: ");
 			Serial.println(WiFi.status());
 #endif
-*/
 
 			strength = clamp(strength, 0, 4);
 
@@ -513,6 +501,8 @@ class App {
 
 			//Serial.println("Finish INIT");
 			createTasks();
+
+			online.init();
 		}
 
 		void createTasks()
@@ -530,10 +520,17 @@ class App {
 		void update()
 		{
 
+			// tds and ph normalization
 			setMeasIntervalMinutes(g_data.getInt(ADD_MEAS_INT));
+
+			// updaters
 			topBar.update();
 			datetime.update();
 			g_rig.update();
+
+			/* online stuff */
+			online.update();
+
 
 			/*
 			Serial.println("measure stuff");
