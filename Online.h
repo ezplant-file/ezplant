@@ -3,15 +3,31 @@
 //#include <WiFiClientSecure.h>
 #include "json.hpp"
 #include <HTTPClient.h>
+#include "stringenum.h"
+
 using json = nlohmann::json;
+
+// online page dynamic text
+String codeTxt = "";
+String secTxt = "";
 
 class OnlineMointor {
 	private:
+		Page* _page = nullptr;
+		ScrObj* _button = nullptr;
+		ScrObj* _codetxt = nullptr;
+		ScrObj* _onlinePageCode = nullptr;
+		ScrObj* _reqTxt = nullptr;
+		ScrObj* _timeOutText = nullptr;
+		ScrObj* _connectedText = nullptr;
+		bool _wait_for_resp = false;
+
 		const char* _keyKey = "key";
 		const char* _timeIntervalKey = "timeInterval";
 		const char* _tokenAPIKey = "tokenAPI";
 		int _key = 0;
 		int _keepFor = 0;
+		int _countDown = 0;
 		const char* _root_ca= ""; //\
 				      "-----BEGIN CERTIFICATE-----\n" \
 				      "MIIFYDCCBEigAwIBAgIQQAF3ITfU6UK47naqPGQKtzANBgkqhkiG9w0BAQsFADA/\n" \
@@ -47,19 +63,157 @@ class OnlineMointor {
 
 		WiFiClient _client;
 
-		const char*  _server = "dashboard.ezplant.ru";
+		const char*  _server = "api.ezplant.ru";
 		const char* _request1 = "/api/device-add.php";
 		const char* _request2 = "/api/device-add-chek.php?key=";
 		const char* _protocol = "http://"; // will be https eventually
 		const char* _tokenFile = "/token";
 		unsigned long _confirmMils = 0;
+		unsigned long _countDownMils = 0;
 		unsigned long _req1_timestamp = 0;
 		static constexpr unsigned long _CONF_REPEAT = 20000;
 		bool _tokenLoaded = false;
+		bool _onTimer = false;
 
 		String _token = "";
 
+		void _waitForConfirm()
+		{
+			if (!_countDown)
+				return;
+
+			if (millis() - _countDownMils > 1000) {
+				_countDownMils = millis();
+
+				_countDown--;
+				//secTxt = (String) _countDown; // + " " + scrStrings[TXT_SECONDS];
+				if (_timeOutText) {
+					_timeOutText->setValue(_countDown);
+					//_timeOutText->erase();
+					//_timeOutText->invalidate();
+					//_timeOutText->prepare();
+				}
+			}
+		}
+
+		void _redrawOnlinePage()
+		{
+
+			if (_codetxt) {
+				_codetxt->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_codetxt->erase();
+			}
+
+			if (_onlinePageCode) {
+				_onlinePageCode->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_onlinePageCode->erase();
+			}
+
+			if (_reqTxt) {
+				_reqTxt->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_reqTxt->erase();
+			}
+
+			if (_timeOutText) {
+				_timeOutText->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_timeOutText->erase();
+			}
+
+			if (_connectedText) {
+				_connectedText->setVisible();
+				if (currPage == pages[ONLINE_PG]) {
+					_connectedText->prepare();
+					_connectedText->draw();
+				}
+			}
+
+			if (_page)
+				_page->restock();
+		}
+
+		void _redrawExpired()
+		{
+			if (_codetxt) {
+				_codetxt->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_codetxt->erase();
+			}
+
+			if (_onlinePageCode) {
+				_onlinePageCode->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_onlinePageCode->erase();
+			}
+
+			if (_reqTxt) {
+				_reqTxt->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_reqTxt->erase();
+			}
+
+			if (_timeOutText) {
+				_timeOutText->setInvisible();
+				if (currPage == pages[ONLINE_PG])
+					_timeOutText->erase();
+			}
+
+			if (_button)
+				_button->setVisible();
+
+			if (_page)
+				_page->restock();
+		}
+
 	public:
+		void startOnline(
+				Page* page,
+				ScrObj* button,
+				ScrObj* codetxt,
+				ScrObj* num,
+				ScrObj* req,
+				ScrObj* sec,
+				ScrObj* connected)
+		{
+			_page = page;
+			_button = button;
+			_codetxt = codetxt;
+			_onlinePageCode = num;
+			_reqTxt = req;
+			_timeOutText = sec;
+			_connectedText = connected;
+
+			if (!connect())
+				return;
+
+			_wait_for_resp = true;
+
+			_button->setInvisible();
+			_button->erase();
+
+			//_button->setInvisibleNoErase();
+			//_button->erase();
+
+			_codetxt->setVisible();
+			_codetxt->prepare();
+			_codetxt->draw();
+
+			_onlinePageCode->setVisible();
+
+			_reqTxt->setVisible();
+			_reqTxt->prepare();
+			_reqTxt->draw();
+
+			_timeOutText->setVisible();
+			_timeOutText->prepare();
+
+			_page->restock();
+
+		}
+
 		void init()
 		{
 			_tokenLoaded = loadToken();
@@ -113,7 +267,10 @@ class OnlineMointor {
 		{
 			_key = 0;
 			_keepFor = 0;
+			codeTxt = "";
 			_client.stop();
+			_onTimer = false;
+			// TODO: reset page
 		}
 
 		bool connect()
@@ -126,7 +283,6 @@ class OnlineMointor {
 			}
 
 			// TODO: add action if _tokenLoaded
-
 
 			HTTPClient http;
 			String req = (String)_protocol+_server+_request1;
@@ -151,6 +307,7 @@ class OnlineMointor {
 				json resp = json::parse(payload.c_str());
 				_key = resp[_keyKey].get<int>();
 				_keepFor = resp[_timeIntervalKey].get<int>();
+				_countDown = _keepFor;
 #ifdef ONLINE_DEBUG
 				Serial.println("responses");
 				Serial.println(_key);
@@ -184,6 +341,7 @@ class OnlineMointor {
 			if (millis() - _req1_timestamp > _keepFor*1000 && _key) {
 				reset();
 #ifdef ONLINE_DEBUG
+				_redrawExpired();
 				Serial.println("Key expired");
 #endif
 				return false;
@@ -220,6 +378,9 @@ class OnlineMointor {
 #endif
 				resp.clear();
 				saveToken();
+
+				_redrawOnlinePage();
+
 				reset();
 			}
 			catch (...)
@@ -233,10 +394,34 @@ class OnlineMointor {
 			return true;
 		}
 
+		int getCurrKey()
+		{
+			return _key;
+		}
+
 		void update()
 		{
 			if (!_key)
 				return;
+
+			if (_wait_for_resp) {
+
+				if (_key < 100000)
+					codeTxt = "0";
+
+				codeTxt += String(_key);
+
+				if (_onlinePageCode) {
+					_onlinePageCode->prepare();
+				}
+
+				_wait_for_resp = false;
+				_onTimer = true;
+			}
+
+			if (_onTimer) {
+				_waitForConfirm();
+			}
 
 			confirm();
 		}

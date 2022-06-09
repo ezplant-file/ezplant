@@ -330,7 +330,8 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	// online monitoring
 	"Мониторинг",
 	"Онлайн мониторинг",
-	"Зарегестрируйте \nустройство на сайте \nhttps://dashboard.ezplant.ru",
+	"Зарегестрируйте \nустройство на сайте",
+       	"https://dashboard.ezplant.ru",
 	"Регистрация устройства",
 	"Код устройства",
 	"Запросить новый код через",

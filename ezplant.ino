@@ -437,7 +437,14 @@ void callPage(void* page_ptr)
 
 	topBar.erase();
 	topBar.invalidateAll();
+	currPage->invalidateAll();
+	// erase now resets all invalid items
 	currPage->erase();
+	// for back button invalidation
+	// since back button and forward button are global
+	// page->invalidateAll();
+	back.invalidate();
+	forward.invalidate();
 	topBar.setText(page->getTitle());
 	topBar.prepare();
 	currPage = page;
@@ -1693,9 +1700,8 @@ Page* buildMenuPage()
 	menu_items[MM_PLANT].setCallback(callPage, pages[STAGE1_PG]);
 	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
 	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
-	//menu_items[MM_FONT].setCallback(callPage, pages[FONT_PG]);
+	menu_items[MM_MON].setCallback(callPage, pages[ONLINE_PG]);
 	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
-	//menu_items[MM_FIRST_PAGE].setCallback(callPage, pages[STAGE1_PG]);
 
 	// add all to page
 	for (int i = 0; i < MM_NITEMS; i++) {
@@ -3844,16 +3850,52 @@ enum OnlinePageObj {
 
 ScrObj* onlinePageItems[OP_NITEMS];
 
-void startOnline(void* arg)
+/*
+void startOnline(
+		Page* page,
+		ScrObj* button,
+		ScrObj* text,
+		ScrObj* num,
+		ScrObj* req,
+		ScrObj* sec,
+		ScrObj* connected)
 {
-	online.connect();
-	// change items states
-	// display key (maybe elsewhere)
-	//
-}
+	if (!page || ! button || !text || !num || !req || !sec || !connected)
+		return;
 
-String codeTxt = "";
-String secTxt = "";
+	// make first request
+	online.connect();
+
+	// change items states
+	button->setInvisible();
+	text->setVisible();
+	//text->prepare();
+	//text->draw();
+
+	num->setVisible();
+
+	req->setVisible();
+	//req->prepare();
+	//req->draw();
+
+	sec->setVisible();
+
+	page->restock();
+
+	online.setScrObjs(
+			page,
+			button,
+			text,
+			num,
+			req,
+			sec,
+			connected);
+
+	// start updating online page
+	g_wait_for_resp = true;
+}
+*/
+
 
 Page* buildOnlinePage()
 {
@@ -3866,17 +3908,20 @@ Page* buildOnlinePage()
 	subtitle.setText(OM_SUBTTL);
 
 	static Image img;
-	img.setXYpos(160, 62);
+	img.setXYpos(160, 60);
 	img.loadRes(images[IMG_CHART]);
 
 	static Text par1;
-	par1.setXYpos(PG_LEFT_PADD, 86);
+	par1.setXYpos(PG_LEFT_PADD, 90);
 	par1.setText(OM_PAR1);
+
+	static Text par2;
+	par2.setXYpos(PG_LEFT_PADD, 90+26);
+	par2.setText(OM_PAR2);
 
 	static BlueTextButton btn;
 	btn.setXYpos(PG_LEFT_PADD, 159);
 	btn.setText(OM_BUTTON);
-	btn.setCallback(startOnline);
 
 	static Text codetxt;
 	codetxt.setXYpos(PG_LEFT_PADD, 159);
@@ -3893,9 +3938,15 @@ Page* buildOnlinePage()
 	req.setText(OM_REQ_TXT);
 	req.setInvisible();
 
-	static StringText sec;
+	static OutputField sec;
 	sec.setXYpos(PG_LEFT_PADD, 159+67);
-	sec.setText(secTxt);
+	//sec.setText(secTxt);
+	sec.setText(TXT_SECONDS);
+	sec.setColors(COL_GREY_70_565, TFT_WHITE);
+	sec.adjustTextX(-10);
+	//sec.noBg();
+	sec.setWidth(TWO_CHR);
+	sec.noXpadding();
 	sec.setInvisible();
 
 	static Text connected;
@@ -3904,15 +3955,28 @@ Page* buildOnlinePage()
 	//connected.setColors();
 	connected.setInvisible();
 
+	btn.setCallback([=](void*) { online.startOnline(
+				&onlinePage,
+				&btn,
+				&codetxt,
+				&code,
+				&req,
+				&sec,
+				&connected); });
+
+	onlinePage.addItem(&connected);
+
 	onlinePage.addItem(&subtitle);
 	onlinePage.addItem(&img);
 	onlinePage.addItem(&par1);
-	onlinePage.addItem(&btn);
+	onlinePage.addItem(&par2);
 	onlinePage.addItem(&codetxt);
+	onlinePage.addItem(&btn);
 	onlinePage.addItem(&code);
 	onlinePage.addItem(&req);
 	onlinePage.addItem(&sec);
-	onlinePage.addItem(&connected);
+
+	onlinePage.addItem(&back);
 
 	return &onlinePage;
 }
@@ -4397,8 +4461,7 @@ void linkPages()
 		DEBUG_PRINT_HEX(i);
 #endif
 
-	// debug last stages
-//	pages[LSTAGES]->setPrev(pages[MENU_PG]);
+	pages[ONLINE_PG]->setPrev(pages[MENU_PG]);
 	pages[ADDSETT_PG]->setPrev(pages[SETT_PG]);
 	pages[ADDSETT_PG]->setNext(pages[ADDSETT2_PG]);
 
@@ -4583,25 +4646,14 @@ void loop()
 		else if (cmd == "stop") {
 			g_rig.halt();
 		}
-		else if (cmd == "online") {
-			online.connect();
-		}
-		else if (cmd == "confirm") {
-			online.confirm();
-		}
 		else if (cmd == "day") {
 			Serial.println(datetime.getDays());
-		}
-		else if (cmd == "save") {
-			online.saveToken();
-		}
-		else if (cmd == "load") {
-			online.loadToken();
 		}
 		else if (cmd == "initOnline") {
 			if (!SPIFFS.exists("/token"))
 				return;
 			SPIFFS.remove("/token");
+			Serial.println("Token file removed");
 		}
 		/*
 		else if (cmd == "next") {

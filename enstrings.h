@@ -330,7 +330,8 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// online monitoring
 	"Monitoring",
 	"Online monitoring",
-	"Add this device \n following instructions on \nhttps://dashboard.ezplant.ru",
+	"Add this device \nfollowing instructions on",
+	"https://dashboard.ezplant.ru",
 	"Sign up this device",
 	"Unique device number",
 	"You can request new code in",

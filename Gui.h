@@ -241,8 +241,11 @@ class ScrObj {
 
 		virtual void erase()
 		{
+			if (!_invalid)
+				return;
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
 			freeRes();
+			_invalid = false;
 		}
 
 		virtual bool hasInput()
@@ -732,6 +735,8 @@ class Text: public ScrObj {
 
 		virtual void prepare() override
 		{
+			freeRes();
+
 			if (_index == EMPTY_STR)
 				return;
 
@@ -955,6 +960,8 @@ class StringText: public Text {
 
 		virtual void prepare() override
 		{
+			freeRes();
+
 			if (!_invalid || !_isVisible)
 				return;
 
@@ -1041,6 +1048,7 @@ class BodyText: public ScrObj {
 
 		virtual void prepare() override
 		{
+			freeRes();
 			//_h = TOP_BAR_HEIGHT - 12;
 			if (!_invalid || !_isVisible)
 				return;
@@ -3054,13 +3062,27 @@ class Page {
 		{
 			for (auto& obj:_items) {
 				if (obj->isVisible()) {
-					//obj->prepare();
-					obj->draw();
+					_toDraw.push_back(obj);
+					//obj->draw();
 				}
 				else {
-					obj->erase();
+					_toErase.push_back(obj);
+					//obj->erase();
 				}
 			}
+
+			for (auto& obj:_toErase) {
+				obj->erase();
+			}
+
+			for (auto& obj:_toDraw) {
+				//TODO: make this work!
+				//obj->prepare();
+				obj->draw();
+			}
+
+			_toDraw.clear();
+			_toErase.clear();
 		}
 
 		// set all screen objects for redraw
@@ -3207,6 +3229,8 @@ class Page {
 		dispStrings_t _title;
 		obj_list _items;
 		obj_list _selectable;
+		obj_list _toErase;
+		obj_list _toDraw;
 		ScrObj* _currItem;
 };
 #endif

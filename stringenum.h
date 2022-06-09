@@ -331,6 +331,7 @@ typedef enum {
 	OM_TITLE,
 	OM_SUBTTL,
 	OM_PAR1,
+	OM_PAR2,
 	OM_BUTTON,
 	OM_CODE_TXT,
 	OM_REQ_TXT,
