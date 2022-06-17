@@ -335,7 +335,8 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Sign up this device",
 	"Unique device number",
 	"You can request new code in",
-	"This device is connected"
+	"This device is connected",
+	"Untether and disconnect"
 
 	//end of strings
 };

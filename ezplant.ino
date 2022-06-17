@@ -3837,66 +3837,6 @@ Page* buildStage8_4()
 	return &stage8;
 }
 
-enum OnlinePageObj {
-	OP_PAR,
-	OP_BTN,
-	OP_CODE_TXT,
-	OP_CODE,
-	OP_NEW_TXT,
-	OP_OUT_FIELD,
-	OP_CONNECTED,
-	OP_NITEMS
-};
-
-ScrObj* onlinePageItems[OP_NITEMS];
-
-/*
-void startOnline(
-		Page* page,
-		ScrObj* button,
-		ScrObj* text,
-		ScrObj* num,
-		ScrObj* req,
-		ScrObj* sec,
-		ScrObj* connected)
-{
-	if (!page || ! button || !text || !num || !req || !sec || !connected)
-		return;
-
-	// make first request
-	online.connect();
-
-	// change items states
-	button->setInvisible();
-	text->setVisible();
-	//text->prepare();
-	//text->draw();
-
-	num->setVisible();
-
-	req->setVisible();
-	//req->prepare();
-	//req->draw();
-
-	sec->setVisible();
-
-	page->restock();
-
-	online.setScrObjs(
-			page,
-			button,
-			text,
-			num,
-			req,
-			sec,
-			connected);
-
-	// start updating online page
-	g_wait_for_resp = true;
-}
-*/
-
-
 Page* buildOnlinePage()
 {
 	static Page onlinePage;
@@ -3921,7 +3861,6 @@ Page* buildOnlinePage()
 
 	static BlueTextButton btn;
 	btn.setXYpos(PG_LEFT_PADD, 159);
-	btn.setText(OM_BUTTON);
 
 	static Text codetxt;
 	codetxt.setXYpos(PG_LEFT_PADD, 159);
@@ -3944,25 +3883,37 @@ Page* buildOnlinePage()
 	sec.setText(TXT_SECONDS);
 	sec.setColors(COL_GREY_70_565, TFT_WHITE);
 	sec.adjustTextX(-10);
+	sec.setWH(25, INPUT_H);
+	//sec.adjustWidth(-5);
 	//sec.noBg();
 	sec.setWidth(TWO_CHR);
 	sec.noXpadding();
 	sec.setInvisible();
 
 	static Text connected;
-	connected.setXYpos(PG_LEFT_PADD, 159);
+	connected.setXYpos(PG_LEFT_PADD, 190);
 	connected.setText(OM_CONNECTED);
-	//connected.setColors();
+	connected.setColors(GREEN_COL_MACRO, TFT_WHITE);
 	connected.setInvisible();
 
-	btn.setCallback([=](void*) { online.startOnline(
-				&onlinePage,
-				&btn,
-				&codetxt,
-				&code,
-				&req,
-				&sec,
-				&connected); });
+	online.setOnline(
+			&onlinePage,
+			&btn,
+			&codetxt,
+			&code,
+			&req,
+			&sec,
+			&connected);
+
+	if (online.tokenLoaded()) {
+		btn.setText(OM_DISCONNECT);
+		btn.setCallback([](void*) {online.untether();});
+		connected.setVisible();
+	}
+	else {
+		btn.setText(OM_BUTTON);
+		btn.setCallback([](void*) {online.startOnline();});
+	}
 
 	onlinePage.addItem(&connected);
 
@@ -4648,12 +4599,6 @@ void loop()
 		}
 		else if (cmd == "day") {
 			Serial.println(datetime.getDays());
-		}
-		else if (cmd == "initOnline") {
-			if (!SPIFFS.exists("/token"))
-				return;
-			SPIFFS.remove("/token");
-			Serial.println("Token file removed");
 		}
 		/*
 		else if (cmd == "next") {

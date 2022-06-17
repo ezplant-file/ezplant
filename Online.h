@@ -4,6 +4,8 @@
 #include "json.hpp"
 #include <HTTPClient.h>
 #include "stringenum.h"
+#include "settings.h"
+#include "IO.h"
 
 using json = nlohmann::json;
 
@@ -66,12 +68,19 @@ class OnlineMointor {
 		const char*  _server = "api.ezplant.ru";
 		const char* _request1 = "/api/device-add.php";
 		const char* _request2 = "/api/device-add-chek.php?key=";
+		const char* _postReq = "/api/data.php";
 		const char* _protocol = "http://"; // will be https eventually
 		const char* _tokenFile = "/token";
+		// for POST
+		const char* _settings = "SETTINGS";
+		const char* _sensors = "SENSORS";
+
 		unsigned long _confirmMils = 0;
 		unsigned long _countDownMils = 0;
 		unsigned long _req1_timestamp = 0;
+		unsigned long _sentMils = 0;
 		static constexpr unsigned long _CONF_REPEAT = 20000;
+		static constexpr unsigned long _POST_REPEAT = 30000;
 		bool _tokenLoaded = false;
 		bool _onTimer = false;
 
@@ -131,6 +140,12 @@ class OnlineMointor {
 				}
 			}
 
+			if (_button) {
+				_button->setText(OM_DISCONNECT);
+				_button->setCallback([this](void*){this->untether();});
+				_button->setVisible();
+			}
+
 			if (_page)
 				_page->restock();
 		}
@@ -168,8 +183,34 @@ class OnlineMointor {
 				_page->restock();
 		}
 
+		void _deleteTokenFile()
+		{
+			if (!SPIFFS.exists("/token"))
+				return;
+			SPIFFS.remove("/token");
+			_tokenLoaded = false;
+#ifdef ONLINE_DEBUG
+			Serial.println("Token file removed");
+#endif
+		}
+
 	public:
-		void startOnline(
+		void untether()
+		{
+			if (_button) {
+				_button->setText(OM_BUTTON);
+				_button->setCallback([this](void*){this->startOnline();});
+			}
+
+			if (_connectedText) {
+				_connectedText->setInvisible();
+			}
+
+			_deleteTokenFile();
+			_redrawExpired();
+		}
+
+		void setOnline(
 				Page* page,
 				ScrObj* button,
 				ScrObj* codetxt,
@@ -185,6 +226,9 @@ class OnlineMointor {
 			_reqTxt = req;
 			_timeOutText = sec;
 			_connectedText = connected;
+		}
+
+		void startOnline() {
 
 			if (!connect())
 				return;
@@ -212,6 +256,11 @@ class OnlineMointor {
 
 			_page->restock();
 
+		}
+
+		bool tokenLoaded()
+		{
+			return _tokenLoaded;
 		}
 
 		void init()
@@ -259,6 +308,7 @@ class OnlineMointor {
 			file.print(_token.c_str());
 			file.flush();
 			file.close();
+			_tokenLoaded = true;
 
 			return true;
 		}
@@ -397,6 +447,173 @@ class OnlineMointor {
 		int getCurrKey()
 		{
 			return _key;
+		}
+
+		void sendData()
+		{
+			if (!g_ping_success)
+				return;
+
+			if (millis() - _sentMils < _POST_REPEAT)
+				return;
+
+			_sentMils = millis();
+
+			json data;
+
+			// token
+			data[_tokenAPIKey] = _token.c_str();
+
+			// all rig settings
+			data[_settings]["RIG_TYPE"] = g_rig_type;
+			data[_settings][STR(LIGHT_ON)] = 	g_data.getInt(LIGHT_ON);
+
+			data[_settings][STR(LIGHT_ON)] = 	g_data.getInt(LIGHT_ON);
+			data[_settings][STR(LIGHT_FROM)] = g_data.getInt(LIGHT_FROM);
+			data[_settings][STR(LIGHT_TO)] = g_data.getInt(LIGHT_TO);
+			data[_settings][STR(LIGHT_DAY)] = g_data.getInt(LIGHT_DAY);
+
+			data[_settings][STR(VENT_ON)] = g_data.getInt(VENT_ON);
+			data[_settings][STR(VENT_TIME_LIM)] = g_data.getInt(VENT_TIME_LIM);
+			data[_settings][STR(VENT_TIME_FROM)] = g_data.getInt(VENT_TIME_FROM);
+			data[_settings][STR(VENT_TIME_TO)] = g_data.getInt(VENT_TIME_TO);
+			data[_settings][STR(VENT_TEMP_LIM)] = g_data.getInt(VENT_TEMP_LIM);
+			data[_settings][STR(VENT_TEMP_THRES)] = g_data.getInt(VENT_TEMP_THRES);
+			data[_settings][STR(VENT_HUM_LIM)] = g_data.getInt(VENT_HUM_LIM);
+			data[_settings][STR(VENT_HUM_THRES)] = g_data.getInt(VENT_HUM_THRES);
+
+			data[_settings][STR(PASSVENT)] = g_data.getInt(PASSVENT);
+			data[_settings][STR(PASSVENT_TIME_LIM)] = g_data.getInt(PASSVENT_TIME_LIM);
+			data[_settings][STR(PASSVENT_TIME_FROM)] = g_data.getInt(PASSVENT_TIME_FROM);
+			data[_settings][STR(PASSVENT_TIME_TO)] = g_data.getInt(PASSVENT_TIME_TO);
+			data[_settings][STR(PASSVENT_TEMP_LIM)] = g_data.getInt(PASSVENT_TEMP_LIM);
+			data[_settings][STR(PASSVENT_TEMP_THRES)] = g_data.getInt(PASSVENT_TEMP_THRES);
+			data[_settings][STR(PASSVENT_HUM_LIM)] = g_data.getInt(PASSVENT_HUM_LIM);
+			data[_settings][STR(PASSVENT_HUM_THRES)] = g_data.getInt(PASSVENT_HUM_THRES);
+
+			data[_settings][STR(GR_CYCL_1_DAYS)] = g_data.getInt(GR_CYCL_1_DAYS);
+			data[_settings][STR(GR_CYCL_2_DAYS)] = g_data.getInt(GR_CYCL_2_DAYS);
+			data[_settings][STR(GR_CYCL_3_DAYS)] = g_data.getInt(GR_CYCL_3_DAYS);
+
+			data[_settings][STR(EC_ON)] = g_data.getInt(EC_ON);
+			data[_settings][STR(EC_CYCL1)] = g_data.getFloat(EC_CYCL1);
+			data[_settings][STR(EC_A1)] = g_data.getFloat(EC_A1);
+			data[_settings][STR(EC_B1)] = g_data.getFloat(EC_B1);
+			data[_settings][STR(EC_C1)] = g_data.getFloat(EC_C1);
+			data[_settings][STR(EC_CYCL2)] = g_data.getFloat(EC_CYCL2);
+			data[_settings][STR(EC_A2)] = g_data.getFloat(EC_A2);
+			data[_settings][STR(EC_B2)] = g_data.getFloat(EC_B2);
+			data[_settings][STR(EC_C2)] = g_data.getFloat(EC_C2);
+			data[_settings][STR(EC_CYCL3)] = g_data.getFloat(EC_CYCL3);
+			data[_settings][STR(EC_A3)] = g_data.getFloat(EC_A3);
+			data[_settings][STR(EC_B3)] = g_data.getFloat(EC_B3);
+			data[_settings][STR(EC_C3)] = g_data.getFloat(EC_C3);
+			data[_settings][STR(EC_PUMPS)] = g_data.getInt(EC_PUMPS);
+
+			data[_settings][STR(ACID_ON)] = g_data.getInt(ACID_ON);
+			data[_settings][STR(ACID_1)] = g_data.getFloat(ACID_1);
+			data[_settings][STR(ACID_2)] = g_data.getFloat(ACID_2);
+			data[_settings][STR(ACID_3)] = g_data.getFloat(ACID_3);
+			data[_settings][STR(ACID_PUMPS)] = g_data.getInt(ACID_PUMPS);
+
+			data[_settings][STR(PUMP_OFF)] = g_data.getInt(PUMP_OFF);
+			data[_settings][STR(PUMP_SEC)] = g_data.getInt(PUMP_SEC);
+
+			data[_settings][STR(AERO_ON)] = g_data.getInt(AERO_ON);
+			data[_settings][STR(AERO_PUMP)] = g_data.getInt(AERO_PUMP);
+			data[_settings][STR(AERO_PUMP_SEC)] = g_data.getInt(AERO_PUMP_SEC);
+
+			data[_settings][STR(STIR_ON)] = g_data.getInt(STIR_ON);
+			data[_settings][STR(STIR_PUMP)] = g_data.getInt(STIR_PUMP);
+			data[_settings][STR(STIR_PUMP_SEC)] = g_data.getInt(STIR_PUMP_SEC);
+
+			data[_settings][STR(FLOOD_HOURS)] = g_data.getInt(FLOOD_HOURS);
+			data[_settings][STR(FLOOD_MIN)] = g_data.getInt(FLOOD_MIN);
+			data[_settings][STR(FLOOD_HOLD_MIN)] = g_data.getInt(FLOOD_HOLD_MIN);
+			data[_settings][STR(FLOOD_HOLD_SEC)] = g_data.getInt(FLOOD_HOLD_SEC);
+
+			data[_settings][STR(SPRAY_PUMP)] = g_data.getInt(SPRAY_PUMP);
+			data[_settings][STR(SPRAY_PUMP_SEC)] = g_data.getInt(SPRAY_PUMP_SEC);
+			data[_settings][STR(SPRAY_CONS)] = g_data.getInt(SPRAY_CONS);
+			data[_settings][STR(SPRAY_CYCL)] = g_data.getInt(SPRAY_CYCL);
+			data[_settings][STR(SPRAY_MIN)] = g_data.getInt(SPRAY_MIN);
+			data[_settings][STR(SPRAY_SEC)] = g_data.getInt(SPRAY_SEC);
+			data[_settings][STR(SPRAY_CYCL_MIN)] = g_data.getInt(SPRAY_CYCL_MIN);
+			data[_settings][STR(SPRAY_CYCL_SEC)] = g_data.getInt(SPRAY_CYCL_SEC);
+
+			data[_settings][STR(DRIP_PUMP)] = g_data.getInt(DRIP_PUMP);
+			data[_settings][STR(DRIP_PUMP_SEC)] = g_data.getInt(DRIP_PUMP_SEC);
+			data[_settings][STR(DRIP_CONS)] = g_data.getInt(DRIP_CONS);
+			data[_settings][STR(DRIP_CYCL)] = g_data.getInt(DRIP_CYCL);
+			data[_settings][STR(DRIP_MIN)] = g_data.getInt(DRIP_MIN);
+			data[_settings][STR(DRIP_SEC)] = g_data.getInt(DRIP_SEC);
+			data[_settings][STR(DRIP_CYCL_MIN)] = g_data.getInt(DRIP_CYCL_MIN);
+			data[_settings][STR(DRIP_CYCL_SEC)] = g_data.getInt(DRIP_CYCL_SEC);
+			data[_settings][STR(ADD_LED_BRIGHT)] = g_data.getInt(ADD_LED_BRIGHT);
+			data[_settings][STR(EC_HYST)] = g_data.getFloat(EC_HYST);
+			data[_settings][STR(PH_HYST)] = g_data.getFloat(PH_HYST);
+			data[_settings][STR(PUMP_TIMEOUT)] = g_data.getInt(PUMP_TIMEOUT);
+			data[_settings][STR(NORM_AL_TM_HI)] = g_data.getInt(NORM_AL_TM_HI);
+			data[_settings][STR(NORM_AL_TM_LO)] = g_data.getInt(NORM_AL_TM_LO);
+			data[_settings][STR(ADD_MEAS_INT)] = g_data.getInt(ADD_MEAS_INT);
+			data[_settings][STR(SOLUTIONS_INT)] = g_data.getInt(SOLUTIONS_INT);
+			data[_settings][STR(ALLOWED_PH_MIN)] = g_data.getFloat(ALLOWED_PH_MIN);
+			data[_settings][STR(ALLOWED_PH_MAX)] = g_data.getFloat(ALLOWED_PH_MAX);
+			data[_settings][STR(ALLOWED_EC_MIN)] = g_data.getFloat(ALLOWED_EC_MIN);
+			data[_settings][STR(ALLOWED_EC_MAX)] = g_data.getFloat(ALLOWED_EC_MAX);
+
+			//all rig sensors
+			if (io.noTds())
+				data[_sensors]["EC"] = "no EC sensor";
+			else
+				data[_sensors]["EC"] = io.getEC();
+
+			if (io.noPh())
+				data[_sensors]["PH"] = "no pH sensor";
+			else
+				data[_sensors]["PH"] = io.getPH();
+
+			if (io.noSht())
+				data[_sensors]["SHT"] = "no SHT sensor";
+			else {
+				data[_sensors]["SHT"]["TEM"] = io.getTem();
+				data[_sensors]["SHT"]["HUM"] = io.getHum();
+			}
+
+			io.readADC();
+
+			uint16_t* values = io.getAnalogValues();
+
+			data[_sensors]["ADC1"] = values[ADC_1];
+			data[_sensors]["ADC2"] = values[ADC_2];
+			data[_sensors]["ADC3"] = values[ADC_3];
+			data[_sensors]["ADC4"] = values[ADC_4];
+
+			data[_sensors]["PORT_A"] = io.getOut(PWR_PG_PORT_A);
+			data[_sensors]["PORT_B"] = io.getOut(PWR_PG_PORT_B);
+			data[_sensors]["PORT_C"] = io.getOut(PWR_PG_PORT_C);
+			data[_sensors]["PORT_D"] = io.getOut(PWR_PG_PORT_D);
+			data[_sensors]["PORT_E"] = io.getOut(PWR_PG_PORT_E);
+			data[_sensors]["PORT_F"] = io.getOut(PWR_PG_PORT_F);
+			data[_sensors]["PORT_G"] = io.getOut(PWR_PG_PORT_G);
+			data[_sensors]["PORT_H"] = io.getOut(PWR_PG_PORT_H);
+			data[_sensors]["FAN"] = io.getOut(PWR_PG_FAN);
+			data[_sensors]["LIGHT"] = io.getOut(PWR_PG_LIGHT);
+			data[_sensors]["MOTOR_UP"] = io.getOut(PWR_PG_UP);
+			data[_sensors]["MOTOR_DOWN"] = io.getOut(PWR_PG_DOWN);
+
+			HTTPClient http;
+			String req = (String)_protocol+_server+_postReq;
+			http.begin(_client, req);
+
+			int httpCode = http.POST(data.dump().c_str());
+
+			if (httpCode = HTTP_CODE_OK) {
+#ifdef ONLINE_DEBUG
+				Serial.println("Data sent");
+#endif
+			}
+			data.clear();
 		}
 
 		void update()

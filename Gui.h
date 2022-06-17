@@ -695,6 +695,11 @@ class Text: public ScrObj {
 		{
 		}
 
+		virtual void invalidate() override
+		{
+			_invalid = true;
+		}
+
 		virtual void freeRes() override
 		{
 			if (_index == EMPTY_STR)
@@ -817,10 +822,13 @@ class Text: public ScrObj {
 
 		virtual void erase() override
 		{
+			if (!_invalid)
+				return;
 			if (_index == EMPTY_STR)
 				return;
 
 			tft.fillRect(_x + _dx, _y + _dy, _w, _h, _bg);
+			_invalid = false;
 			//freeRes();
 		}
 
@@ -1023,6 +1031,11 @@ class BodyText: public ScrObj {
 	public:
 		BodyText(): ScrObj(0, TEXT_HEIGHT)
 		{
+		}
+
+		virtual void invalidate() override
+		{
+			_invalid = true;
 		}
 
 		virtual void freeRes() override
@@ -1368,8 +1381,10 @@ class InputField: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, TFT_WHITE);
-			if (!_notext)
+			if (!_notext) {
+				_text.invalidate();
 				_text.erase();
+			}
 			freeRes();
 		}
 
@@ -1890,6 +1905,7 @@ class CheckBox: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_text.invalidate();
 			_text.erase();
 			freeRes();
 		}
@@ -2057,6 +2073,7 @@ class Toggle: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_text.invalidate();
 			_text.erase();
 			freeRes();
 		}
@@ -2324,6 +2341,7 @@ class RadioButton: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_text.invalidate();
 			_text.erase();
 			freeRes();
 		}
@@ -2507,6 +2525,7 @@ class Wait: public ScrObj {
 		virtual void erase() override
 		{
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_waitText.invalidate();
 			_waitText.erase();
 			freeRes();
 		}
@@ -3131,6 +3150,9 @@ class Page {
 
 		ScrObj* getCurrItemAt(size_t i)
 		{
+			if (i >= _selectable.size())
+				return nullptr;
+
 			if (_selectable.at(i)->isVisible())
 				return _selectable.at(i);
 			else

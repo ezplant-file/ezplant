@@ -220,11 +220,14 @@ class Panel {
 			}
 
 			/* time stuff */
-			gTimeStr = *datetime.getTimeStr();
-			_time.invalidate();
-			_time.prepare();
-			_time.erase();
-			_time.draw();
+			if (currPage == pages[MAIN_PG]) {
+				gTimeStr = *datetime.getTimeStr();
+				_time.invalidate();
+				_time.prepare();
+				_time.erase();
+				_time.invalidate();
+				_time.draw();
+			}
 
 			_timestamp = millis();
 
@@ -530,6 +533,9 @@ class App {
 
 			/* online stuff */
 			online.update();
+			if (online.tokenLoaded()) {
+				online.sendData();
+			}
 
 
 			/*
@@ -577,6 +583,7 @@ class App {
 				gMainPageText->invalidate();
 				gMainPageText->prepare();
 				gMainPageText->erase();
+				gMainPageText->invalidate();
 				gMainPageText->draw();
 
 			}

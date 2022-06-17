@@ -336,6 +336,7 @@ typedef enum {
 	OM_CODE_TXT,
 	OM_REQ_TXT,
 	OM_CONNECTED,
+	OM_DISCONNECT,
 
 	END_OF_STRINGS
 } dispStrings_t;
