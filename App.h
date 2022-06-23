@@ -23,6 +23,8 @@ WebServer server(80);
 // ping
 #include <ESP32Ping.h>
 
+#define PRESET_UTC 3
+
 /*--------------------------------------------------------------------------------------------*/
 
 // debounce stuff
@@ -39,7 +41,6 @@ WebServer server(80);
 uint8_t g_dimafter = 20;
 int16_t g_init_brightness = 30;
 bool g_ntp_sync = true;
-int8_t gUTC = 3;
 bool g_wifi_on = true;
 bool g_first_launch = true;
 

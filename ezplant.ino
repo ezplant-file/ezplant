@@ -10,7 +10,8 @@
 //#define EXPANDERS_DEBUG
 //#define APP_TESTING
 #define APP_DEBUG
-#define ONLINE_DEBUG
+//#define ONLINE_DEBUG
+#define TIME_DEBUG
 
 #define TASKS
 #include "settings.h"
@@ -118,7 +119,7 @@ bool loadSettings()
 
 		gUTC = load["gUTC"].get<int8_t>();
 
-		datetime.initUTC(gUTC);
+		datetime.initUTC();
 
 		g_selected_lang = load["lang"].get<lang_t>();
 		gwsWifiChBox.on(load["g_wifi_on"].get<bool>());
@@ -408,7 +409,7 @@ void callPage(void* page_ptr)
 
 	if (currPage->lastStage()) {
 		g_first_launch = false;
-		datetime.initUTC(gUTC);
+		//datetime.initUTC(gUTC);
 		// save rig setup day of the year
 		datetime.setStartDay();
 		g_data.set(START_DAY, datetime.getStartDay());
@@ -4469,6 +4470,7 @@ void linkPages()
 
 void setup(void)
 {
+	gUTC = PRESET_UTC;
 #ifdef APP_DEBUG
 	Serial.begin(115200);
 #endif

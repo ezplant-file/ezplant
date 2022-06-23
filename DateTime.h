@@ -20,7 +20,7 @@ extern Page* currPage;
 #define RTC_CHECK_INTERVAL 60000
 #define USER_INPUT_SETTLE 500
 
-std::atomic<int8_t> g_utc;
+std::atomic<int8_t> gUTC;
 
 extern std::atomic<bool> g_ping_success;
 
@@ -226,13 +226,12 @@ class DateTime: public ScrObj {
 
 		int8_t getUTC()
 		{
-			return g_utc;
+			return gUTC;
 		}
 
-		void initUTC(int8_t utc)
+		void initUTC()
 		{
-			g_utc = utc;
-			configTime(g_utc*3600, 0, "");
+			configTime(gUTC*3600, 0, "");
 		}
 
 		void setUTC(void* obj)
@@ -246,7 +245,7 @@ class DateTime: public ScrObj {
 
 			InputField* utc = (InputField*) obj;
 
-			g_utc = utc->getValue();
+			gUTC = utc->getValue();
 		}
 
 		void getI2Ctime()
@@ -259,11 +258,18 @@ class DateTime: public ScrObj {
 			//lock.unlock();
 		}
 
-		void setI2Ctime()
+		bool setI2Ctime()
 		{
 			//lock_t lock(timeMutex);
 			rtc.settimeUnix(mktime(&_timeinfo));
-			//lock.unlock();
+			time_t time;
+			time = rtc.gettimeUnix();
+			struct tm *tmp = localtime(&time);
+
+			if (tmp->tm_hour != _timeinfo.tm_hour)
+				return false;
+
+			return true;
 		}
 
 		void syncNTP()
@@ -272,17 +278,21 @@ class DateTime: public ScrObj {
 				return;
 			}
 
-			configTime(3600*g_utc, 0, _nptServer);
+			configTime(3600*gUTC, 0, _nptServer);
 			if (!getLocalTime(&_timeinfo)) {
 				getI2Ctime();
-#ifdef APP_DEBUG
+#ifdef TIME_DEBUG
 				Serial.println("failed to sync ntp time");
 #endif
 				return;
 			}
 			else {
 				_sync_succ = true;
-				setI2Ctime();
+
+				if (!setI2Ctime())
+#ifdef TIME_DEBUG
+					Serial.println("failed to set i2c time");
+#endif
 			}
 		}
 
@@ -386,17 +396,12 @@ class DateTime: public ScrObj {
 			_visible[YEAR].setCallback(std::bind(&DateTime::setYear, this, std::placeholders::_1));
 
 			for (auto& i:_visible) {
-				//i.adjustX(-4);
 				i.adjustTextX(-5);
 				i.adjustTextY(-1);
-				//i.showLeadZero();
 				i.setFont(MIDFONT);
-				//i.setText(EMPTY_STR);
-				//i.setWidth(TWO_CHR);
 				timePage.addItem(&i);
 			}
 
-			//_visible[YEAR].setWidth(FOUR_CHR);
 			_visible[YEAR].adjustWidth(4);
 		}
 
