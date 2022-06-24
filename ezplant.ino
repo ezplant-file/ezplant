@@ -1739,8 +1739,8 @@ Page* buildAddSettPage()
 	alTime.setText(AS1_STIME);
 
 	static HourLimits time(59, 110);
-	ScrObj* lo = (ScrObj*) time.getLowerPtr();
-	ScrObj* hi = (ScrObj*) time.getHigherPtr();
+	InputField* lo = (InputField*) time.getLowerPtr();
+	InputField* hi = (InputField*) time.getHigherPtr();
 	lo->setSettingsId(NORM_AL_TM_LO);
 	hi->setSettingsId(NORM_AL_TM_HI);
 	lo->setValue(g_data.getInt(NORM_AL_TM_LO));

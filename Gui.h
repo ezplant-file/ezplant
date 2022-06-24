@@ -258,21 +258,17 @@ class ScrObj {
 			_callback(_objptr);
 		}
 
+		/*
 		void* returnPtr()
 		{
 			return _objptr;
 		}
+		*/
 
 		virtual void setCallback(std::function<void(void*)> callback, void* objptr = nullptr)
 		{
 			_callback = callback;
 			_objptr = objptr;
-		}
-
-
-		void setSelectable(bool isSelectable = true)
-		{
-			_isSelectable = isSelectable;
 		}
 
 		virtual bool isVisible()
@@ -320,10 +316,12 @@ class ScrObj {
 			return _isSelectable;
 		}
 
+		/*
 		bool isPressed()
 		{
 			return _isPressed;
 		}
+		*/
 
 		bool isSelected()
 		{
@@ -365,7 +363,7 @@ class ScrObj {
 		// set circle cursor
 		void setCircle()
 		{
-			_isSquare = false;
+			//_isSquare = false;
 			_isCircle = true;
 		}
 
@@ -374,10 +372,12 @@ class ScrObj {
 			return _isCircle;
 		}
 
+		/*
 		bool isSquare()
 		{
 			return _isSquare;
 		}
+		*/
 
 		virtual uint16_t getCurCol()
 		{
@@ -428,16 +428,6 @@ class ScrObj {
 			return !_neverHide;
 		}
 
-		rig_settings_t getSettingsId()
-		{
-			return _sett_id;
-		}
-
-		void setSettingsId(rig_settings_t id)
-		{
-			_sett_id = id;
-		}
-
 		virtual void add()
 		{
 		}
@@ -458,15 +448,15 @@ class ScrObj {
 		void* _objptr = nullptr;
 		bool _isVisible = true;
 		bool _isSelectable;
-		bool _isPressed = false;
+		//bool _isPressed = false;
 		bool _isSelected = false;
 		bool _invalid = false;
-		bool _isSquare = true;
+		//bool _isSquare = true;
 		bool _isCircle = false;
 		bool _neverHide = false;
+
 		// cursor erase color
 		uint16_t _curCol = 0xffff;
-		rig_settings_t _sett_id = SETT_EMPTY;
 };
 
 class Line: public ScrObj {
@@ -1257,6 +1247,25 @@ class InputField: public ScrObj {
 		{
 		}
 
+		void setSelectable(bool isSelectable = true)
+		{
+			_isSelectable = isSelectable;
+		}
+
+	private:
+		rig_settings_t _sett_id = SETT_EMPTY;
+	public:
+
+		rig_settings_t getSettingsId()
+		{
+			return _sett_id;
+		}
+
+		void setSettingsId(rig_settings_t id)
+		{
+			_sett_id = id;
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid || !_isVisible)
@@ -1871,6 +1880,19 @@ class CheckBox: public ScrObj {
 		{
 			freeRes();
 		}
+	private:
+		rig_settings_t _sett_id = SETT_EMPTY;
+	public:
+
+		rig_settings_t getSettingsId()
+		{
+			return _sett_id;
+		}
+
+		void setSettingsId(rig_settings_t id)
+		{
+			_sett_id = id;
+		}
 
 		int getTextX()
 		{
@@ -2296,6 +2318,22 @@ class RadioButton: public ScrObj {
 		RadioButton(int w, int h): ScrObj(w, h)
 		{
 		}
+
+	private:
+		rig_settings_t _sett_id = SETT_EMPTY;
+	public:
+
+		rig_settings_t getSettingsId()
+		{
+			return _sett_id;
+		}
+
+		void setSettingsId(rig_settings_t id)
+		{
+			_sett_id = id;
+		}
+
+
 
 		void adjustCircleY(int dy)
 		{
