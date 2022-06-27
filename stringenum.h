@@ -306,9 +306,6 @@ typedef enum {
 	S84_SUBTTL,
 	S84_MODE,
 
-	// list of last stages
-	LSTAGES_STR,
-
 	// main page string
 	MP_STRING,
 

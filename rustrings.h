@@ -306,9 +306,6 @@ const char* ruStrings[END_OF_STRINGS] PROGMEM = {
 	"Капельный полив",
 	"Режим полива",
 
-	// list of last stages
-	"last stages",
-
 	// main page string
 	"Показание от ",
 

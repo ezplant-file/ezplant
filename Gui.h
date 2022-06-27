@@ -1299,7 +1299,7 @@ class InputField: public ScrObj {
 				tmp+=":00";
 			}
 
-			tmp += _str;
+			//tmp += _str;
 
 			uint8_t calcPaddingY = _paddingY;
 
@@ -1516,7 +1516,8 @@ class InputField: public ScrObj {
 		{
 			_bg = bg;
 			_fg = fg;
-			_text.setColors(fg, bg);
+			//_text.setColors(fg, bg);
+			_text.setColors(fg, TFT_WHITE);
 			_invalid = true;
 		}
 
@@ -1589,10 +1590,12 @@ class InputField: public ScrObj {
 			_dw = width;
 		}
 
+		/*
 		void setStr(const char* str)
 		{
 			_str = str;
 		}
+		*/
 
 		void setTDS()
 		{
@@ -1626,6 +1629,7 @@ class InputField: public ScrObj {
 
 	protected:
 		bool _hardlimits = false;
+
 		union {
 			int i = 1;
 			float f;
@@ -1641,8 +1645,8 @@ class InputField: public ScrObj {
 		bool _showLead = false;
 		bool _showPlus = false;
 		uint16_t _fg = FONT_COL_565;
-		//uint16_t _bg = COL_GREY_E3_565;
-		uint16_t _bg = greyscaleColor(0xDC);
+		uint16_t _bg = COL_GREY_DC_565;
+		//uint16_t _bg = greyscaleColor(0xDC);
 		int8_t _dy = 0;
 		int8_t _dx = 0;
 		int8_t _dw = 0;
@@ -1653,7 +1657,7 @@ class InputField: public ScrObj {
 		float _flower = 0.1;
 		uint8_t _paddingX = IN_FLD_X_PADDING;
 		uint8_t _paddingY = IN_FLD_Y_PADDING;
-		const char* _str = "";
+		//const char* _str = "";
 		bool _background = true;
 		bool _notext = false;
 		placeholder_t _width = THREE_CHR;
@@ -1709,7 +1713,7 @@ class OutputFieldMain: public InputField {
 				tmp+=":00";
 			}
 
-			tmp += _str;
+			//tmp += _str;
 
 			tft.print(tmp);
 			tft.unloadFont();

@@ -529,6 +529,7 @@ void changeLangRus(void* arg)
 	topBar.erase();
 	topBar.invalidateAll();
 	topBar.setText(SCREENLANG);
+	currPage->invalidateAll();
 	currPage->erase();
 	currPage->invalidateAll();
 	currPage->prepare();
@@ -552,6 +553,7 @@ void changeLangEng(void* arg)
 	topBar.erase();
 	topBar.invalidateAll();
 	topBar.setText(SCREENLANG);
+	currPage->invalidateAll();
 	currPage->erase();
 	currPage->invalidateAll();
 	currPage->prepare();
@@ -2811,7 +2813,7 @@ Page* buildStage4()
 	temp.setXYpos(45, 210);
 	temp.setText(MORE_THAN);
 	temp.setWidth(FOUR_CHR);
-	temp.setStr("°C");
+	//temp.setStr("°C");
 	temp.setSettingsId(PASSVENT_TEMP_THRES);
 	temp.setValue(g_data.getInt(PASSVENT_TEMP_THRES));
 	temp.setCallback(saveInputFieldSetting, &temp);
@@ -2832,7 +2834,7 @@ Page* buildStage4()
 	static InputField hum;
 	hum.setXYpos(45, 261);
 	hum.setText(MORE_THAN);
-	hum.setStr("%");
+	//hum.setStr("%");
 	hum.setSettingsId(PASSVENT_HUM_THRES);
 	hum.setValue(g_data.getInt(PASSVENT_HUM_THRES));
 	hum.setCallback(saveInputFieldSetting, &hum);

@@ -495,15 +495,11 @@ class App {
 				//rtc.begin();
 			g_ping_success = false;
 
-			//datetime.init();
-			//gMainPageStr = String(scrStrings[MP_STRING]) + *datetime.getDateStr();
-
 			tft.init();
 			//tft.initDMA(true);
 			tft.setRotation(0);
 			tft.fillScreen(greyscaleColor(BACKGROUND));
 
-			//Serial.println("Finish INIT");
 			createTasks();
 
 			online.init();
@@ -765,7 +761,6 @@ class App {
 				g_phWait.setInvisible();
 				g_ph_read.setVisible();
 				currItem = currPage->getCurrItemAt(0);
-				//currItem = &back;
 				_iterator = 0;
 			}
 
@@ -789,7 +784,6 @@ class App {
 				g_tdsWait.setInvisible();
 				g_tds_read.setVisible();
 				currItem = currPage->getCurrItemAt(0);
-				//currItem = &tds_diag_back;
 				_iterator = 0;
 			}
 

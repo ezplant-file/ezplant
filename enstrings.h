@@ -251,7 +251,7 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Planting. Stage 6",
 	"Concentration (EC)",
 	"Set solution proportions",
-	"Pump time (portion size)"
+	"Pump time (portion size)",
 	"A", "B", "C",
 
 	// stage 7
@@ -306,11 +306,8 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Drip irrigation",
 	"Irrigation mode",
 
-	// list of last stages
-	"last stages",
-
 	// main page string
-	"Sensors data taken at ",
+	"Taken at ",
 
 	// debug measure
 	"m_state",
