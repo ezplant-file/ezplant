@@ -200,11 +200,11 @@ class Panel {
 				_hideTime();
 			}
 
-			_statusWIFI.reload();
+			//_statusWIFI.reload();
 			_statusWIFI.draw();
 			_statusWIFI.freeRes();
 
-			_statusInternet.reload();
+			//_statusInternet.reload();
 			_statusInternet.draw();
 			_statusInternet.freeRes();
 

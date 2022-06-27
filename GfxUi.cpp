@@ -142,7 +142,8 @@ uint32_t GfxUi::read32(fs::File &f) {
 //====================================================================================
 //   Opens the image file and prime the Jpeg decoder
 //====================================================================================
-void GfxUi::drawJpeg(fs::File& jpegFile, int xpos, int ypos) {
+//void GfxUi::drawJpeg(fs::File& jpegFile, int xpos, int ypos) {
+void GfxUi::drawJpeg(const char* filename, int xpos, int ypos) {
 
 	/*
   Serial.println("===========================");
@@ -150,9 +151,9 @@ void GfxUi::drawJpeg(fs::File& jpegFile, int xpos, int ypos) {
   Serial.println("===========================");
 
   // Open the named file (the Jpeg decoder library will close it after rendering image)
+  */
   fs::File jpegFile = SPIFFS.open( filename, "r");    // File handle reference for SPIFFS
   //  File jpegFile = SD.open( filename, FILE_READ);  // or, file handle reference for SD library
-  */
 
   if ( !jpegFile ) {
     Serial.print("ERROR: File \""); Serial.print(jpegFile.name()); Serial.println ("\" not found!");

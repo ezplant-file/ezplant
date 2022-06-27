@@ -227,7 +227,7 @@ void getCallback()
 	saveFile();
 
 	g_wifi_set = true;
-	pages[SETT_PG] = buildSettingsPage();
+	pages[SETT_PG] = buildSettingsPage(); // TODO: change that; only change pointer to wifi page
 
 	if (currPage == pages[WIFI_PG]) {
 		callPage(pages[WIFI_SETT_PG]);
@@ -368,7 +368,7 @@ void gChangeWifi(void* arg)
 	g_wifi_set = false;
 
 	checkWifi();
-	pages[SETT_PG] = buildSettingsPage();
+	pages[SETT_PG] = buildSettingsPage(); // TODO: change that; only change pointer to wifi page
 	callPage(pages[WIFI_PG]);
 }
 
@@ -1969,7 +1969,7 @@ Page* buildSettingsPage()
 	// string pointers for items
 	dispStrings_t ru_menu_settings[MN_NITEMS];
 	ru_menu_settings[MN_TIMEDATE] = TIMEDATE;
-	ru_menu_settings[MN_WIFI] = WIFI;
+	ru_menu_settings[MN_WIFI] = WIFI; // <----- points to different locations based on g_wifi_set. TODO: redo
 	ru_menu_settings[MN_SCREENLANG] = SCREENLANG;
 	ru_menu_settings[MN_CALIB] = CALIB;
 	ru_menu_settings[MN_THRES] = THRES;
@@ -2342,23 +2342,45 @@ void inputsCallback(void* inputptr)
 Page* buildFirstPage()
 {
 	static Page firstPlanting;
+
+	Serial.println();
+	Serial.print("Size of the page: ");
+	Serial.println(sizeof(firstPlanting));
+
 	static Text heading1;
 	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	heading1.setFont(BOLDFONT);
 	heading1.setText(FP_SUBTTL);
 
+	Serial.println();
+	Serial.print("Size of the heading: ");
+	Serial.println(sizeof(heading1));
+
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 63);
 	par1.setText(FP_PAR);
+
+	Serial.println();
+	Serial.print("Size of the paragraph: ");
+	Serial.println(sizeof(par1));
 
 	static BlueTextButton start;
 	start.setXYpos(PG_LEFT_PADD, 153);
 	start.setText(FP_BTN);
 	start.setCallback(callPage, pages[STAGE1_PG]);
 
+	Serial.println();
+	Serial.print("Size of the button: ");
+	Serial.println(sizeof(start));
+
 	static Image seeds;
 	seeds.setXYpos(174, 142);
 	seeds.loadRes(images[IMG_SEEDS]);
+
+	Serial.println();
+	Serial.print("Size of the image: ");
+	Serial.println(sizeof(seeds));
+	Serial.println();
 
 	firstPlanting.addItem(&heading1);
 	firstPlanting.addItem(&par1);
@@ -4298,16 +4320,6 @@ Page* buildMainPage()
 	return &mainPage;
 }
 
-/*
-enum {
-	BTN_92,
-	BTN_82,
-	BTN_83,
-	BTN_84,
-	LP_NBTNS
-};
-*/
-
 void gSetBacklight(void* arg)
 {
 	analogWrite(LED_PIN, gBrightness.getValue());
@@ -4399,8 +4411,7 @@ void buildAllPages()
 	pages[ADDSETT2_PG] = buildSecondAddSettPage();
 	pages[SETT_PG] = buildSettingsPage();
 
-	// list of last stages
-	//pages[LSTAGES] = lastPagesList();
+	// online connect page
 	pages[ONLINE_PG] = buildOnlinePage();
 
 	pages[MENU_PG] = buildMenuPage();
@@ -4445,7 +4456,6 @@ void linkPages()
 
 	// menu pages
 	pages[SETT_PG]->setPrev(pages[MENU_PG]);
-	//pages[FONT_PG]->setPrev(pages[MENU_PG]);
 	pages[TEST_PG]->setPrev(pages[MENU_PG]);
 
 	// settings pages

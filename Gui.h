@@ -1103,20 +1103,23 @@ class Image: public ScrObj {
 			if (!_invalid || !_isVisible)
 				return;
 
-			reload();
+			//reload();
 
-			if (_jpegFile) {
-				ui.drawJpeg(_jpegFile, _x, _y);
+			//if (_jpegFile) {
+			//	ui.drawJpeg(_jpegFile, _x, _y);
+				ui.drawJpeg(_filename, _x, _y);
 				_w = JpegDec.width;
 				_h = JpegDec.height;
 				_invalid = false;
-			}
+			//}
 		}
 
+		/*
 		void reload()
 		{
-			_jpegFile = SPIFFS.open(_filename, "r");
+			//_jpegFile = SPIFFS.open(_filename, "r");
 		}
+		*/
 
 		void loadRes(const char* filename)
 		{
@@ -1128,12 +1131,12 @@ class Image: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			if (_jpegFile)
-				_jpegFile.close();
+			//if (_jpegFile)
+				//_jpegFile.close();
 		}
 
 	private:
-		fs::File _jpegFile;
+		//fs::File _jpegFile;
 		const char* _filename;
 };
 
@@ -1151,12 +1154,13 @@ class ImageButton: public ScrObj {
 			if (!_invalid)
 				return;
 
-			reload();
+			//reload();
 
-			if (_jpegFile) {
-				ui.drawJpeg(_jpegFile, _x, _y);
+			//if (_jpegFile) {
+				//ui.drawJpeg(_jpegFile, _x, _y);
+				ui.drawJpeg(_filename, _x, _y);
 				_invalid = false;
-			}
+			//}
 		}
 
 		virtual bool isVisible() override
@@ -1171,12 +1175,15 @@ class ImageButton: public ScrObj {
 		}
 		*/
 
+		/*
 		void reload()
 		{
 			_jpegFile = SPIFFS.open(_filename, "r");
 		}
+		*/
 
-		void loadRes(const String& filename)
+		//void loadRes(const String& filename)
+		void loadRes(const char* filename)
 		{
 			//_jpegFile = SPIFFS.open(filename, "r");
 			//_w = _h = 30;
@@ -1187,13 +1194,13 @@ class ImageButton: public ScrObj {
 
 		virtual void freeRes() override
 		{
-			if (_jpegFile)
-				_jpegFile.close();
+			//if (_jpegFile)
+				//_jpegFile.close();
 		}
 
 	private:
-		fs::File _jpegFile;
-		String _filename;
+		//fs::File _jpegFile;
+		const char* _filename;
 };
 
 class SimpleBox: public ScrObj {
@@ -1908,7 +1915,7 @@ class CheckBox: public ScrObj {
 			if (!_invalid || !_isVisible)
 				return;
 
-			reload();
+			//reload();
 
 			_text.draw();
 
@@ -1916,16 +1923,19 @@ class CheckBox: public ScrObj {
 				tft.fillRect(_x, _y, _w, _h, greyscaleColor(CHK_BOX_COL));
 				_invalid = false;
 			}
-			else if (_jpegFile) {
-				ui.drawJpeg(_jpegFile, _x, _y);
+			else
+				/*if (_jpegFile)*/
+			{
+				//ui.drawJpeg(_jpegFile, _x, _y);
+				ui.drawJpeg(_filename, _x, _y);
 				_invalid = false;
 			}
 		}
 
 		virtual void freeRes() override
 		{
-			if (_jpegFile)
-				_jpegFile.close();
+			//if (_jpegFile)
+				//_jpegFile.close();
 		}
 
 		virtual void erase() override
@@ -2031,10 +2041,12 @@ class CheckBox: public ScrObj {
 			_isOn = isOn;
 		}
 
+		/*
 		void reload()
 		{
 			_jpegFile = SPIFFS.open(_filename, "r");
 		}
+		*/
 
 	private:
 		std::function<void(void*, void*)> _callback2;
@@ -2045,7 +2057,7 @@ class CheckBox: public ScrObj {
 		//bool _textAligned = false;
 		bool _isOn = false;
 		//TFT_eSprite* spr;
-		fs::File _jpegFile;
+		//fs::File _jpegFile;
 		const char* _filename = CHK_BOX_FILE;
 };
 
