@@ -3967,24 +3967,24 @@ Page* buildMainPage()
 	mainPage.addItem(&gMesState);
 #endif
 
-	static BlueTextButton menu;
+	auto  menu = std::make_unique<BlueTextButton>();
 	menu.setXYpos(FP_LEFT_PADDING, 289);
 	menu.setText(MENU);
 	menu.setCallback(callPage, pages[MENU_PG]);
 
-	static BlueTextButton pause;
+	auto  pause = std::make_unique<BlueTextButton>();
 	pause.setXYpos(180, 289);
 	pause.setText(TXT_PAUSE);
 	//pause.setCallback(std::bind(&Rig::halt, &g_rig));
 	pause.setCallback(pauseBtnCallback, &pause);
 
-	static Image drop;
+	auto  drop = std::make_unique<Image>();
 	drop.setXYpos(17, 40);
 	drop.loadRes(images[IMG_DROP]);
 	mainPage.addItem(&drop);
 
 	/* big letters */
-	static OutputField ph;
+	auto OutputField ph;
 	ph.setXYpos(110, 47);
 	ph.setWH(52, INPUT_H);
 	ph.setFont(BOLDFONT);
@@ -3995,7 +3995,7 @@ Page* buildMainPage()
 	g_ph = &ph;
 	mainPage.addItem(&ph);
 
-	static OutputField tds;
+	auto OutputField tds;
 	tds.setXYpos(110, 71);
 	tds.setWH(62, INPUT_H);
 	tds.setFont(BOLDFONT);
@@ -4006,7 +4006,7 @@ Page* buildMainPage()
 	g_tds = &tds;
 	mainPage.addItem(&tds);
 
-	static StringText mainStr;
+	auto StringText mainStr;
 	mainStr.setXYpos(7, 100);
 	mainStr.setText(gMainPageStr);
 	mainStr.setPaddingX(0);
@@ -4024,7 +4024,7 @@ Page* buildMainPage()
 		NBOXES
 	};
 
-	static CompositeBox boxes[NBOXES];
+	auto CompositeBox boxes[NBOXES];
 
 	int j = 0;
 	int gap = 5;
@@ -4045,10 +4045,10 @@ Page* buildMainPage()
 
 
 	/* bulb box */
-	static Image smallbulb;
+	auto Image smallbulb;
 	smallbulb.loadRes(images[IMG_BULB_S]);
 
-	static CircIndicator ledInd;
+	auto CircIndicator ledInd;
 	ledInd.setText(EMPTY_STR);
 	ledInd.noBg();
 	g_light = &ledInd;
@@ -4057,10 +4057,10 @@ Page* buildMainPage()
 	boxes[B_BULB].addItem(&ledInd);
 
 	/* door box */
-	static Image smalldoor;
+	auto Image smalldoor;
 	smalldoor.loadRes(images[IMG_DOOR_S]);
 
-	static CircIndicator doorInd;
+	auto CircIndicator doorInd;
 	doorInd.setText(EMPTY_STR);
 	doorInd.noBg();
 	g_passvent = &doorInd;
@@ -4069,10 +4069,10 @@ Page* buildMainPage()
 	boxes[B_DOOR].addItem(&doorInd);
 
 	/* fan box */
-	static Image smallfan;
+	auto Image smallfan;
 	smallfan.loadRes(images[IMG_COOLER_S]);
 
-	static CircIndicator fanInd;
+	auto CircIndicator fanInd;
 	fanInd.setText(EMPTY_STR);
 	fanInd.noBg();
 	g_vent = &fanInd;
@@ -4081,10 +4081,10 @@ Page* buildMainPage()
 	boxes[B_FAN].addItem(&fanInd);
 
 	/* humidity box */
-	static Image hum;
+	auto Image hum;
 	hum.loadRes(images[IMG_HUM]);
 
-	static OutputFieldMain humInd;
+	auto OutputFieldMain humInd;
 	humInd.setFont(BOLDFONT);
 	humInd.noXpadding();
 	humInd.setColors(0, COL_GREY_DC_565);
@@ -4094,7 +4094,7 @@ Page* buildMainPage()
 	humInd.adjustX(3);
 	g_hum = &humInd;
 
-	static Text percent;
+	auto Text percent;
 	percent.setFont(BOLDFONT);
 	percent.setColors(0, COL_GREY_DC_565);
 	percent.adjustX(-7);
@@ -4105,10 +4105,10 @@ Page* buildMainPage()
 	boxes[B_HUM].addItem(&percent);
 
 	/* temperature box */
-	static Image tem;
+	auto Image tem;
 	tem.loadRes(images[IMG_TEMP]);
 
-	static OutputFieldMain temInd;
+	auto OutputFieldMain temInd;
 	temInd.setFont(BOLDFONT);
 	temInd.setColors(0, COL_GREY_DC_565);
 	temInd.setText(EMPTY_STR);
@@ -4118,7 +4118,7 @@ Page* buildMainPage()
 	temInd.setWH(33, 13);
 	g_tem = &temInd;
 
-	static Text degree;
+	auto Text degree;
 	degree.setFont(BOLDFONT);
 	degree.setColors(0, COL_GREY_DC_565);
 	degree.setText(TXT_C);
@@ -4128,14 +4128,14 @@ Page* buildMainPage()
 	boxes[B_TEM].addItem(&degree);
 
 	/* pump box */
-	static Image pump;
+	auto Image pump;
 	pump.loadRes(images[IMG_PUMP]);
 
-	static CircIndicator pumpInd;
+	auto CircIndicator pumpInd;
 	pumpInd.setText(EMPTY_STR);
 	g_pump = &pumpInd;
 
-	static SimpleBox placeh;
+	auto SimpleBox placeh;
 	placeh.setWH(0, 0);
 
 	boxes[B_PUMP].addItem(&pump);
@@ -4152,7 +4152,7 @@ Page* buildMainPage()
 
 	int btboxes_height = 24;
 
-	static SmallBox bottomBoxes[NBTBOXES];
+	auto SmallBox bottomBoxes[NBTBOXES];
 
 	bottomBoxes[TAP].setWH(41, btboxes_height);
 	bottomBoxes[A].setWH(31, btboxes_height);
@@ -4177,13 +4177,13 @@ Page* buildMainPage()
 	mainPage.addItem(&bottomBoxes[PH]);
 
 	/* tap box */
-	static Image tapImg;
+	auto Image tapImg;
 	tapImg.loadRes(images[IMG_TAP]);
 
-	static Image tapImgRed;
+	auto Image tapImgRed;
 	tapImgRed.loadRes(images[IMG_TAP_RED]);
 
-	static CircIndicator tapInd;
+	auto CircIndicator tapInd;
 	tapInd.setText(EMPTY_STR);
 	tapInd.noBg();
 
@@ -4193,12 +4193,12 @@ Page* buildMainPage()
 	g_Tap = &bottomBoxes[TAP];
 
 	/* A box */
-	static NoSpriteText aTxt;
+	auto NoSpriteText aTxt;
 	aTxt.setFont(BOLDFONT);
 	aTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	aTxt.setText(TXT_A);
 
-	static CircIndicator aInd;
+	auto CircIndicator aInd;
 	aInd.setText(EMPTY_STR);
 	aInd.noBg();
 
@@ -4207,12 +4207,12 @@ Page* buildMainPage()
 	g_A = &bottomBoxes[A];
 
 	/* B box */
-	static NoSpriteText bTxt;
+	auto NoSpriteText bTxt;
 	bTxt.setFont(BOLDFONT);
 	bTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	bTxt.setText(TXT_B);
 
-	static CircIndicator bInd;
+	auto CircIndicator bInd;
 	bInd.setText(EMPTY_STR);
 	bInd.noBg();
 
@@ -4221,12 +4221,12 @@ Page* buildMainPage()
 	g_B = &bottomBoxes[B];
 
 	/* C box */
-	static NoSpriteText cTxt;
+	auto NoSpriteText cTxt;
 	cTxt.setFont(BOLDFONT);
 	cTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	cTxt.setText(TXT_C);
 
-	static CircIndicator cInd;
+	auto CircIndicator cInd;
 	cInd.setText(EMPTY_STR);
 	cInd.noBg();
 
@@ -4235,25 +4235,25 @@ Page* buildMainPage()
 	g_C = &bottomBoxes[C];
 
 	/* pH box */
-	static NoSpriteText phTxt;
+	auto NoSpriteText phTxt;
 	phTxt.setFont(BOLDFONT);
 	phTxt.setColors(TFT_BLACK, COL_GREY_DC_565);
 	phTxt.setText(TXT_PH);
 
 	bottomBoxes[PH].setText(&phTxt);
 
-	static CircIndicator phUpInd;
+	auto CircIndicator phUpInd;
 	phUpInd.setText(EMPTY_STR);
 	phUpInd.noBg();
 	phUpInd.adjustCircleY(3);
 
-	static Image phUpImg;
+	auto Image phUpImg;
 	phUpImg.loadRes(images[IMG_PH_UP]);
 
-	static Image phUpImgEmp;
+	auto Image phUpImgEmp;
 	phUpImgEmp.loadRes(images[IMG_PH_UP_EMP]);
 
-	static SmallBox phUp;
+	auto SmallBox phUp;
 	phUp.setXYpos(bottomBoxes[PH].getX() + 28, grid_start+(boxes[0].getH()+gap)*2);
 	phUp.setWH(22, btboxes_height);
 	phUp.setCheck(&phUpInd);
@@ -4262,18 +4262,18 @@ Page* buildMainPage()
 	phUp.invalidate();
 	g_ph_up = &phUp;
 
-	static CircIndicator phDwInd;
+	auto CircIndicator phDwInd;
 	phDwInd.setText(EMPTY_STR);
 	phDwInd.noBg();
 	phDwInd.adjustCircleY(3);
 
-	static Image phDwImg;
+	auto Image phDwImg;
 	phDwImg.loadRes(images[IMG_PH_DW]);
 
-	static Image phDwImgEmp;
+	auto Image phDwImgEmp;
 	phDwImgEmp.loadRes(images[IMG_PH_DW_EMP]);
 
-	static SmallBox phDw;
+	auto SmallBox phDw;
 	phDw.setXYpos(bottomBoxes[PH].getX() + 28 + phUp.getW(), grid_start+(boxes[0].getH()+gap)*2);
 	phDw.setWH(22, btboxes_height);
 	phDw.setCheck(&phDwInd);
@@ -4318,6 +4318,8 @@ unsigned long oldMillis;
 
 void buildAllPages()
 {
+}
+/*
 	// stage8_4
 	pages[STAGE84_PG] = buildStage8_4();
 
@@ -4404,9 +4406,12 @@ void buildAllPages()
 	pages[MENU_PG] = buildMenuPage();
 	pages[MAIN_PG] = buildMainPage();
 }
+*/
 
 void linkPages()
 {
+}
+	/*
 #ifdef APP_DEBUG
 	Serial.println("pages pointers: ");
 	for (auto i:pages)
@@ -4467,6 +4472,7 @@ void linkPages()
 	g_ph_done.setCallback(callPage, pages[MENU_PG]);
 	g_tds_done.setCallback(callPage, pages[MENU_PG]);
 }
+*/
 
 void setup(void)
 {
