@@ -760,9 +760,7 @@ class Text: public ScrObj {
 
 			/**************************************************/
 
-			// TODO: calculate based on longest substring
 			// calculate _w based on string wrap
-
 			const char* str = scrStrings[_index];
 			const char* longest = str;
 			const char* currentLine = str;
@@ -2237,7 +2235,6 @@ skip:
 #define RAD_BG_COL 0xDC
 
 
-// TODO: replace with antialiased image
 class CircRadBtn: public ScrObj {
 	public:
 		CircRadBtn(): ScrObj(RAD_BTN_SIZE, RAD_BTN_SIZE, SELECTABLE)
@@ -3136,11 +3133,9 @@ class Page {
 			for (auto& obj:_items) {
 				if (obj->isVisible()) {
 					_toDraw.push_back(obj);
-					//obj->draw();
 				}
 				else {
 					_toErase.push_back(obj);
-					//obj->erase();
 				}
 			}
 
@@ -3149,8 +3144,6 @@ class Page {
 			}
 
 			for (auto& obj:_toDraw) {
-				//TODO: make this work!
-				//obj->prepare();
 				obj->draw();
 			}
 
@@ -3173,7 +3166,6 @@ class Page {
 
 		void erase()
 		{
-			//tft.fillRect(0, 28, 240, 284 - 28, greyscaleColor(BACKGROUND));
 			for (auto& obj:_items)
 				obj->erase();
 		}
@@ -3181,17 +3173,6 @@ class Page {
 		void prepare()
 		{
 			for (auto& obj:_items) {
-				/*
-				// ::::::: omg, project Zeus :::::::::
-				if (obj->hasInput()) {
-					InputField* itm = (InputField*) currItem;
-					if (itm->isFloat() && itm->getSettingsId())
-						itm->setValue(g_data.getFloat(itm->getSettingsId()));
-					else
-						itm->setValue(g_data.getInt(itm->getSettingsId()));
-				}
-				*/
-
 				if (obj->isVisible())
 					obj->prepare();
 			}

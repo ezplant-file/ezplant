@@ -1,4 +1,3 @@
-//TODO: consider resource manager and page builder classes
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 //#include "esp_task_wdt.h"
@@ -62,12 +61,16 @@ static ExclusiveRadio enSelect;
 
 // Test page items
 Page testPage;
+/*
 static Toggle testTgl;
 static CheckBox testChBox;
 static RadioButton testRad;
 static InputField testInput;
 static GreyTextButton testGreyButton;
 static BlueTextButton testBlueButton;
+*/
+
+GreyTextButton* gWiFigreyTextButton;
 
 /****************** WiFi stuff ***************************************/
 const char* ap_ssid = "ezplant_wifi";
@@ -227,7 +230,8 @@ void getCallback()
 	saveFile();
 
 	g_wifi_set = true;
-	pages[SETT_PG] = buildSettingsPage(); // TODO: change that; only change pointer to wifi page
+	gWiFigreyTextButton->setCallback(callPage, pages[WIFI_SETT_PG]);
+	//pages[SETT_PG] = buildSettingsPage(); // TODO: change that; only change pointer to wifi page
 
 	if (currPage == pages[WIFI_PG]) {
 		callPage(pages[WIFI_SETT_PG]);
@@ -368,7 +372,8 @@ void gChangeWifi(void* arg)
 	g_wifi_set = false;
 
 	checkWifi();
-	pages[SETT_PG] = buildSettingsPage(); // TODO: change that; only change pointer to wifi page
+	gWiFigreyTextButton->setCallback(callPage, pages[WIFI_PG]);
+	//pages[SETT_PG] = buildSettingsPage(); // TODO: change that; only change pointer to wifi page
 	callPage(pages[WIFI_PG]);
 }
 
@@ -483,6 +488,7 @@ void wifiChCallback(void* arg)
 	gwsWifiChBox.draw();
 }
 
+/*
 // test page callbacks
 void tglCallback(void* arg, int i)
 {
@@ -513,6 +519,7 @@ void radCallback(void* arg)
 	testRad.invalidate();
 	testRad.draw();
 }
+*/
 
 // lang page callbacks
 void changeLangRus(void* arg)
@@ -1357,6 +1364,7 @@ Page* buildWiFiSettPage()
 
 /************************ TEST PAGE ******************************/
 
+/*
 Page* buildTestPage()
 {
 	testTgl.setFont(SMALLFONT);
@@ -1415,6 +1423,7 @@ Page* buildTestPage()
 	return &testPage;
 }
 
+*/
 
 /************************ FONT PAGE ******************************/
 
@@ -1664,7 +1673,7 @@ enum mainMenuItems {
 	MM_MON,
 	MM_SETT,
 	MM_DIAG,
-	MM_TEST,
+	//MM_TEST,
 	//MM_FONT,
 	//MM_FIRST_PAGE,
 	MM_NITEMS
@@ -1683,7 +1692,7 @@ Page* buildMenuPage()
 	menu1[MM_MON] = ONLINE_MON;
 	menu1[MM_SETT] = SETTINGS;
 	menu1[MM_DIAG] = DIAG;
-	menu1[MM_TEST] = TEST_PAGE;
+	//menu1[MM_TEST] = TEST_PAGE;
 	//menu1[MM_FONT] = FONT_PAGE;
 	//menu1[MM_FIRST_PAGE] = FP_SUBTTL;
 
@@ -1702,7 +1711,7 @@ Page* buildMenuPage()
 	// set callBacks
 	menu_items[MM_PLANT].setCallback(callPage, pages[STAGE1_PG]);
 	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
-	menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
+	//menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
 	menu_items[MM_MON].setCallback(callPage, pages[ONLINE_PG]);
 	menu_items[MM_DIAG].setCallback(callPage, pages[DIAG_PG]);
 
@@ -1966,10 +1975,12 @@ Page* buildSettingsPage()
 {
 	static GreyTextButton settings_items[MN_NITEMS];
 
+	gWiFigreyTextButton = &settings_items[MN_WIFI];
+
 	// string pointers for items
 	dispStrings_t ru_menu_settings[MN_NITEMS];
 	ru_menu_settings[MN_TIMEDATE] = TIMEDATE;
-	ru_menu_settings[MN_WIFI] = WIFI; // <----- points to different locations based on g_wifi_set. TODO: redo
+	ru_menu_settings[MN_WIFI] = WIFI;
 	ru_menu_settings[MN_SCREENLANG] = SCREENLANG;
 	ru_menu_settings[MN_CALIB] = CALIB;
 	ru_menu_settings[MN_THRES] = THRES;
@@ -4405,7 +4416,7 @@ void buildAllPages()
 	pages[WIFI_SETT_PG] = buildWiFiSettPage();
 	pages[WIFI_PG] = buildWifiPage();
 	//pages[FONT_PG] = buildFontPage();
-	pages[TEST_PG] = buildTestPage();
+	//pages[TEST_PG] = buildTestPage();
 	pages[LANG_PG] = buildLangPage();
 	pages[ADDSETT_PG] = buildAddSettPage();
 	pages[ADDSETT2_PG] = buildSecondAddSettPage();
@@ -4456,7 +4467,7 @@ void linkPages()
 
 	// menu pages
 	pages[SETT_PG]->setPrev(pages[MENU_PG]);
-	pages[TEST_PG]->setPrev(pages[MENU_PG]);
+	//pages[TEST_PG]->setPrev(pages[MENU_PG]);
 
 	// settings pages
 	pages[WIFI_SETT_PG]->setPrev(pages[SETT_PG]);
