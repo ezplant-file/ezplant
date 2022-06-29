@@ -120,7 +120,7 @@ typedef enum {
 	SETT_PG,
 	LANG_PG,
 	//FONT_PG,
-	TEST_PG,
+	//TEST_PG,
 	WIFI_PG,
 	WIFI_SETT_PG,
 	TIME_PG,

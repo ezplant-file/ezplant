@@ -9,6 +9,8 @@ const char* data_file = "/data";
 
 using json = nlohmann::json;
 
+#define ALL_SETTINGS \
+
 // all settings
 typedef enum {
 	SETT_EMPTY,

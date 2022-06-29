@@ -127,13 +127,6 @@ OutputField g_tds_read;
 // ezplant.ino:
 void callPage(void*);
 
-/*
-#include <thread>
-#include <chrono>
-#include <mutex>
-#include <condition_variable>
-*/
-
 String gTimeStr;
 
 
@@ -326,20 +319,6 @@ class Panel {
 			_time.setPaddingX(0);
 			_time.setWH(0, 12);
 			_time.setText(gTimeStr);
-			/*
-			_hours.setXYpos(140, 5);
-			_hours.noBg();
-			_hours.setText(DT_COLON);
-			_hours.adjustTextX(-21);
-			_hours.setColors(COL_GREY_70_565, COL_GREY_E3_565);
-			_hours.showLeadZero();
-
-			_minutes.setXYpos(161, 5);
-			_minutes.noBg();
-			_minutes.noText();
-			_minutes.setColors(COL_GREY_70_565, COL_GREY_E3_565);
-			_minutes.showLeadZero();
-			*/
 		}
 	private:
 
@@ -347,33 +326,18 @@ class Panel {
 		{
 			_showtime = true;
 			_time.setVisible();
-			//_hours.setVisible();
-			//_minutes.setVisible();
-			/*
-			_hours.setValue(datetime.getHour());
-			_minutes.setValue(datetime.getMinute());
-			_hours.invalidate();
-			_minutes.invalidate();
-			_hours.prepare();
-			_minutes.prepare();
-			_hours.draw();
-			_minutes.draw();
-			*/
 		}
 
 		void _hideTime()
 		{
 			_showtime = false;
 			_time.setInvisibleNoErase();
-			//_hours.setInvisible();
-			//_minutes.setInvisible();
 		}
 
 		SimpleBox _topBox;
 		Image _statusWIFI;
 		Image _statusInternet;
 		Text _menuText;
-		//Text _time;
 		bool _changed = false;
 		bool _wifiIsON = false;
 		bool _showtime = false;
@@ -384,7 +348,6 @@ class Panel {
 		images_t _prevWiFiImage = IMG_NO_WIFI;
 		images_t _prevNetImage = IMG_NET_NO;
 		StringText _time;
-		//OutputField _hours, _minutes;
 } topBar;
 
 // main page indicators
@@ -533,15 +496,6 @@ class App {
 			if (online.tokenLoaded()) {
 				online.sendData();
 			}
-
-
-			/*
-			Serial.println("measure stuff");
-			Serial.println(_measInterval);
-			Serial.println(_measMils);
-			Serial.println(_initDone);
-			Serial.println();
-			*/
 
 			if (millis() - _measMils > _measInterval  || !_initDone) {
 				_measMils = millis();
