@@ -9,7 +9,7 @@
 //#define EXPANDERS_DEBUG
 //#define APP_TESTING
 #define APP_DEBUG
-//#define ONLINE_DEBUG
+#define ONLINE_DEBUG
 #define TIME_DEBUG
 
 #define TASKS

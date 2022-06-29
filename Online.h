@@ -466,101 +466,10 @@ class OnlineMointor {
 
 			// all rig settings
 			data[_settings]["RIG_TYPE"] = g_rig_type;
-			data[_settings][STR(LIGHT_ON)] = 	g_data.getInt(LIGHT_ON);
 
-			data[_settings][STR(LIGHT_ON)] = 	g_data.getInt(LIGHT_ON);
-			data[_settings][STR(LIGHT_FROM)] = g_data.getInt(LIGHT_FROM);
-			data[_settings][STR(LIGHT_TO)] = g_data.getInt(LIGHT_TO);
-			data[_settings][STR(LIGHT_DAY)] = g_data.getInt(LIGHT_DAY);
-
-			data[_settings][STR(VENT_ON)] = g_data.getInt(VENT_ON);
-			data[_settings][STR(VENT_TIME_LIM)] = g_data.getInt(VENT_TIME_LIM);
-			data[_settings][STR(VENT_TIME_FROM)] = g_data.getInt(VENT_TIME_FROM);
-			data[_settings][STR(VENT_TIME_TO)] = g_data.getInt(VENT_TIME_TO);
-			data[_settings][STR(VENT_TEMP_LIM)] = g_data.getInt(VENT_TEMP_LIM);
-			data[_settings][STR(VENT_TEMP_THRES)] = g_data.getInt(VENT_TEMP_THRES);
-			data[_settings][STR(VENT_HUM_LIM)] = g_data.getInt(VENT_HUM_LIM);
-			data[_settings][STR(VENT_HUM_THRES)] = g_data.getInt(VENT_HUM_THRES);
-
-			data[_settings][STR(PASSVENT)] = g_data.getInt(PASSVENT);
-			data[_settings][STR(PASSVENT_TIME_LIM)] = g_data.getInt(PASSVENT_TIME_LIM);
-			data[_settings][STR(PASSVENT_TIME_FROM)] = g_data.getInt(PASSVENT_TIME_FROM);
-			data[_settings][STR(PASSVENT_TIME_TO)] = g_data.getInt(PASSVENT_TIME_TO);
-			data[_settings][STR(PASSVENT_TEMP_LIM)] = g_data.getInt(PASSVENT_TEMP_LIM);
-			data[_settings][STR(PASSVENT_TEMP_THRES)] = g_data.getInt(PASSVENT_TEMP_THRES);
-			data[_settings][STR(PASSVENT_HUM_LIM)] = g_data.getInt(PASSVENT_HUM_LIM);
-			data[_settings][STR(PASSVENT_HUM_THRES)] = g_data.getInt(PASSVENT_HUM_THRES);
-
-			data[_settings][STR(GR_CYCL_1_DAYS)] = g_data.getInt(GR_CYCL_1_DAYS);
-			data[_settings][STR(GR_CYCL_2_DAYS)] = g_data.getInt(GR_CYCL_2_DAYS);
-			data[_settings][STR(GR_CYCL_3_DAYS)] = g_data.getInt(GR_CYCL_3_DAYS);
-
-			data[_settings][STR(EC_ON)] = g_data.getInt(EC_ON);
-			data[_settings][STR(EC_CYCL1)] = g_data.getFloat(EC_CYCL1);
-			data[_settings][STR(EC_A1)] = g_data.getFloat(EC_A1);
-			data[_settings][STR(EC_B1)] = g_data.getFloat(EC_B1);
-			data[_settings][STR(EC_C1)] = g_data.getFloat(EC_C1);
-			data[_settings][STR(EC_CYCL2)] = g_data.getFloat(EC_CYCL2);
-			data[_settings][STR(EC_A2)] = g_data.getFloat(EC_A2);
-			data[_settings][STR(EC_B2)] = g_data.getFloat(EC_B2);
-			data[_settings][STR(EC_C2)] = g_data.getFloat(EC_C2);
-			data[_settings][STR(EC_CYCL3)] = g_data.getFloat(EC_CYCL3);
-			data[_settings][STR(EC_A3)] = g_data.getFloat(EC_A3);
-			data[_settings][STR(EC_B3)] = g_data.getFloat(EC_B3);
-			data[_settings][STR(EC_C3)] = g_data.getFloat(EC_C3);
-			data[_settings][STR(EC_PUMPS)] = g_data.getInt(EC_PUMPS);
-
-			data[_settings][STR(ACID_ON)] = g_data.getInt(ACID_ON);
-			data[_settings][STR(ACID_1)] = g_data.getFloat(ACID_1);
-			data[_settings][STR(ACID_2)] = g_data.getFloat(ACID_2);
-			data[_settings][STR(ACID_3)] = g_data.getFloat(ACID_3);
-			data[_settings][STR(ACID_PUMPS)] = g_data.getInt(ACID_PUMPS);
-
-			data[_settings][STR(PUMP_OFF)] = g_data.getInt(PUMP_OFF);
-			data[_settings][STR(PUMP_SEC)] = g_data.getInt(PUMP_SEC);
-
-			data[_settings][STR(AERO_ON)] = g_data.getInt(AERO_ON);
-			data[_settings][STR(AERO_PUMP)] = g_data.getInt(AERO_PUMP);
-			data[_settings][STR(AERO_PUMP_SEC)] = g_data.getInt(AERO_PUMP_SEC);
-
-			data[_settings][STR(STIR_ON)] = g_data.getInt(STIR_ON);
-			data[_settings][STR(STIR_PUMP)] = g_data.getInt(STIR_PUMP);
-			data[_settings][STR(STIR_PUMP_SEC)] = g_data.getInt(STIR_PUMP_SEC);
-
-			data[_settings][STR(FLOOD_HOURS)] = g_data.getInt(FLOOD_HOURS);
-			data[_settings][STR(FLOOD_MIN)] = g_data.getInt(FLOOD_MIN);
-			data[_settings][STR(FLOOD_HOLD_MIN)] = g_data.getInt(FLOOD_HOLD_MIN);
-			data[_settings][STR(FLOOD_HOLD_SEC)] = g_data.getInt(FLOOD_HOLD_SEC);
-
-			data[_settings][STR(SPRAY_PUMP)] = g_data.getInt(SPRAY_PUMP);
-			data[_settings][STR(SPRAY_PUMP_SEC)] = g_data.getInt(SPRAY_PUMP_SEC);
-			data[_settings][STR(SPRAY_CONS)] = g_data.getInt(SPRAY_CONS);
-			data[_settings][STR(SPRAY_CYCL)] = g_data.getInt(SPRAY_CYCL);
-			data[_settings][STR(SPRAY_MIN)] = g_data.getInt(SPRAY_MIN);
-			data[_settings][STR(SPRAY_SEC)] = g_data.getInt(SPRAY_SEC);
-			data[_settings][STR(SPRAY_CYCL_MIN)] = g_data.getInt(SPRAY_CYCL_MIN);
-			data[_settings][STR(SPRAY_CYCL_SEC)] = g_data.getInt(SPRAY_CYCL_SEC);
-
-			data[_settings][STR(DRIP_PUMP)] = g_data.getInt(DRIP_PUMP);
-			data[_settings][STR(DRIP_PUMP_SEC)] = g_data.getInt(DRIP_PUMP_SEC);
-			data[_settings][STR(DRIP_CONS)] = g_data.getInt(DRIP_CONS);
-			data[_settings][STR(DRIP_CYCL)] = g_data.getInt(DRIP_CYCL);
-			data[_settings][STR(DRIP_MIN)] = g_data.getInt(DRIP_MIN);
-			data[_settings][STR(DRIP_SEC)] = g_data.getInt(DRIP_SEC);
-			data[_settings][STR(DRIP_CYCL_MIN)] = g_data.getInt(DRIP_CYCL_MIN);
-			data[_settings][STR(DRIP_CYCL_SEC)] = g_data.getInt(DRIP_CYCL_SEC);
-			data[_settings][STR(ADD_LED_BRIGHT)] = g_data.getInt(ADD_LED_BRIGHT);
-			data[_settings][STR(EC_HYST)] = g_data.getFloat(EC_HYST);
-			data[_settings][STR(PH_HYST)] = g_data.getFloat(PH_HYST);
-			data[_settings][STR(PUMP_TIMEOUT)] = g_data.getInt(PUMP_TIMEOUT);
-			data[_settings][STR(NORM_AL_TM_HI)] = g_data.getInt(NORM_AL_TM_HI);
-			data[_settings][STR(NORM_AL_TM_LO)] = g_data.getInt(NORM_AL_TM_LO);
-			data[_settings][STR(ADD_MEAS_INT)] = g_data.getInt(ADD_MEAS_INT);
-			data[_settings][STR(SOLUTIONS_INT)] = g_data.getInt(SOLUTIONS_INT);
-			data[_settings][STR(ALLOWED_PH_MIN)] = g_data.getFloat(ALLOWED_PH_MIN);
-			data[_settings][STR(ALLOWED_PH_MAX)] = g_data.getFloat(ALLOWED_PH_MAX);
-			data[_settings][STR(ALLOWED_EC_MIN)] = g_data.getFloat(ALLOWED_EC_MIN);
-			data[_settings][STR(ALLOWED_EC_MAX)] = g_data.getFloat(ALLOWED_EC_MAX);
+			for (int i = 0; i < NSETTINGS; i++) {
+				data[_settings][STR((rig_settings_t)i)] = g_data.getFloat((rig_settings_t)i);
+			}
 
 			//all rig sensors
 			if (io.noTds())
@@ -611,6 +520,7 @@ class OnlineMointor {
 			if (httpCode = HTTP_CODE_OK) {
 #ifdef ONLINE_DEBUG
 				Serial.println("Data sent");
+				Serial.println(data.dump().c_str());
 #endif
 			}
 			data.clear();
