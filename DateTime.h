@@ -110,6 +110,11 @@ class DateTime: public ScrObj {
 			_startday = _timeinfo.tm_yday;
 		}
 
+		void setStartDay(int day)
+		{
+			_startday = day;
+		}
+
 		void loadStartDay()
 		{
 			_startday = g_data.getInt(START_DAY);

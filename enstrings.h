@@ -21,6 +21,8 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Pause",
 	"Start",
 	"...",
+	"Constant",
+	"Cyclic",
 	// main menu strings
 	"Menu",
 	"Planting",
@@ -227,11 +229,17 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	// stage 3
 	"Planting. Stage 3",
 	"Ventilation",
-	"Forced ventilation",
+	"Mode",
+	// constant
 	"Conditions",
 	"Time interval",
 	"Temperature is higher than",
 	"Humidity is higher than",
+	// cyclic
+	"Parameters",
+	"Time interval",
+	"Vent duration",
+	"Pause duration",
 
 	// stage 4
 	"Planting. Stage 4",
@@ -296,8 +304,6 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"",
 	"seconds before measurement",
 	"Irrigation mode",
-	"Constant",
-	"Cyclic",
 	"Irrigate for",
 	"Irrigate every",
 

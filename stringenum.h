@@ -21,6 +21,8 @@ typedef enum {
 	TXT_PAUSE,
 	TXT_START,
 	TXT_DOTS,
+	TXT_CONST,
+	TXT_CYCL,
 	// main menu strings
 	MENU,
 	NEW_PLANT,
@@ -227,11 +229,17 @@ typedef enum {
 	// stage 3
 	S3_TITLE,
 	S3_VENT,
-	S3_PAR1,
+	S3_MODE,
+	// constant
 	S3_SUBTTL,
 	S3_TIME,
 	S3_TEMP,
 	S3_HUM,
+	// cyclic
+	S3_PAR,
+	S3_INTERVAL,
+	S3_VENT_DUR,
+	S3_PAUS_DUR,
 
 	// stage 4
 	S4_TITLE,
@@ -296,8 +304,6 @@ typedef enum {
 	S83_INTXT,
 	S83_INPUT,
 	S83_MODE,
-	S83_CONST,
-	S83_CYCL,
 	S83_DUR,
 	S83_EVR,
 

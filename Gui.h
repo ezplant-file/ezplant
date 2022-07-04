@@ -1,4 +1,6 @@
 /******************************************************************************
+				Serial.print("Prog bar percent ");
+				Serial.println(percent);
 
   GUI elements classes.
   setXYpos method should always be called first while building ScrOjbs.
@@ -277,7 +279,7 @@ class ScrObj {
 		}
 
 		// TODO: deal with _isSelectable on not selectable obj
-		void setVisible()
+		virtual void setVisible()
 		{
 			/*
 			if (_wasSelectable) {
@@ -286,6 +288,7 @@ class ScrObj {
 			*/
 			_isVisible = true;
 			_invalid = true;
+			prepare();
 		}
 
 		void setInvisibleNoErase()
@@ -295,7 +298,7 @@ class ScrObj {
 			_isVisible = false;
 		}
 
-		void setInvisible()
+		virtual void setInvisible()
 		{
 			//_isSelectable = false;
 			_invalid = true;
@@ -1801,6 +1804,20 @@ class HourLimits: public ScrObj {
 		{
 		}
 
+		virtual void setVisible() override
+		{
+			_lower.setVisible();
+			_higher.setVisible();
+			_dash.setVisible();
+		}
+
+		virtual void setInvisible() override
+		{
+			_lower.setInvisible();
+			_higher.setInvisible();
+			_dash.setInvisible();
+		}
+
 	private:
 		static constexpr uint8_t _GAP = 8;
 		InputField _lower = InputField();
@@ -2302,6 +2319,7 @@ class CircRadBtn: public ScrObj {
 		void on(bool isOn)
 		{
 			_isOn = isOn;
+			_invalid = true;
 		}
 
 	private:
@@ -2891,6 +2909,72 @@ class SmallBox: public ScrObj {
 		Image* _imgFull = nullptr;
 };
 
+// x - FP_LEFT_PADDING
+// y - 122
+#define PROG_W 225
+#define PROG_H 4
+
+
+//#include "DateTime.h" // getDays()
+class ProgressBar: public ScrObj {
+	private:
+		uint16_t _barCol = GREEN_COL_MACRO;
+		uint8_t _percent = 0;
+		static constexpr uint8_t _VLINE = PROG_H*2;
+
+		void _drawMarks(bool draw = true)
+		{
+			int line_y = _y - _VLINE/2;
+			uint16_t color;
+			draw ? color = COL_GREY_70_565 : color = TFT_WHITE;
+			tft.drawFastHLine(_x, _y+_w, _w, color);
+			tft.drawFastVLine(_x, line_y, _VLINE, color);
+			tft.drawFastVLine(_x+50, line_y, _VLINE, color);
+
+		}
+	public:
+		ProgressBar(): ScrObj(PROG_W, PROG_H)
+		{
+		}
+
+		virtual void setValue(int percent) override
+		{
+			_percent = percent;
+			_invalid = true;
+		}
+
+		virtual void draw() override
+		{
+			if (!_invalid)
+				return;
+
+			// draw bar
+			tft.fillRect(_x, _y, _w*_percent/100.0, _h, _barCol);
+
+			// draw other stuff
+			_drawMarks();
+
+			_invalid = false;
+		}
+
+		virtual void erase() override
+		{
+			if (!_invalid)
+				return;
+			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
+			_drawMarks(false);
+			freeRes();
+			_invalid = false;
+		}
+
+		virtual void freeRes() override
+		{
+		}
+} g_ProgBar;
+
+
+
+
 typedef enum {
 	T_EMPTY,
 	T_HALF,
@@ -3014,7 +3098,7 @@ class Tank: public ScrObj {
 		uint16_t _water = tft.color565(0xaa, 0xe5, 0xe9);
 } g_tankBig;
 
-Tank g_tankSmall;
+//Tank g_tankSmall;
 
 class Cursor {
 	public:
@@ -3107,15 +3191,40 @@ class Cursor {
 		int _h;
 };
 
+
+#define DEBUG_PRINT_HEX(A) Serial.println((unsigned long long) (A), HEX)
+
 //#include "settings.h" // g_data
 class Page {
 	public:
+		void trim()
+		{
+			for (auto it = _items.begin(); it != _items.end(); ) {
+				if (!(*it)->isVisible()) {
+					(*it)->invalidate();
+					(*it)->erase();
+					it = _items.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+		}
+
 		void addItem(ScrObj* scrobj)
 		{
 			_items.push_back(scrobj);
 			if (scrobj->isSelectable() && scrobj->isVisible()) {
 				_selectable.push_back(scrobj);
 			}
+		}
+
+		void addItemBefore(ScrObj* scrobj)
+		{
+			auto it = _items.end();
+			--it;
+			--it;
+			_items.insert(it, scrobj);
 		}
 
 		void restock()
@@ -3264,7 +3373,7 @@ class Page {
 		{
 			for (auto& obj:_items) {
 				obj->setVisible();
-				obj->prepare();
+				//obj->prepare();
 			}
 		}
 

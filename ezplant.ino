@@ -49,7 +49,7 @@ static Page settingsPage;
 static ImageButton back;
 static ImageButton forward;
 //static ImageButton sett_back;
-static BlueTextButton next;
+//static BlueTextButton next;
 
 // Lang select and screen settings page items
 static InputField gDimseconds;
@@ -71,7 +71,6 @@ static BlueTextButton testBlueButton;
 */
 
 GreyTextButton* gWiFigreyTextButton;
-
 /****************** WiFi stuff ***************************************/
 const char* ap_ssid = "ezplant_wifi";
 const char* ap_password = scrStrings[WI_PASSWORD];
@@ -776,7 +775,7 @@ void checkTdsSensor(void* arg)
 }
 
 /*******************************************************************************
-page builders TODO: move to Gui
+page builders
 *******************************************************************************/
 
 /**************************** COMMON CALIB PAGES ********************************/
@@ -2595,7 +2594,6 @@ Page* buildStage2()
 	lightCheck.setText(S2_LIGHT);
 	lightCheck.setAlign(LEFT);
 	lightCheck.setFont(BOLDFONT);
-	//lightCheck.setCallback(lightCallback, &lightCheck);
 	lightCheck.setSettingsId(LIGHT_ON);
 	lightCheck.setCallback(checkBoxCallback, &lightCheck, &stage2);
 	lightCheck.on(g_data.getInt(LIGHT_ON));
@@ -2639,7 +2637,6 @@ Page* buildStage2()
 	days.setLimits(0, 14);
 
 	stage2.addItem(&bulbImg);
-	//stage2.addItem(&heading1);
 	stage2.addItem(&lightCheck);
 	stage2.addItem(&par1);
 
@@ -2662,6 +2659,44 @@ Page* buildStage2()
 	return &stage2;
 }
 
+/*
+void ventPageConst(int n, ...)
+{
+	va_list objs;
+	va_start(objs, n);
+	for (int i = 0; i < n; i++) {
+		ScrObj* curr = va_arg(objs, ScrObj*);
+		if (!i) {
+			CircRadBtn* btn = (CircRadBtn*) curr;
+			if (!btn->isOn())
+				continue;
+			Serial.println("Already ON");
+			return;
+		}
+		DEBUG_PRINT_HEX(va_arg(objs, ScrObj*));
+	}
+	va_end(objs);
+}
+
+void ventPageCycl(int n, ...)
+{
+	va_list objs;
+	va_start(objs, n);
+	for (int i = 0; i < n; i++) {
+		ScrObj* curr = va_arg(objs, ScrObj*);
+		if (!i) {
+			CircRadBtn* btn = (CircRadBtn*) curr;
+			if (!btn->isOn())
+				continue;
+			Serial.println("Already ON");
+			return;
+		}
+		DEBUG_PRINT_HEX(va_arg(objs, ScrObj*));
+	}
+	va_end(objs);
+}
+*/
+
 Page* buildStage3()
 {
 	static Page stage3;
@@ -2669,7 +2704,7 @@ Page* buildStage3()
 	stage3.setNext(pages[STAGE4_PG]);
 
 	static CheckBox ventCheck;
-	ventCheck.setXYpos(119, MB_Y_START);
+	ventCheck.setXYpos(143, MB_Y_START);
 	ventCheck.setText(S3_VENT);
 	ventCheck.setAlign(LEFT);
 	ventCheck.setFont(BOLDFONT);
@@ -2683,28 +2718,38 @@ Page* buildStage3()
 	fanImg.loadRes(images[IMG_COOLER]);
 	fanImg.neverHide();
 
+	// mode text
 	static Text par1;
-	par1.setXYpos(PG_LEFT_PADD, 67);
-	par1.setText(S3_PAR1);
-	par1.neverHide();
+	par1.setXYpos(PG_LEFT_PADD, 75);
+	par1.setFont(BOLDFONT);
+	par1.setText(S3_MODE);
+
+	// constant mode elements
+	static RadioButton cons;
+	cons.setFont(SMALLFONT);
+	cons.setXYpos(PG_LEFT_PADD, 98);
+	cons.setText(TXT_CONST);
+	cons.setSettingsId(VENT_CONST);
+	cons.on(g_data.getInt(VENT_CONST));
+	// callback follows
 
 	static Text subTitle;
-	subTitle.setXYpos(PG_LEFT_PADD, 117);
+	subTitle.setXYpos(PG_LEFT_PADD, 117+10);
 	subTitle.setFont(BOLDFONT);
 	subTitle.setText(S3_SUBTTL);
 
 	static Text timeint;
-	timeint.setXYpos(PG_LEFT_PADD, 143);
+	timeint.setXYpos(PG_LEFT_PADD, 143+10);
 	timeint.setText(S3_TIME);
 
 	static CheckBox timeCheck;
-	timeCheck.setXYpos(PG_LEFT_PADD, 163);
+	timeCheck.setXYpos(PG_LEFT_PADD, 163+10);
 	timeCheck.setText(EMPTY_STR);
 	timeCheck.setSettingsId(VENT_TIME_LIM);
 	timeCheck.setCallback(saveCheckBoxSetting, &timeCheck);
 	timeCheck.on(g_data.getInt(VENT_TIME_LIM));
 
-	static HourLimits timeLimit(45, 163);
+	static HourLimits timeLimit(45, 163+10);
 	InputField* low = (InputField*) timeLimit.getLowerPtr();
 	InputField* high = (InputField*) timeLimit.getHigherPtr();
 	low->setSettingsId(VENT_TIME_FROM);
@@ -2715,18 +2760,18 @@ Page* buildStage3()
 	high->setValue(g_data.getInt(VENT_TIME_TO));
 
 	static Text temptxt;
-	temptxt.setXYpos(PG_LEFT_PADD, 195);
+	temptxt.setXYpos(PG_LEFT_PADD, 195+10);
 	temptxt.setText(S3_TEMP);
 
 	static CheckBox tempCheck;
-	tempCheck.setXYpos(PG_LEFT_PADD, 210);
+	tempCheck.setXYpos(PG_LEFT_PADD, 210+10);
 	tempCheck.setText(EMPTY_STR);
 	tempCheck.setSettingsId(VENT_TEMP_LIM);
 	tempCheck.setCallback(saveCheckBoxSetting, &tempCheck);
 	tempCheck.on(g_data.getInt(VENT_TEMP_LIM));
 
 	static InputField temp;
-	temp.setXYpos(45, 210);
+	temp.setXYpos(45, 210+10);
 	temp.setText(MORE_THAN);
 	temp.setSettingsId(VENT_TEMP_THRES);
 	temp.setValue(g_data.getInt(VENT_TEMP_THRES));
@@ -2734,25 +2779,171 @@ Page* buildStage3()
 	temp.setLimits(10, 40);
 
 	static Text humtxt;
-	humtxt.setXYpos(PG_LEFT_PADD, 242);
+	humtxt.setXYpos(PG_LEFT_PADD, 242+10);
 	humtxt.setText(S3_HUM);
 
 	static CheckBox humCheck;
-	humCheck.setXYpos(PG_LEFT_PADD, 261);
+	humCheck.setXYpos(PG_LEFT_PADD, 261+10);
 	humCheck.setText(EMPTY_STR);
 	humCheck.setSettingsId(VENT_HUM_LIM);
 	humCheck.setCallback(saveCheckBoxSetting, &humCheck);
 	humCheck.on(g_data.getInt(VENT_HUM_LIM));
 
 	static InputField hum;
-	hum.setXYpos(45, 261);
+	hum.setXYpos(45, 261+10);
 	hum.setText(MORE_THAN);
 	hum.setSettingsId(VENT_HUM_THRES);
 	hum.setValue(g_data.getInt(VENT_HUM_THRES));
 	hum.setCallback(saveInputFieldSetting, &hum);
 	hum.setLimits(10, 90);
 
+	// cyclic elements
+	static RadioButton cycl;
+	cycl.setXYpos(120, 98);
+	cycl.setText(TXT_CYCL);
+	cycl.setSettingsId(VENT_CYCL);
+
+	static Text param;
+	param.setXYpos(PG_LEFT_PADD, 132);
+	param.setFont(BOLDFONT);
+	param.setText(S3_PAR);
+
+	static Text worktime_txt;
+	worktime_txt.setXYpos(PG_LEFT_PADD, 155);
+	worktime_txt.setText(S3_INTERVAL);
+
+	int fieldsX = 119;
+	static HourLimits worktime(fieldsX, 151);
+	// setting ids
+	low = (InputField*) worktime.getLowerPtr();
+	high = (InputField*) worktime.getHigherPtr();
+	low->setSettingsId(VENT_TIME_FROM);
+	high->setSettingsId(VENT_TIME_TO);
+	low->setCallback(saveInputFieldSetting, low);
+	high->setCallback(saveInputFieldSetting, high);
+	low->setValue(g_data.getInt(VENT_TIME_FROM));
+	high->setValue(g_data.getInt(VENT_TIME_TO));
+
+	static Text ventDur_txt;
+	ventDur_txt.setXYpos(PG_LEFT_PADD, 188);
+	ventDur_txt.setText(S3_VENT_DUR);
+
+	static InputField ventDur;
+	ventDur.setXYpos(fieldsX, 183);
+	ventDur.setText(TXT_MINUTES);
+	ventDur.setSettingsId(VENT_DUR);
+	ventDur.setValue(g_data.getInt(VENT_DUR));
+
+	static Text pausDur_txt;
+	pausDur_txt.setXYpos(PG_LEFT_PADD, 217);
+	pausDur_txt.setText(S3_PAUS_DUR);
+
+	static InputField pausDur;
+	pausDur.setXYpos(fieldsX, 211);
+	pausDur.setText(TXT_MINUTES);
+	pausDur.setSettingsId(VENT_PAUS_DUR);
+	pausDur.setValue(g_data.getInt(VENT_PAUS_DUR));
+
+	// constant checkbox callback
+	cons.setCallback([=](void*) {
+			if (cons.isOn()) {
+				return;
+			}
+			else {
+				cons.on(true);
+				cycl.on(false);
+
+				// cycl items
+				param.setInvisible();
+				worktime_txt.setInvisible();
+				worktime.setInvisible();
+				ventDur_txt.setInvisible();
+				ventDur.setInvisible();
+				pausDur_txt.setInvisible();
+				pausDur.setInvisible();
+
+				// cons items
+				subTitle.setVisible();
+				timeint.setVisible();
+				timeCheck.setVisible();
+				timeLimit.setVisible();
+				temptxt.setVisible();
+				temptxt.prepare();
+				tempCheck.setVisible();
+				temp.setVisible();
+				humtxt.setVisible();
+				humtxt.prepare();
+				humCheck.setVisible();
+				hum.setVisible();
+
+				// repopulate page
+				stage3.trim();
+				stage3.addItemBefore(&subTitle);
+				stage3.addItemBefore(&timeint);
+				stage3.addItemBefore(&timeCheck);
+				stage3.addItemBefore((ScrObj*)timeLimit.getLowerPtr());
+				stage3.addItemBefore(timeLimit.getDashPtr());
+				stage3.addItemBefore((ScrObj*)timeLimit.getHigherPtr());
+				stage3.addItemBefore(&temptxt);
+				stage3.addItemBefore(&temptxt);
+				stage3.addItemBefore(&tempCheck);
+				stage3.addItemBefore(&temp);
+				stage3.addItemBefore(&humtxt);
+				stage3.addItemBefore(&humtxt);
+				stage3.addItemBefore(&humCheck);
+				stage3.addItemBefore(&hum);
+				stage3.restock();
+			}
+			});
+
+	// cylcic checkbox callback
+	cycl.setCallback([=](void*) {
+			if (cycl.isOn()) {
+				return;
+			}
+			else {
+				cons.on(false);
+				cycl.on(true);
+
+				// cycl items
+				param.setVisible();
+				worktime_txt.setVisible();
+				worktime.setVisible();
+				ventDur_txt.setVisible();
+				ventDur.setVisible();
+				pausDur_txt.setVisible();
+				pausDur.setVisible();
+
+				// cons items
+				subTitle.setInvisible();
+				timeint.setInvisible();
+				timeCheck.setInvisible();
+				timeLimit.setInvisible();
+				temptxt.setInvisible();
+				tempCheck.setInvisible();
+				temp.setInvisible();
+				humtxt.setInvisible();
+				humCheck.setInvisible();
+				hum.setInvisible();
+
+				// repopulate page
+				stage3.trim();
+				stage3.addItemBefore(&param);
+				stage3.addItemBefore(&worktime_txt);
+				stage3.addItemBefore((ScrObj*)worktime.getLowerPtr());
+				stage3.addItemBefore(worktime.getDashPtr());
+				stage3.addItemBefore((ScrObj*)worktime.getHigherPtr());
+				stage3.addItemBefore(&ventDur_txt);
+				stage3.addItemBefore(&ventDur);
+				stage3.addItemBefore(&pausDur_txt);
+				stage3.addItemBefore(&pausDur);
+				stage3.restock();
+			}
+			});
+
 	stage3.addItem(&ventCheck);
+	stage3.addItem(&cons);
+	stage3.addItem(&cycl);
 	stage3.addItem(&fanImg);
 	stage3.addItem(&par1);
 	stage3.addItem(&subTitle);
@@ -3675,7 +3866,7 @@ Page* buildStage8_3()
 	static RadioButton cons;
 	spray_type[RB_CONST] = &cons;
 	cons.setXYpos(PG_LEFT_PADD, 153);
-	cons.setText(S83_CONST);
+	cons.setText(TXT_CONST);
 	cons.setSettingsId(SPRAY_CONS);
 	cons.on(g_data.getInt(SPRAY_CONS));
 	cons.setCallback(sprayRadioCallback, &cons);
@@ -3683,7 +3874,7 @@ Page* buildStage8_3()
 	static RadioButton cycl;
 	spray_type[RB_CYCL] = &cycl;
 	cycl.setXYpos(119, 153);
-	cycl.setText(S83_CYCL);
+	cycl.setText(TXT_CYCL);
 	cycl.setSettingsId(SPRAY_CYCL);
 	cycl.on(g_data.getInt(SPRAY_CYCL));
 	cycl.setCallback(sprayRadioCallback, &cycl);
@@ -3800,7 +3991,7 @@ Page* buildStage8_4()
 	static RadioButton cons;
 	drip_type[RB_CONST] = &cons;
 	cons.setXYpos(PG_LEFT_PADD, 153);
-	cons.setText(S83_CONST);
+	cons.setText(TXT_CONST);
 	cons.setSettingsId(DRIP_CONS);
 	cons.on(g_data.getInt(DRIP_CONS));
 	cons.setCallback(dripRadioCallback, &cons);
@@ -3808,7 +3999,7 @@ Page* buildStage8_4()
 	static RadioButton cycl;
 	drip_type[RB_CYCL] = &cycl;
 	cycl.setXYpos(119, 153);
-	cycl.setText(S83_CYCL);
+	cycl.setText(TXT_CYCL);
 	cycl.setSettingsId(DRIP_CYCL);
 	cycl.on(g_data.getInt(DRIP_CYCL));
 	cycl.setCallback(dripRadioCallback, &cycl);
@@ -4047,6 +4238,11 @@ Page* buildMainPage()
 	mainStr.setPaddingX(0);
 	mainPage.addItem(&mainStr);
 	gMainPageText = &mainStr;
+
+	/* progress bar */
+	g_ProgBar.setXYpos(FP_LEFT_PADDING, 122);
+	g_ProgBar.invalidate();
+	mainPage.addItem(&g_ProgBar);
 
 	/* big boxes */
 	enum {
@@ -4577,6 +4773,8 @@ void setup(void)
 	topBar.setText(currPage->getTitle());
 	topBar.prepare();
 	topBar.draw();
+
+	//ui.drawProgressBar(5, 122, 224, 4, 40, TFT_WHITE, GREEN_COL_MACRO);
 }
 
 void deleteSettingsFile()
@@ -4624,6 +4822,9 @@ void loop()
 		}
 		else if (cmd == "day") {
 			Serial.println(datetime.getDays());
+		}
+		else if (cmd == "setday") {
+			datetime.setStartDay(datetime.getStartDay() - 1);
 		}
 		/*
 		else if (cmd == "next") {

@@ -27,6 +27,10 @@ using json = nlohmann::json;
 	X(VENT_TEMP_THRES) \
 	X(VENT_HUM_LIM) \
 	X(VENT_HUM_THRES) \
+	X(VENT_CONST) \
+	X(VENT_CYCL) \
+	X(VENT_DUR) \
+	X(VENT_PAUS_DUR) \
  \
 	/* stage 4 settings */ \
 	X(PASSVENT) \
@@ -211,7 +215,10 @@ class Data {
 			set(ALLOWED_PH_MAX, 9.0f);
 			set(ALLOWED_EC_MIN, 0.06f);
 			set(ALLOWED_EC_MAX, 4.0f);
-
+			set(VENT_CONST, 1);
+			set(VENT_CYCL, 0);
+			set(VENT_DUR, 10);
+			set(VENT_PAUS_DUR, 50);
 		}
 
 		void print()
