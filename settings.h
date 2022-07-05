@@ -137,7 +137,7 @@ typedef enum {
 const char* STR(rig_settings_t n)
 {
 	switch (n) {
-		default: return nullptr;
+		default: return "UNKNOWN SETTINGS";
 #define X(a) \
 		case a: \
 			return #a;

@@ -541,7 +541,7 @@ class App {
 
 			if (currPage == pages[MAIN_PG] && millis() - _mainMils > MAIN_P_UPDATE) {
 				uint8_t percent = map(datetime.getDays(), 0, g_data.getInt(GR_CYCL_3_DAYS), 0, 100);
-				Serial.println(percent);
+				//Serial.println(percent);
 				g_ProgBar.setValue(percent);
 				g_tem->setValue(io.getTem());
 				g_tem->draw();
