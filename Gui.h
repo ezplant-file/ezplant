@@ -2939,7 +2939,6 @@ class ProgressBar: public ScrObj {
 
 		void _drawMarks(bool draw = true)
 		{
-			Serial.println(__func__);
 			int line_y = _y - _VLINE/2;
 			uint16_t color;
 			draw ? color = COL_GREY_70_565 : color = TFT_WHITE;
@@ -2950,32 +2949,6 @@ class ProgressBar: public ScrObj {
 			// zeroth mark
 			tft.drawFastVLine(_x, line_y, _VLINE, color);
 
-			/*
-			Serial.print("days\t");
-			Serial.print(g_data.getInt(GR_CYCL_1_DAYS));
-			Serial.print("\r");
-			Serial.print(g_data.getInt(GR_CYCL_2_DAYS));
-			Serial.print("\r");
-			Serial.print(g_data.getInt(GR_CYCL_3_DAYS));
-			Serial.print("\n");
-			float first = (float)g_data.getInt(GR_CYCL_1_DAYS) / g_data.getInt(GR_CYCL_3_DAYS);
-			Serial.print("first");
-			Serial.println(first);
-			float firstMark = first * 100;
-			//auto firstMark = (g_data.getInt(GR_CYCL_1_DAYS) / g_data.getInt(GR_CYCL_3_DAYS)) * 100.0;
-			Serial.print("firstMark");
-			Serial.println(firstMark);
-			auto firstMarkX = _w*firstMark/100.0;
-			*/
-
-			/*
-			Serial.print("first mark x ");
-			Serial.println(firstMarkX);
-
-			Serial.print("first mark x x");
-			Serial.println(firstMarkXX);
-			*/
-
 			tft.drawFastVLine(_x+_firstMarkX, line_y, _VLINE, color);
 			tft.drawFastVLine(_x+_secondMarkX, line_y, _VLINE, color);
 			tft.drawFastVLine(_x+_w-1, line_y, _VLINE, color);
@@ -2983,7 +2956,6 @@ class ProgressBar: public ScrObj {
 
 		void _drawNumbers()
 		{
-			Serial.println(__func__);
 			int firstDay = g_data.getInt(GR_CYCL_1_DAYS);
 			int secondDay = g_data.getInt(GR_CYCL_2_DAYS);
 			int thirdDay = g_data.getInt(GR_CYCL_3_DAYS);
@@ -3020,7 +2992,6 @@ class ProgressBar: public ScrObj {
 
 		void _eraseNumbers()
 		{
-			Serial.println(__func__);
 			_zeroTxt.invalidate();
 			_firstTxt.invalidate();
 			_secondTxt.invalidate();
@@ -3051,16 +3022,14 @@ class ProgressBar: public ScrObj {
 		{
 			if (!_invalid)
 				return;
-			Serial.println(__func__);
-			//auto width = _w*_percent/100.0;
-			/*
-			Serial.print("percent ");
-			Serial.println(_percent);
-			Serial.print("bar width ");
-			Serial.println(width);
-			*/
+
+			auto fill = _w * _percent / 100.0;
+
+			if (fill > _w)
+				fill = _w;
+
 			// draw bar
-			tft.fillRect(_x, _y, _w*_percent/100.0, _h, _barCol);
+			tft.fillRect(_x, _y, fill, _h, _barCol);
 
 			// draw other stuff
 			_calculatePos();
@@ -3074,7 +3043,7 @@ class ProgressBar: public ScrObj {
 		{
 			if (!_invalid)
 				return;
-			Serial.println(__func__);
+
 			tft.fillRect(_x, _y, _w, _h, greyscaleColor(BACKGROUND));
 			_drawMarks(false);
 			_eraseNumbers();

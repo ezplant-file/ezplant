@@ -2318,6 +2318,7 @@ Page* buildPwrDiag()
 }
 
 /* settings input fields callback */
+/*
 enum {
 	SECOND_OUT,
 	THIRD_OUT,
@@ -2325,7 +2326,9 @@ enum {
 };
 
 OutputField* daysOut[NOUTS];
+*/
 
+/*
 void inputsCallback(void* inputptr)
 {
 	if (inputptr == nullptr)
@@ -2341,12 +2344,15 @@ void inputsCallback(void* inputptr)
 		g_data.set(id, input->getValue());
 
 	// nmeddog...
-	if (id == GR_CYCL_1_DAYS)
+	if (id == GR_CYCL_1_DAYS) {
 		daysOut[SECOND_OUT]->setValue(input->getValue());
+	}
 
-	if (id == GR_CYCL_2_DAYS)
+	if (id == GR_CYCL_2_DAYS) {
 		daysOut[THIRD_OUT]->setValue(input->getValue());
+	}
 }
+*/
 
 /******* settings page builders and callbacks *******/
 Page* buildFirstPage()
@@ -3117,44 +3123,69 @@ Page* buildStage5()
 	first.setXYpos(bulletsX, 107);
 	first.setFont(BOLDFONT);
 	first.setText(BULL_1);
-	static DayLimits firstStageLimits(daysX, 103);
 
-	InputField* limit = firstStageLimits.getInputFieldPtr();
-	limit->setSettingsId(GR_CYCL_1_DAYS);
-	limit->setValue(g_data.getInt(GR_CYCL_1_DAYS));
-	limit->setCallback(inputsCallback, limit);
-	limit->setLimits(1, 120);
+	static DayLimits firstStageLimits(daysX, 103);
+	static DayLimits secondStageLimilts(daysX, 138);
+	static DayLimits thirdStageLimits(daysX, 174);
+
+	auto limit1 = firstStageLimits.getInputFieldPtr();
+	auto limit2 = secondStageLimilts.getInputFieldPtr();
+	auto limit3 = thirdStageLimits.getInputFieldPtr();
+
+	OutputField* lower2 = secondStageLimilts.getOutputFieldPtr();
+	OutputField* lower3 = thirdStageLimits.getOutputFieldPtr();
+
+	// first cycle stuff
+	limit1->setSettingsId(GR_CYCL_1_DAYS);
+	limit1->setValue(g_data.getInt(GR_CYCL_1_DAYS));
+	limit1->setCallback([limit1, lower2](void*)
+			{
+			auto h = limit1->getValue();
+			g_data.set(limit1->getSettingsId(), h);
+			lower2->setValue(h);
+			});
+	limit1->setLimits(1, 120);
 
 	static Text second;
 	second.setXYpos(bulletsX, 142);
 	second.setText(BULL_2);
 	second.setFont(BOLDFONT);
-	static DayLimits secondStageLimilts(daysX, 138);
-	OutputField* lower = secondStageLimilts.getOutputFieldPtr();
-	daysOut[SECOND_OUT] = lower;
-	lower->setValue(limit->getValue());
 
-	limit = secondStageLimilts.getInputFieldPtr();
-	limit->setSettingsId(GR_CYCL_2_DAYS);
-	limit->setValue(g_data.getInt(GR_CYCL_2_DAYS));
-	limit->setCallback(inputsCallback, limit);
-	limit->setLimits(1, 120);
+	// second cycle stuff
+	limit2->setSettingsId(GR_CYCL_2_DAYS);
+	limit2->setValue(g_data.getInt(GR_CYCL_2_DAYS));
+	limit2->setCallback([lower2, limit2, limit1, lower3](void*)
+			{
+				auto l = lower2->getValue();
+				auto h = limit2->getValue();
+				if (l >= h)
+					limit2->setValue(l+1);
+				g_data.set(limit2->getSettingsId(), h);
+				lower3->setValue(h);
+			});
+	limit2->setLimits(1, 120);
+	lower2->setValue(limit1->getValue());
 
 
 	static Text third;
 	third.setXYpos(bulletsX, 178);
 	third.setText(BULL_3);
 	third.setFont(BOLDFONT);
-	static DayLimits thirdStageLimits(daysX, 174);
-	lower = thirdStageLimits.getOutputFieldPtr();
-	daysOut[THIRD_OUT] = lower;
-	lower->setValue(limit->getValue());
 
-	limit = thirdStageLimits.getInputFieldPtr();
-	limit->setSettingsId(GR_CYCL_3_DAYS);
-	limit->setValue(g_data.getInt(GR_CYCL_3_DAYS));
-	limit->setCallback(inputsCallback, limit);
-	limit->setLimits(1, 120);
+	// third cycle stuff
+	limit3->setSettingsId(GR_CYCL_3_DAYS);
+	limit3->setValue(g_data.getInt(GR_CYCL_3_DAYS));
+	limit3->setCallback([lower3, limit3, limit2](void*)
+			{
+				auto l = lower3->getValue();
+				auto h = limit3->getValue();
+				if (l >= h)
+					limit3->setValue(l+1);
+				g_data.set(limit3->getSettingsId(),
+						limit3->getValue());
+			});
+	limit3->setLimits(1, 120);
+	lower3->setValue(limit2->getValue());
 
 	static Image sprouts;
 	sprouts.setXYpos(38, 218);
