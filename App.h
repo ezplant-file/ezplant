@@ -429,8 +429,14 @@ class App {
 		int16_t _prevBright = g_init_brightness;
 		bool _inactive = false;
 		static constexpr unsigned long REPEAT_INT = 1000;
+		int today = 0;
 
 	public:
+		int days()
+		{
+			return today;
+		}
+
 		void setMeasIntervalMinutes(unsigned interval)
 		{
 			_measInterval = interval * 60000;
@@ -448,14 +454,13 @@ class App {
 
 		void init()
 		{
-
 			resetCalibFlags();
 			switch (g_selected_lang) {
 				default:
 				case RU_LANG: scrStrings = ruStrings; break;
 				case EN_LANG: scrStrings = engStrings; break;
 			}
-				//rtc.begin();
+			//rtc.begin();
 			g_ping_success = false;
 
 			tft.init();
@@ -466,6 +471,16 @@ class App {
 			createTasks();
 
 			online.init();
+
+			today = datetime.getDays();
+			uint8_t percent = (float) today / g_data.getInt(GR_CYCL_3_DAYS) * 100.0;
+			if (g_first_launch)
+				percent = 0;
+			Serial.print("Today percent init: ");
+			Serial.println(percent);
+			//Serial.print("Init day ");
+			//Serial.println(today);
+			g_ProgBar.setValue(percent);
 		}
 
 		void createTasks()
@@ -539,10 +554,17 @@ class App {
 
 			}
 
-			if (currPage == pages[MAIN_PG] && millis() - _mainMils > MAIN_P_UPDATE) {
-				uint8_t percent = map(datetime.getDays(), 0, g_data.getInt(GR_CYCL_3_DAYS), 0, 100);
-				//Serial.println(percent);
+			if (today != datetime.getDays()) {
+				today = datetime.getDays();
+				//uint8_t percent = map(today, 0, g_data.getInt(GR_CYCL_3_DAYS), 0, 100);
+				uint8_t percent = (float) today / g_data.getInt(GR_CYCL_3_DAYS) * 100.0;
+				Serial.print("Today percent: ");
+				Serial.println(percent);
 				g_ProgBar.setValue(percent);
+			}
+
+			if (currPage == pages[MAIN_PG] && millis() - _mainMils > MAIN_P_UPDATE) {
+				//Serial.println(percent);
 				g_tem->setValue(io.getTem());
 				g_tem->draw();
 				g_hum->setValue(int(io.getHum()));

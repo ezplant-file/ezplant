@@ -1,0 +1,33 @@
+https://esp32.com/viewtopic.php?t=6043
+https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/system_time.html
+
+    struct tm tm;
+
+    tm.tm_year = 2018 - 1900;
+
+    tm.tm_mon = 10;
+
+    tm.tm_mday = 15;
+
+    tm.tm_hour = 14;
+
+    tm.tm_min = 10;
+
+    tm.tm_sec = 10;
+
+    time_t t = mktime(&tm);
+
+    printf("Setting time: %s", asctime(&tm));
+
+    struct timeval now = { .tv_sec = t };
+
+    settimeofday(&now, NULL);
+
+Straight-up Answer:
+settimeofday() takes two params, one for time, the other for timezone. the time param is of type "timeval", which is a struct that has two members that you set: "tv_sec" and "tv_usec". tv_sec is of type time_t, meaning it is seconds since epoch (Jan 1, 1970). tv_usec is set to microseconds, since the original time_t doesn't have that accuracy. The timezone is of type "timezone", that has two members "tz_minuteswest" and "tz_dsttime". Not sure what tz_dsttime is about, but tz_minuteswest is the timezone offset in minutes, but it is signed, with the west being positive.
+
+Some Tips (if you don't have internet while working):
+You need to know two things, the unit of the parameter, and the origin (ie the offset from which it counts). The unit I think is seconds, although the underlying functions it calls to set the time take microseconds. To find the offset, just set it using a value of 0, then obtain the date, and that will tell you microseconds since when. Most likely microseconds since epoch. So if you want to update the time to now, you would have to pass in how many microseconds have passed since the epoch (google it).
+
+To get the unit, set the value to 0, then to 1, then multiples of 10, while reading out cTime(). From there you can deduce the units.
+

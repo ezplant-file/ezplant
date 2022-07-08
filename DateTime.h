@@ -5,6 +5,7 @@
 #include <chrono>
 #include <mutex>
 #include <condition_variable>
+#include <settings.h>
 
 #include "Gui.h"
 // TODO: always get time from i2c, sync i2c once per hour...
@@ -102,12 +103,25 @@ class DateTime: public ScrObj {
 
 		int getDays()
 		{
-			return _timeinfo.tm_yday - _startday + 1;
+			struct tm* tmp;
+			tmp = &_timeinfo;
+			time_t epochseconds = mktime(tmp);
+			int today = epochseconds/(60 * 60 * 24);
+			return today - _startday + 1;
+			//return _timeinfo.tm_yday - _startday + 1;
 		}
 
 		void setStartDay()
 		{
-			_startday = _timeinfo.tm_yday;
+			//_startday = _timeinfo.tm_yday;
+			struct tm* tmp;
+			tmp = &_timeinfo;
+			tmp->tm_hour = 0;
+			tmp->tm_min = 0;
+			tmp->tm_sec = 0;
+			time_t seconds2midnight = mktime(tmp);
+
+			_startday = seconds2midnight / (60 * 60 * 24);
 		}
 
 		void setStartDay(int day)

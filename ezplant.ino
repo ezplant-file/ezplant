@@ -3138,11 +3138,13 @@ Page* buildStage5()
 	// first cycle stuff
 	limit1->setSettingsId(GR_CYCL_1_DAYS);
 	limit1->setValue(g_data.getInt(GR_CYCL_1_DAYS));
-	limit1->setCallback([limit1, lower2](void*)
+	limit1->setCallback([limit1, lower2, limit2](void*)
 			{
 			auto h = limit1->getValue();
-			g_data.set(limit1->getSettingsId(), h);
-			lower2->setValue(h);
+			if (limit1->getValue() >= limit2->getValue())
+				limit1->setValue(limit2->getValue() - 1);
+			g_data.set(limit1->getSettingsId(), limit1->getValue());
+			lower2->setValue(limit1->getValue());
 			});
 	limit1->setLimits(1, 120);
 
@@ -3154,14 +3156,16 @@ Page* buildStage5()
 	// second cycle stuff
 	limit2->setSettingsId(GR_CYCL_2_DAYS);
 	limit2->setValue(g_data.getInt(GR_CYCL_2_DAYS));
-	limit2->setCallback([lower2, limit2, limit1, lower3](void*)
+	limit2->setCallback([lower2, limit2, limit1, lower3, limit3](void*)
 			{
 				auto l = lower2->getValue();
 				auto h = limit2->getValue();
+				if (h >= limit3->getValue())
+					limit2->setValue(limit3->getValue() - 1);
 				if (l >= h)
 					limit2->setValue(l+1);
-				g_data.set(limit2->getSettingsId(), h);
-				lower3->setValue(h);
+				g_data.set(limit2->getSettingsId(), limit2->getValue());
+				lower3->setValue(limit2->getValue());
 			});
 	limit2->setLimits(1, 120);
 	lower2->setValue(limit1->getValue());
@@ -4741,11 +4745,9 @@ void setup(void)
 	// connect to wifi or create AP
 	checkWifi();
 
-	// init all stuff in App.h
-	app.init();
-
+	// All ScrObj of all pages...
 	buildAllPages();
-
+	// ... and top bar
 	topBar.build();
 
 	// setPrev on required pages
@@ -4754,6 +4756,7 @@ void setup(void)
 	// backlight
 	gBrightness.onClick();
 
+	// page to show at launch
 	if (g_first_launch) {
 		currPage = pages[FIRST_PG];
 	}
@@ -4763,6 +4766,15 @@ void setup(void)
 		g_rig.start();
 	}
 
+	// init time
+	rtc.begin();
+	datetime.init();
+
+	// init all stuff in App.h
+	app.init();
+
+	// final preparations (TODO: move to app.init)
+	// in fact, should move topbar to App class too...
 	currPage->setCurrItem(0);
 	currItem = currPage->getCurrItem();
 	currPage->prepare();
@@ -4788,24 +4800,14 @@ void setup(void)
 	// init all expanders (TODO: init all i2c there)
 	io.init();
 
-	rtc.begin();
-	datetime.init();
+	//rtc.begin();
+	//datetime.init();
 
-	// main page items (TODO: save current values to file and load at start)
-	/*
-	g_ph->setValue(io.getPH());
-	g_tds->setValue(io.getEC());
-	gMainPageStr = String(scrStrings[MP_STRING]) + *datetime.getDateStr();
-	*/
-
-	//app.setInit();
 	// draw current page
 	currPage->draw();
 	topBar.setText(currPage->getTitle());
 	topBar.prepare();
 	topBar.draw();
-
-	//ui.drawProgressBar(5, 122, 224, 4, 40, TFT_WHITE, GREEN_COL_MACRO);
 }
 
 void deleteSettingsFile()
@@ -4852,7 +4854,9 @@ void loop()
 			g_rig.halt();
 		}
 		else if (cmd == "day") {
+			Serial.println("Today: ");
 			Serial.println(datetime.getDays());
+			Serial.println(app.days());
 		}
 		else if (cmd == "setday") {
 			datetime.setStartDay(datetime.getStartDay() - 1);
