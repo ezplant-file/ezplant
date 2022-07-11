@@ -327,6 +327,7 @@ typedef enum {
 	// addit settings page 2
 	AS2_PH_HYST,
 	AS2_EC_HYST,
+	AS2_TODAY,
 	AS2_SOL_INT,
 	AS2_RANGE,
 

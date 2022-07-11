@@ -5,7 +5,7 @@
 #include <chrono>
 #include <mutex>
 #include <condition_variable>
-#include <settings.h>
+//#include <settings.h>
 
 #include "Gui.h"
 // TODO: always get time from i2c, sync i2c once per hour...
@@ -66,11 +66,12 @@ class DateTime: public ScrObj {
 		bool _userInputSettled = false;
 		bool _timeSynced = false;
 		struct tm  _timeinfo;
+		time_t _oldepoch;
 		unsigned long _rtcMils = 0;
 		const char* const _nptServer = NTP_SERVER;
 		unsigned long _userInputTimestamp = 0;
 		int _count = 0;
-		int _startday = 0;
+		//int _startday = 0;
 
 		std::atomic<bool> _sync_succ;
 		std::thread timeTread;
@@ -101,42 +102,29 @@ class DateTime: public ScrObj {
 			return _timeinfo.tm_min;
 		}
 
+		// get days since epoch
+		int epochdays()
+		{
+			time_t epochseconds = mktime(&_timeinfo);
+			return epochseconds/(60 * 60 * 24);
+		}
+
 		int getDays()
 		{
-			struct tm* tmp;
-			tmp = &_timeinfo;
-			time_t epochseconds = mktime(tmp);
-			int today = epochseconds/(60 * 60 * 24);
-			return today - _startday + 1;
-			//return _timeinfo.tm_yday - _startday + 1;
+			// return days after planting was set (today)
+			return epochdays()
+				- g_data.getInt(START_DAY) + 1;
 		}
 
 		void setStartDay()
 		{
-			//_startday = _timeinfo.tm_yday;
-			struct tm* tmp;
-			tmp = &_timeinfo;
-			tmp->tm_hour = 0;
-			tmp->tm_min = 0;
-			tmp->tm_sec = 0;
-			time_t seconds2midnight = mktime(tmp);
-
-			_startday = seconds2midnight / (60 * 60 * 24);
+			int startday = epochdays();
+			g_data.set(START_DAY, startday);
 		}
 
 		void setStartDay(int day)
 		{
-			_startday = day;
-		}
-
-		void loadStartDay()
-		{
-			_startday = g_data.getInt(START_DAY);
-		}
-
-		int getStartDay()
-		{
-			return _startday;
+			g_data.set(START_DAY, day);
 		}
 
 		// TODO: redo.
@@ -153,10 +141,6 @@ class DateTime: public ScrObj {
 				// notify
 				conditionVar.notify_one();
 
-				/***************/
-				//syncNTP();
-				//prepare();
-				//invalidate();
 				_userInputSettled = false;
 				_timeSynced = true;
 			}
@@ -189,35 +173,59 @@ class DateTime: public ScrObj {
 			// page methods deal with that
 		}
 
+		// functions to "magically" offset start day on time change
+		void magicDay()
+		{
+			_oldepoch = mktime(&_timeinfo);
+		}
+
+		void newStartDay()
+		{
+#ifdef TIME_DEBUG
+			Serial.println("new start day set");
+#endif
+			time_t delta = mktime(&_timeinfo);
+			delta -= _oldepoch;
+			int deltadays = delta / (24 * 60 * 60);
+			if (deltadays > 0)
+				g_data.set(START_DAY, g_data.getInt(START_DAY) + deltadays);
+		}
+
 		// GUI functions
 		void setHours(void* obj)
 		{
 			_timeinfo.tm_hour = _visible[HOUR].getValue();
-			rtc.settimeUnix(mktime(&_timeinfo));
+			setI2Ctime();
 		}
 
 		void setMinutes(void* obj)
 		{
 			_timeinfo.tm_min = _visible[MIN].getValue();
-			rtc.settimeUnix(mktime(&_timeinfo));
+			setI2Ctime();
 		}
 
 		void setDay(void* obj)
 		{
+			magicDay();
 			_timeinfo.tm_mday = _visible[DAY].getValue();
-			rtc.settimeUnix(mktime(&_timeinfo));
+			if (setI2Ctime())
+				newStartDay();
 		}
 
 		void setMon(void* obj)
 		{
+			magicDay();
 			_timeinfo.tm_mon = _visible[MON].getValue() - 1;
-			rtc.settimeUnix(mktime(&_timeinfo));
+			if (setI2Ctime())
+				newStartDay();
 		}
 
 		void setYear(void* obj)
 		{
+			magicDay();
 			_timeinfo.tm_year = _visible[YEAR].getValue() - 1900;
-			rtc.settimeUnix(mktime(&_timeinfo));
+			if (setI2Ctime())
+				newStartDay();
 		}
 
 		bool getSync()
@@ -297,6 +305,8 @@ class DateTime: public ScrObj {
 				return;
 			}
 
+			magicDay();
+
 			configTime(3600*gUTC, 0, _nptServer);
 			if (!getLocalTime(&_timeinfo)) {
 				getI2Ctime();
@@ -306,6 +316,7 @@ class DateTime: public ScrObj {
 				return;
 			}
 			else {
+				newStartDay();
 				_sync_succ = true;
 
 				if (!setI2Ctime())

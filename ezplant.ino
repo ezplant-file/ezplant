@@ -416,7 +416,6 @@ void callPage(void* page_ptr)
 		//datetime.initUTC(gUTC);
 		// save rig setup day of the year
 		datetime.setStartDay();
-		g_data.set(START_DAY, datetime.getStartDay());
 		g_data.save();
 		saveSettings();
 		g_rig.start();
@@ -589,6 +588,7 @@ void syncTimeCallback(void* arg)
 	datetime.setSync(checkbox->isOn());
 	datetime.invalidate();
 	datetime.prepare();
+	datetime.invalidate();
 
 	//pages[TIME_PG]->restock();
 
@@ -1672,9 +1672,7 @@ enum mainMenuItems {
 	MM_MON,
 	MM_SETT,
 	MM_DIAG,
-	//MM_TEST,
-	//MM_FONT,
-	//MM_FIRST_PAGE,
+	//MM_CURR_PLANT,
 	MM_NITEMS
 };
 
@@ -1845,6 +1843,9 @@ void checkLoField(void* self, void* loField)
 	saveInputFieldSetting(hi);
 }
 
+// used in setup only
+InputField* gTodayIF;
+
 Page* buildSecondAddSettPage()
 {
 	static Page addSettPage;
@@ -1864,11 +1865,11 @@ Page* buildSecondAddSettPage()
 	hystphIn.setCallback(saveInputFieldSetting, &hystphIn);
 
 	static Text hystEC;
-	hystEC.setXYpos(PG_LEFT_PADD, 94);
+	hystEC.setXYpos(PG_LEFT_PADD, 94-15);
 	hystEC.setText(AS2_EC_HYST);
 
 	static InputField hystecIn;
-	hystecIn.setXYpos(177, 90);
+	hystecIn.setXYpos(177, 90-15);
 	hystecIn.setText(EMPTY_STR);
 	hystecIn.setFloat();
 	hystecIn.setfLimits(0.05f, 0.5f);
@@ -1876,6 +1877,22 @@ Page* buildSecondAddSettPage()
 	hystecIn.setSettingsId(EC_HYST);
 	hystecIn.setValue(g_data.getFloat(EC_HYST));
 	hystecIn.setCallback(saveInputFieldSetting, &hystecIn);
+
+	static Text todayTxt;
+	todayTxt.setXYpos(PG_LEFT_PADD, 94+10);
+	todayTxt.setText(AS2_TODAY);
+
+	static InputField today;
+	gTodayIF = &today;
+	today.setXYpos(177, 90+10);
+	today.setText(EMPTY_STR);
+	today.setLimits(1, 999);
+	today.setValue(datetime.getDays());
+	today.setCallback([today](void*) {
+			g_data.set(START_DAY,
+					datetime.epochdays()
+					- today.getValue() + 1);
+			});
 
 	static Text interval;
 	interval.setXYpos(PG_LEFT_PADD, 129);
@@ -1947,6 +1964,8 @@ Page* buildSecondAddSettPage()
 	addSettPage.addItem(&hystphIn);
 	addSettPage.addItem(&hystEC);
 	addSettPage.addItem(&hystecIn);
+	addSettPage.addItem(&todayTxt);
+	addSettPage.addItem(&today);
 	addSettPage.addItem(&interval);
 	addSettPage.addItem(&intervalIn);
 	addSettPage.addItem(&range);
@@ -2359,44 +2378,23 @@ Page* buildFirstPage()
 {
 	static Page firstPlanting;
 
-	Serial.println();
-	Serial.print("Size of the page: ");
-	Serial.println(sizeof(firstPlanting));
-
 	static Text heading1;
 	heading1.setXYpos(PG_LEFT_PADD, MB_Y_START);
 	heading1.setFont(BOLDFONT);
 	heading1.setText(FP_SUBTTL);
 
-	Serial.println();
-	Serial.print("Size of the heading: ");
-	Serial.println(sizeof(heading1));
-
 	static Text par1;
 	par1.setXYpos(PG_LEFT_PADD, 63);
 	par1.setText(FP_PAR);
-
-	Serial.println();
-	Serial.print("Size of the paragraph: ");
-	Serial.println(sizeof(par1));
 
 	static BlueTextButton start;
 	start.setXYpos(PG_LEFT_PADD, 153);
 	start.setText(FP_BTN);
 	start.setCallback(callPage, pages[STAGE1_PG]);
 
-	Serial.println();
-	Serial.print("Size of the button: ");
-	Serial.println(sizeof(start));
-
 	static Image seeds;
 	seeds.setXYpos(174, 142);
 	seeds.loadRes(images[IMG_SEEDS]);
-
-	Serial.println();
-	Serial.print("Size of the image: ");
-	Serial.println(sizeof(seeds));
-	Serial.println();
 
 	firstPlanting.addItem(&heading1);
 	firstPlanting.addItem(&par1);
@@ -4762,7 +4760,6 @@ void setup(void)
 	}
 	else {
 		currPage = pages[MAIN_PG];
-		datetime.loadStartDay();
 		g_rig.start();
 	}
 
@@ -4808,6 +4805,7 @@ void setup(void)
 	topBar.setText(currPage->getTitle());
 	topBar.prepare();
 	topBar.draw();
+	gTodayIF->setValue(datetime.getDays());
 }
 
 void deleteSettingsFile()
@@ -4859,7 +4857,7 @@ void loop()
 			Serial.println(app.days());
 		}
 		else if (cmd == "setday") {
-			datetime.setStartDay(datetime.getStartDay() - 1);
+			datetime.setStartDay(g_data.getInt(START_DAY) - 1);
 		}
 		/*
 		else if (cmd == "next") {

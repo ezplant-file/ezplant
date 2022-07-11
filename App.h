@@ -556,10 +556,12 @@ class App {
 
 			if (today != datetime.getDays()) {
 				today = datetime.getDays();
-				//uint8_t percent = map(today, 0, g_data.getInt(GR_CYCL_3_DAYS), 0, 100);
 				uint8_t percent = (float) today / g_data.getInt(GR_CYCL_3_DAYS) * 100.0;
+				percent = clamp(percent, 0, 100);
+#ifdef TIME_DEBUG
 				Serial.print("Today percent: ");
 				Serial.println(percent);
+#endif
 				g_ProgBar.setValue(percent);
 			}
 
