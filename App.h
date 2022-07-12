@@ -418,6 +418,7 @@ class App {
 		unsigned long _mainMils = 0;
 		unsigned long _measMils = 0;
 		unsigned long _measInterval = 30 * 60000;
+		unsigned long _returnMils = 0;
 		bool _blink = false;
 		bool _dbFlag = false;
 		bool _triggered = false;
@@ -429,6 +430,7 @@ class App {
 		int16_t _prevBright = g_init_brightness;
 		bool _inactive = false;
 		static constexpr unsigned long REPEAT_INT = 1000;
+		static constexpr unsigned long RETURN_INT = 30000;
 		int today = 0;
 
 	public:
@@ -789,6 +791,16 @@ class App {
 				gBrightness.onClick();
 			}
 
+			// return to main page after a while...
+			if (millis() - _returnMils > RETURN_INT && currPage != pages[MAIN_PG] && !g_first_launch) {
+				_cursor.draw(false);
+				_iterator = 0;
+				callPage(pages[MAIN_PG]);
+				currItem = currPage->getCurrItemAt(_iterator);
+				g_data.save();
+				saveSettings();
+			}
+
 			// if we are on wifi settings page and net status changed
 			if (currPage == pages[WIFI_SETT_PG] && topBar.netChanged()) {
 				// reset flag
@@ -923,7 +935,7 @@ class App {
 					_iterator = 0;
 				currItem = currPage->getCurrItemAt(_iterator);
 			}
-			else if (io.userHome() && currPage != pages[MAIN_PG]) {
+			else if (io.userHome() && currPage != pages[MAIN_PG] && !g_first_launch) {
 				_cursor.draw(false);
 				callPage(pages[MAIN_PG]);
 				currItem = currPage->getCurrItemAt(_iterator);
@@ -933,8 +945,8 @@ class App {
 
 			_dbFlag = false;
 
-			// don't blink and don't dim if buttons were pressed...
-			_blinkMils = _dimMils = millis();
+			// don't blink, don't return to main screen and don't dim if buttons were pressed...
+			_returnMils = _blinkMils = _dimMils = millis();
 			_triggered = true;
 		}
 };

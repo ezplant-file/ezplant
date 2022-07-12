@@ -25,7 +25,8 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Cyclic",
 	// main menu strings
 	"Menu",
-	"Planting",
+	"New planting",
+	"Current planting",
 	"Online monitoring",
 	"Settings",
 	"Diagnostics",

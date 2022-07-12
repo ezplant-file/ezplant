@@ -71,6 +71,7 @@ static BlueTextButton testBlueButton;
 */
 
 GreyTextButton* gWiFigreyTextButton;
+GreyTextButton* gCurrPlantBtn;
 /****************** WiFi stuff ***************************************/
 const char* ap_ssid = "ezplant_wifi";
 const char* ap_password = scrStrings[WI_PASSWORD];
@@ -376,6 +377,8 @@ void gChangeWifi(void* arg)
 	callPage(pages[WIFI_PG]);
 }
 
+bool g_current_planting = false;
+
 void callPage(void* page_ptr)
 {
 
@@ -411,14 +414,20 @@ void callPage(void* page_ptr)
 		forward.setCallback(callPage, page->next());
 	}
 
-	if (currPage->lastStage()) {
+	if (currPage->lastStage() && !g_current_planting) {
 		g_first_launch = false;
+		gCurrPlantBtn->setVisible();
+		pages[MENU_PG]->restock();
 		//datetime.initUTC(gUTC);
 		// save rig setup day of the year
 		datetime.setStartDay();
 		g_data.save();
 		saveSettings();
 		g_rig.start();
+	}
+	else if (currPage->lastStage()) {
+		g_data.save();
+		saveSettings();
 	}
 
 	if (currPage == pages[ADDSETT_PG] || currPage == pages[ADDSETT2_PG]) {
@@ -1668,13 +1677,14 @@ Page* buildLangPage()
 }
 
 enum mainMenuItems {
+	MM_CURR_PLANT,
 	MM_PLANT,
 	MM_MON,
 	MM_SETT,
 	MM_DIAG,
-	//MM_CURR_PLANT,
 	MM_NITEMS
 };
+
 
 Page* buildMenuPage()
 {
@@ -1685,6 +1695,7 @@ Page* buildMenuPage()
 	int gap = MENU_GAP;
 
 	dispStrings_t menu1[MM_NITEMS];
+	menu1[MM_CURR_PLANT] = CUR_PLANT;
 	menu1[MM_PLANT] = NEW_PLANT;
 	menu1[MM_MON] = ONLINE_MON;
 	menu1[MM_SETT] = SETTINGS;
@@ -1705,8 +1716,22 @@ Page* buildMenuPage()
 		j++;
 	}
 
+	gCurrPlantBtn = &menu_items[MM_CURR_PLANT];
+
 	// set callBacks
-	menu_items[MM_PLANT].setCallback(callPage, pages[STAGE1_PG]);
+	if (g_first_launch)
+		menu_items[MM_CURR_PLANT].setInvisible();
+
+	menu_items[MM_CURR_PLANT].setCallback([](void*) {
+		g_current_planting = true;
+		callPage(pages[STAGE1_PG]);
+		});
+
+	menu_items[MM_PLANT].setCallback([](void*) {
+		g_current_planting = false;
+		callPage(pages[STAGE1_PG]);
+		});
+
 	menu_items[MM_SETT].setCallback(callPage, pages[SETT_PG]);
 	//menu_items[MM_TEST].setCallback(callPage, pages[TEST_PG]);
 	menu_items[MM_MON].setCallback(callPage, pages[ONLINE_PG]);
@@ -1725,7 +1750,7 @@ Page* buildMenuPage()
 	return &menuPage;
 }
 
-Page* buildAddSettPage()
+Page* buildAddSettFirstPage()
 {
 	static Page addSettPage;
 	addSettPage.setTitle(ADDSETT);
@@ -1846,7 +1871,7 @@ void checkLoField(void* self, void* loField)
 // used in setup only
 InputField* gTodayIF;
 
-Page* buildSecondAddSettPage()
+Page* buildAddSettSecondPage()
 {
 	static Page addSettPage;
 	addSettPage.setTitle(ADDSETT);
@@ -1865,11 +1890,11 @@ Page* buildSecondAddSettPage()
 	hystphIn.setCallback(saveInputFieldSetting, &hystphIn);
 
 	static Text hystEC;
-	hystEC.setXYpos(PG_LEFT_PADD, 94-15);
+	hystEC.setXYpos(PG_LEFT_PADD, 94-17);
 	hystEC.setText(AS2_EC_HYST);
 
 	static InputField hystecIn;
-	hystecIn.setXYpos(177, 90-15);
+	hystecIn.setXYpos(177, 90-17);
 	hystecIn.setText(EMPTY_STR);
 	hystecIn.setFloat();
 	hystecIn.setfLimits(0.05f, 0.5f);
@@ -1888,7 +1913,7 @@ Page* buildSecondAddSettPage()
 	today.setText(EMPTY_STR);
 	today.setLimits(1, 999);
 	today.setValue(datetime.getDays());
-	today.setCallback([today](void*) {
+	today.setCallback([](void*) {
 			g_data.set(START_DAY,
 					datetime.epochdays()
 					- today.getValue() + 1);
@@ -4647,8 +4672,8 @@ void buildAllPages()
 	//pages[FONT_PG] = buildFontPage();
 	//pages[TEST_PG] = buildTestPage();
 	pages[LANG_PG] = buildLangPage();
-	pages[ADDSETT_PG] = buildAddSettPage();
-	pages[ADDSETT2_PG] = buildSecondAddSettPage();
+	pages[ADDSETT_PG] = buildAddSettFirstPage();
+	pages[ADDSETT2_PG] = buildAddSettSecondPage();
 	pages[SETT_PG] = buildSettingsPage();
 
 	// online connect page

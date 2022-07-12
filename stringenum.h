@@ -26,6 +26,7 @@ typedef enum {
 	// main menu strings
 	MENU,
 	NEW_PLANT,
+	CUR_PLANT,
 	ONLINE_MON,
 	SETTINGS,
 	DIAG,
