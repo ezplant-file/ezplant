@@ -3129,11 +3129,20 @@ class Tank: public ScrObj {
 			return *this;
 		}
 
+		void smalltank()
+		{
+			_bigtank = false;
+		}
+
 	private:
 		void _drawLines()
 		{
-			tft.drawFastHLine(_x, _y+50, _w, _fg);
-			tft.drawFastHLine(_x, _y+19, _w, _fg);
+			if (_bigtank) {
+				tft.drawFastHLine(_x, _y+50, _w, _fg);
+				tft.drawFastHLine(_x, _y+19, _w, _fg);
+			}
+			else
+				tft.drawFastHLine(_x, _y+45, _w, _fg);
 		}
 
 		void _drawEmpty()
@@ -3176,13 +3185,14 @@ class Tank: public ScrObj {
 			tft.fillRect(_x+1, _y-subrectH+botRectH+1, _w-2, subrectH, _water);
 		}
 
+		bool _bigtank = true;
 		tank_state_t _state = T_EMPTY;
 		uint16_t _bg = 0xFFFF;
 		uint16_t _fg = COL_GREY_70_565;
 		uint16_t _water = tft.color565(0xaa, 0xe5, 0xe9);
 } g_tankBig;
 
-//Tank g_tankSmall;
+Tank g_tankSmall;
 
 class Cursor {
 	public:

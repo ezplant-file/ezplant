@@ -2466,6 +2466,16 @@ void rigtypeCallback(void* btn)
 			g_rig_type = (rig_type)j;
 		j++;
 	}
+
+	if (g_rig_type == RIG_FLOOD) {
+		g_tankBig.setXYpos(209, 33);
+		g_tankSmall.setVisible();
+	}
+	else {
+		g_tankBig.setXYpos(201, 45);
+		g_tankSmall.setInvisible();
+	}
+
 	forward.setCallback(rigtypeForward);
 	/*
 	Serial.print("rig type: ");
@@ -4574,9 +4584,14 @@ Page* buildMainPage()
 	mainPage.addItem(&phUp);
 	mainPage.addItem(&phDw);
 
-	// tank
+	// tanks
 	g_tankBig.setXYpos(201, 45);
 	mainPage.addItem(&g_tankBig);
+
+	g_tankSmall.setXYpos(185, 50);
+	g_tankSmall.setInvisible();
+	g_tankSmall.smalltank();
+	mainPage.addItem(&g_tankSmall);
 
 	// bottom buttons
 	mainPage.addItem(&menu);
