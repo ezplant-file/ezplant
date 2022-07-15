@@ -434,6 +434,11 @@ class InputOutput {
 			_adc[ADC_4] = analogRead(PIN_ANALOG_D);
 		}
 
+		bool readAsDig(int a)
+		{
+			return digitalRead(a);
+		}
+
 		bool* getDigitalValues()
 		{
 			return _dig_keys;

@@ -2448,6 +2448,18 @@ enum {
 
 RigTypeRadioButton rbuttons[RIG_NTYPES];
 
+void setupTanks()
+{
+	if (g_rig_type == RIG_FLOOD) {
+		g_tankBig.setXYpos(209, 33);
+		g_tankSmall.setVisible();
+	}
+	else {
+		g_tankBig.setXYpos(201, 45);
+		g_tankSmall.setInvisible();
+	}
+}
+
 void rigtypeCallback(void* btn)
 {
 	if (btn == nullptr)
@@ -2467,14 +2479,7 @@ void rigtypeCallback(void* btn)
 		j++;
 	}
 
-	if (g_rig_type == RIG_FLOOD) {
-		g_tankBig.setXYpos(209, 33);
-		g_tankSmall.setVisible();
-	}
-	else {
-		g_tankBig.setXYpos(201, 45);
-		g_tankSmall.setInvisible();
-	}
+	setupTanks();
 
 	forward.setCallback(rigtypeForward);
 	/*
@@ -4590,7 +4595,6 @@ Page* buildMainPage()
 
 	g_tankSmall.setXYpos(185, 50);
 	g_tankSmall.setInvisible();
-	g_tankSmall.smalltank();
 	mainPage.addItem(&g_tankSmall);
 
 	// bottom buttons
@@ -4837,14 +4841,16 @@ void setup(void)
 	// init all expanders (TODO: init all i2c there)
 	io.init();
 
-	//rtc.begin();
-	//datetime.init();
+	// tanks
+	setupTanks();
 
 	// draw current page
 	currPage->draw();
 	topBar.setText(currPage->getTitle());
 	topBar.prepare();
 	topBar.draw();
+
+	// additional settings current day
 	gTodayIF->setValue(datetime.getDays());
 }
 
@@ -4901,7 +4907,7 @@ void loop()
 		}
 		/*
 		else if (cmd == "next") {
-			g_tankBig++;
+			g_tankSmall++;
 		}
 		else if (cmd == "toggle") {
 			testFlag = !testFlag;

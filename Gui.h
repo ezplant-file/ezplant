@@ -2908,13 +2908,18 @@ class SmallBox: public ScrObj {
 		Image* _imgFull = nullptr;
 };
 
+/*
+class CarbonIndicator: public ScrObj {
+}
+*/
+
+
+
 // x - FP_LEFT_PADDING
 // y - 122
 #define PROG_W 225
 #define PROG_H 4
 
-
-//#include "DateTime.h" // getDays()
 class ProgressBar: public ScrObj {
 	private:
 		uint16_t _barCol = GREEN_COL_MACRO;
@@ -3073,6 +3078,11 @@ class Tank: public ScrObj {
 			invalidate();
 		}
 
+		Tank(bool small): ScrObj(19, 48)
+		{
+			_bigtank = !small;
+		}
+
 		virtual void draw() override
 		{
 			if (!_invalid || !_isVisible)
@@ -3129,11 +3139,6 @@ class Tank: public ScrObj {
 			return *this;
 		}
 
-		void smalltank()
-		{
-			_bigtank = false;
-		}
-
 	private:
 		void _drawLines()
 		{
@@ -3142,7 +3147,7 @@ class Tank: public ScrObj {
 				tft.drawFastHLine(_x, _y+19, _w, _fg);
 			}
 			else
-				tft.drawFastHLine(_x, _y+45, _w, _fg);
+				tft.drawFastHLine(_x, _y+32, _w, _fg);
 		}
 
 		void _drawEmpty()
@@ -3169,14 +3174,26 @@ class Tank: public ScrObj {
 
 		void _drawMiddleTop()
 		{
-			int subrectH = 6;
-			int botRectH = 52;
-			tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, _water);
-			tft.fillRect(_x+1, _y+_h-botRectH-1, _w-2, subrectH, _bg);
+			if (_bigtank) {
+				int subrectH = 6;
+				int botRectH = 52;
+				tft.fillSmoothRoundRect(_x+1, _y+_h-botRectH-1, _w-2, botRectH, 5, _water);
+				tft.fillRect(_x+1, _y+_h-botRectH-1, _w-2, subrectH, _bg);
+			}
+			else {
+				tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, _h-2, 5, _water);
+
+				int subrectH = 6;
+				int botRectH = 23;
+				tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, botRectH, 5, _water);
+				tft.fillRect(_x+1, _y-subrectH+botRectH+1, _w-2, subrectH, _water);
+			}
 		}
 
 		void _drawFull()
 		{
+			if (!_bigtank)
+				return;
 			tft.fillSmoothRoundRect(_x+1, _y+1, _w-2, _h-2, 5, _water);
 
 			int subrectH = 6;
@@ -3192,7 +3209,7 @@ class Tank: public ScrObj {
 		uint16_t _water = tft.color565(0xaa, 0xe5, 0xe9);
 } g_tankBig;
 
-Tank g_tankSmall;
+Tank g_tankSmall(true);
 
 class Cursor {
 	public:

@@ -629,6 +629,20 @@ class App {
 					g_tankBig.setState(T_FULL);
 				}
 
+				if (g_rig_type == RIG_FLOOD) {
+					bool stanklow, stankfull;
+
+					stanklow = io.readAsDig(PIN_ANALOG_A);
+					stankfull = io.readAsDig(PIN_ANALOG_B);
+
+					if (!stanklow && !stankfull)
+						g_tankSmall.setState(T_EMPTY);
+					else if (stanklow && !stankfull)
+						g_tankSmall.setState(T_HALF);
+					else if (stankfull)
+						g_tankSmall.setState(T_TWOTHIRDS);
+				}
+
 				/* outputs */
 				if (io.getOut(PWR_PG_PORT_A) != g_A->isOn()) {
 					g_A->on(io.getOut(PWR_PG_PORT_A));
