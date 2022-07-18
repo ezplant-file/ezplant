@@ -179,6 +179,7 @@ class DateTime: public ScrObj {
 			_oldepoch = mktime(&_timeinfo);
 		}
 
+		// figure out delta, when time resets
 		void newStartDay()
 		{
 #ifdef TIME_DEBUG
@@ -363,6 +364,7 @@ class DateTime: public ScrObj {
 			}
 
 			if (currPage == pages[TIME_PG]) {
+				_fieldsTitle.invalidate();
 				_fieldsTitle.erase();
 			}
 

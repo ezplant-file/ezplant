@@ -31,6 +31,7 @@ WebServer server(80);
 #define CURSOR_TIMER 500
 #define DEBOUNCE 150
 
+// call it what it is
 #define sleep(A) (vTaskDelay((A) / portTICK_PERIOD_MS))
 
 // dim screen after
@@ -47,7 +48,7 @@ bool g_first_launch = true;
 /*--------------------------------------------------------------------------------------------*/
 
 // utils
-const char* REMOTE_HOST = "www.iocontrol.ru";
+const char* REMOTE_HOST = "www.ezplant.ru";
 
 //WiFiClient client;
 
