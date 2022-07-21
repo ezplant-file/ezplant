@@ -3510,4 +3510,45 @@ class Page {
 		obj_list _toDraw;
 		ScrObj* _currItem;
 };
+
+class SocketChooser {
+	private:
+		// radio buttons
+		static enum {
+			_LIGHT, _PUMP, _AERO, _VENT, _NBTN
+		};
+
+		static constexpr int RB_START_Y = 87;
+		static constexpr int GAP = 3;
+		static Page _Page;
+
+		// page items
+		static Text _Role;
+		static StringText _SocketTxt;
+		static RadioButton _buttons[_NBTN];
+		static BlueTextButton _Apply;
+
+		// msc
+		static String _SocketStr = scrStrings[SC_ID];
+	public:
+		Page* build()
+		{
+			_Page.setTitle();
+
+			_Role.setXYpos(PG_LEFT_PADD, 43);
+			_SocketTxt.setXYpos(PG_LEFT_PADD, 62);
+
+			int j = 0;
+
+			for (auto& i:_buttons) {
+				i.setXYpos(PG_LEFT_PADD, RB_START_Y+(RAD_BTN_SIZE+_GAP)*j);
+				j++;
+			}
+
+			_buttons[_LIGHT].setText();
+			_buttons[_PUMP].setText();
+			_buttons[_AERO].setText();
+			_buttons[_VENT].setText();
+		}
+};
 #endif

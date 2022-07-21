@@ -341,7 +341,17 @@ const char* engStrings[END_OF_STRINGS] PROGMEM = {
 	"Unique device number",
 	"You can request new code in",
 	"This device is connected",
-	"Untether and disconnect"
+	"Untether and disconnect",
+
+	// socket class
+	"Socket settings",
+	"Choose purpose",
+	"Socket with id #",
+	"Light",
+	"Pump",
+	"Aeration",
+	"Ventilation",
+	"Apply"
 
 	//end of strings
 };

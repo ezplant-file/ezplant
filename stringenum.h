@@ -343,6 +343,16 @@ typedef enum {
 	OM_CONNECTED,
 	OM_DISCONNECT,
 
+	// socket class
+	SC_TITLE,
+	SC_ROLE,
+	SC_ID,
+	SC_LIGHT,
+	SC_PUMP,
+	SC_AERO,
+	SC_VENT,
+	SC_APPLY,
+
 	END_OF_STRINGS
 } dispStrings_t;
 
